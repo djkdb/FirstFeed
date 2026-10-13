@@ -63,6 +63,16 @@ export const DEFAULTS = {
   'ai.webTimeoutMs': 300_000,
   /** 로그인(구독) 확인 결과를 기억하는 시간(ms). 실행 직전 확인을 매번 하면 호출마다 1초 남짓 느려진다 */
   'ai.authCacheMs': 60_000,
+  /** 인터뷰 최소 질문 수 — 이보다 적으면 AI 가 "충분하다"고 해도 계속 묻는다 (CLAUDE.md 결정 5) */
+  'identity.minTurns': 3,
+  /** 인터뷰 최대 질문 수 — 여기서 멈춘다 */
+  'identity.maxTurns': 10,
+  /** 지난 질문과 글자 유사도가 이 값 이상이면 같은 질문으로 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
+  'identity.duplicateQuestionThreshold': 0.6,
+  /** 축끼리 글자 유사도가 이 값 이상이면 겹친다고 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
+  'identity.pillarOverlapThreshold': 0.5,
+  /** 인용 최소 글자 수(공백·문장부호 제외). 너무 짧은 조각은 근거가 약해서 (CLAUDE.md 근거 규칙의 알려진 한계) */
+  'identity.minQuoteChars': 4,
   /** 과제별 프롬프트 활성 버전. 없으면 v1 */
   'prompts.activeVersions': {} as Record<string, string>,
 };

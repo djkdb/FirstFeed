@@ -1,0 +1,20 @@
+/* 화면 기본 스타일 — 브랜드 템플릿과는 별개인 앱 자체의 모양 */
+:root {
+  --bg: #f6f6f4;
+  --surface: #ffffff;
+  --text: #1c1c1c;
+  --muted: #666666;
+  --ok: #1d7a46;
+  --error: #b42318;
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+body { margin: 0; }
+.shell { max-width: 720px; margin: 0 auto; padding: 32px 16px; }
+h1 { margin: 0; font-size: 28px; }
+.tagline { margin: 4px 0 24px; color: var(--muted); }
+.card { background: var(--surface); border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 3px rgb(0 0 0 / 8%); }
+.card h2 { margin: 0 0 8px; font-size: 16px; }
+.status.ok { color: var(--ok); }
+.status.error { color: var(--error); }

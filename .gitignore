@@ -24,3 +24,6 @@ exports/
 !.vscode/settings.json
 .idea/
 *.log
+
+# 비공개 테스트 자료 (지인 인터뷰 답변·대외활동 공지) — 목록(private.manifest.json)만 공개한다
+tests/fixtures/private/

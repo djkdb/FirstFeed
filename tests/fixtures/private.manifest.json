@@ -1,0 +1,5 @@
+{
+  "note": "비공개 테스트 자료의 목록과 건수만 담는다. 내용은 레포에 없다 (지인 인터뷰·대외활동 공지). 갱신: npm run fixtures:manifest",
+  "counts": {},
+  "files": []
+}

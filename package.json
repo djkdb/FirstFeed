@@ -15,7 +15,10 @@
     "lint": "eslint .",
     "typecheck": "tsc -p server --noEmit && tsc -p app --noEmit && tsc -p scripts --noEmit",
     "test": "vitest run",
-    "check": "npm run lint && npm run typecheck && npm test"
+    "check": "npm run lint && npm run typecheck && npm test",
+    "check:privacy": "node scripts/check-privacy.ts",
+    "fixtures:manifest": "node scripts/fixtures-manifest.ts",
+    "prepare": "node scripts/setup-git-hooks.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

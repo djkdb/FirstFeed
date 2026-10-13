@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "path": "server/src/lib/redact.ts",
+      "reason": "가리기 규칙의 주석에 형식 설명용 가짜 전화번호·비밀 값 예시가 있음"
+    },
+    {
+      "path": "server/src/lib/redact.test.ts",
+      "reason": "가리기 함수 테스트용 가짜 이메일·전화번호·키 모음"
+    },
+    {
+      "path": "scripts/privacy.test.ts",
+      "reason": "허용 목록 검사 테스트용 가짜 값"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "firstfeed",
+  "private": true,
+  "type": "module",
+  "description": "퍼스트피드 — 인스타를 처음 시작하는 사람을 위한 브랜딩·콘텐츠·운영 도구 (로컬 앱)",
+  "workspaces": [
+    "server",
+    "app"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,app -c blue,green \"npm run dev -w @firstfeed/server\" \"npm run dev -w @firstfeed/app\"",
+    "lint": "eslint .",
+    "typecheck": "tsc -p server --noEmit && tsc -p app --noEmit && tsc -p scripts --noEmit",
+    "test": "vitest run",
+    "check": "npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "concurrently": "^10.0.6",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.4"
+  }
+}

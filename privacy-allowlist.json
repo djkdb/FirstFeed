@@ -11,6 +11,10 @@
     {
       "path": "scripts/privacy.test.ts",
       "reason": "허용 목록 검사 테스트용 가짜 값"
+    },
+    {
+      "path": "scripts/transcript.test.ts",
+      "reason": "대화 기록 가리기 테스트용 가짜 이메일·키"
     }
   ]
 }

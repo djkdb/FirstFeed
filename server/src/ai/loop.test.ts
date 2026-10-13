@@ -68,7 +68,8 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
     const { db, ai } = setup([bad, bad, bad]);
     const r = await generateChecked(ai, req);
     expect(r.ok).toBe(false);
-    expect(r).not.toHaveProperty('data');
+    expect(r).not.toHaveProperty('data'); // 저장할 수 있는 칸은 없고, 구제 단계용 rejected 만 있다
+    expect(r).toHaveProperty('rejected');
     expect(r).toMatchObject({ rewrites: 2, errors: [{ code: 'quote_not_in_source' }] });
     expect(runs(db)).toMatchObject([{ status: 'rule_error' }, { status: 'rule_error' }, { status: 'rule_error' }]);
   });

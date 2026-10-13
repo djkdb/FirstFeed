@@ -34,7 +34,17 @@ interface Base {
   rewrites: number;
   warnings: Issue[];
 }
-export type CheckedResult<T> = (Base & { ok: true; data: T }) | (Base & { ok: false; errors: Issue[] });
+export type CheckedResult<T> =
+  | (Base & { ok: true; data: T })
+  | (Base & {
+      ok: false;
+      errors: Issue[];
+      /**
+       * 검증에 실패한 마지막 결과. **그대로 저장하면 안 된다.**
+       * 실패한 부분을 코드로 덜어 내고 남은 것만 다시 검사하는 구제 단계(예: 근거 없는 축만 빼기)에서만 쓴다.
+       */
+      rejected: T;
+    });
 
 function formatIssues(issues: Issue[]): string {
   return issues.map((i) => `- [${i.code}]${i.where ? ` ${i.where}:` : ''} ${i.message}`).join('\n');
@@ -89,7 +99,7 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
       }
       if (rewrites >= maxRewrites) {
         console.warn(`[AI] ${req.task}: 재작성 ${rewrites}회 뒤에도 문제 ${errors.length}건 — 결과를 버립니다`);
-        return { ok: false, errors, jobId: job.jobId, calls: job.attempt, rewrites, warnings };
+        return { ok: false, errors, rejected: gen.data, jobId: job.jobId, calls: job.attempt, rewrites, warnings };
       }
       rewrites++;
       prompt = `${req.prompt}\n\n${

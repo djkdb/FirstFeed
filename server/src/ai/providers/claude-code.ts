@@ -3,6 +3,7 @@
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { getSetting } from '../../config.ts';
 import { runProcess } from '../../lib/process.ts';
 import { AiError, type AiProvider, type ProviderRunInput, type ProviderRunOutput, type ProviderStatus } from '../types.ts';
 
@@ -14,24 +15,75 @@ export interface ClaudeCodeOptions {
    * 기본은 모두 켠다. 끄는 것은 대조 실험(scripts/ai-context-probe.ts)에서만.
    */
   isolation?: { safeMode: boolean; tempCwd: boolean; cwd?: string };
+  /** 로그인 확인 결과를 기억하는 시간(ms). 매 호출마다 auth status 를 돌리면 1초 남짓씩 느려져서 */
+  authCacheMs?: number;
 }
 
 const DETECT_TIMEOUT_MS = 15_000;
 
+const NOT_LOGGED_IN_HINT = 'Claude Code 에 로그인되어 있지 않습니다. 터미널에서 `claude` 를 실행해 로그인한 뒤 [다시 확인]을 누르세요.';
+
+function notSubscriptionHint(auth: AuthStatus): string {
+  return (
+    `구독 요금이 아닌 다른 요금(${auth.authMethod ?? '알 수 없는 방식'})으로 나갈 수 있어 이 앱은 호출하지 않습니다. ` +
+    '터미널에서 `claude auth status` 로 인증 방식을 확인하고, `claude` 로 claude.ai 계정에 로그인하세요. ' +
+    '설정 파일(관리자 설정 포함)의 apiKeyHelper·env 가 원인일 수 있습니다.'
+  );
+}
+
 /**
- * 구독(claude.ai 로그인) 대신 쓰이는 인증·접속 변수. 셸에 하나라도 있으면 `claude` 는 구독보다 이것을 먼저 쓴다
- * (2026-10-13 확인: ANTHROPIC_API_KEY → authMethod "api_key", ANTHROPIC_AUTH_TOKEN → "oauth_token" 으로 바뀌고
- * 가짜 값이면 401, ANTHROPIC_BASE_URL 은 그 주소로 접속을 시도 — devlog 2026-10-13-03).
- * 사용자가 다른 개발 작업용으로 셸에 키를 넣어 둔 경우, 앱이 모르게 API 요금으로 돌지 않도록 구독 경로에서는 뺀다.
+ * 구독(claude.ai 로그인) 대신 쓰이는 인증·접속·공급자 전환 변수. 셸에 있으면 `claude` 는 구독보다 이것을 먼저 쓴다.
+ * 사용자가 다른 개발 작업용으로 셸에 넣어 둔 경우 앱이 모르게 다른 요금으로 돌지 않도록 구독 경로에서는 뺀다.
  * API 키 경로는 11월 API 어댑터에서 키체인 값을 명시적으로 넘긴다.
+ * 근거는 모두 실제 확인(devlog 2026-10-13-03·04) + 공식 문서(code.claude.com/docs/en/env-vars):
+ *  - ANTHROPIC_API_KEY → authMethod "api_key", 가짜 값이면 401. 문서: "-p 에서는 있으면 항상 쓴다"
+ *  - ANTHROPIC_AUTH_TOKEN → "oauth_token", 401 / ANTHROPIC_BASE_URL → 그 주소로 접속 시도
+ *  - CLAUDE_CODE_USE_{BEDROCK,VERTEX,FOUNDRY,ANTHROPIC_AWS,MANTLE} → "third_party", apiProvider 가 그 공급자로 바뀜
+ *  - ANTHROPIC_FEDERATION_RULE_ID(+ORGANIZATION_ID·WORKSPACE_ID) → "oauth_token". 문서: "/login 자격 증명보다 우선"
+ * ANTHROPIC_PROFILE 은 가짜 값으로는 변화가 없어 넣지 않았다 — 실행 직전 구독 판정(isSubscriptionAuth)이 마지막 방어선이다.
  */
-export const NON_SUBSCRIPTION_ENV = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL'] as const;
+export const NON_SUBSCRIPTION_ENV = [
+  'ANTHROPIC_API_KEY',
+  'ANTHROPIC_AUTH_TOKEN',
+  'ANTHROPIC_BASE_URL',
+  'CLAUDE_CODE_USE_BEDROCK',
+  'CLAUDE_CODE_USE_VERTEX',
+  'CLAUDE_CODE_USE_FOUNDRY',
+  'CLAUDE_CODE_USE_ANTHROPIC_AWS',
+  'CLAUDE_CODE_USE_MANTLE',
+  'ANTHROPIC_FEDERATION_RULE_ID',
+  'ANTHROPIC_ORGANIZATION_ID',
+  'ANTHROPIC_WORKSPACE_ID',
+] as const;
 
 /** 구독 경로로 실행할 환경 변수: 지금 환경에서 구독을 우회하는 변수만 뺀다 */
 export function subscriptionEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const env = { ...base };
   for (const key of NON_SUBSCRIPTION_ENV) delete env[key];
   return env;
+}
+
+/** `claude auth status --json` 중 쓰는 칸 */
+export interface AuthStatus {
+  loggedIn?: boolean;
+  authMethod?: string;
+  apiProvider?: string;
+  subscriptionType?: string | null;
+}
+
+/**
+ * 구독 인증인가. 통과하는 경우는 둘뿐:
+ *  - authMethod "claude.ai" (로그인)
+ *  - authMethod "oauth_token" 이면서 넘기는 env 에 CLAUDE_CODE_OAUTH_TOKEN(setup-token 으로 만든 구독 토큰)이 있을 때.
+ *    "oauth_token" 은 비구독 ANTHROPIC_AUTH_TOKEN·federation 에서도 똑같이 나오므로 이름만으로는 못 가린다 —
+ *    그 변수들은 subscriptionEnv 에서 이미 뺐으므로, 남은 oauth_token 의 출처는 CLAUDE_CODE_OAUTH_TOKEN 뿐이다.
+ * 공급자는 반드시 Anthropic 직접(firstParty)이어야 한다.
+ */
+export function isSubscriptionAuth(auth: AuthStatus, env: NodeJS.ProcessEnv): boolean {
+  if (auth.loggedIn !== true) return false;
+  if (auth.apiProvider !== undefined && auth.apiProvider !== 'firstParty') return false;
+  if (auth.authMethod === 'claude.ai') return true;
+  return auth.authMethod === 'oauth_token' && Boolean(env.CLAUDE_CODE_OAUTH_TOKEN);
 }
 
 /** `--output-format json` 의 결과 봉투 중 쓰는 칸. 2026-10-13 실제 호출로 확인 (devlog 2026-10-13-02) */
@@ -49,10 +101,27 @@ export class ClaudeCodeProvider implements AiProvider {
   readonly id = 'claude';
   private readonly bin: string;
   private readonly isolation: NonNullable<ClaudeCodeOptions['isolation']>;
+  private readonly authCacheMs: number;
+  private authCache: { status: AuthStatus | null; at: number } | null = null;
 
   constructor(opts: ClaudeCodeOptions = {}) {
     this.bin = opts.bin ?? 'claude';
     this.isolation = opts.isolation ?? { safeMode: true, tempCwd: true };
+    this.authCacheMs = opts.authCacheMs ?? getSetting(null, 'ai.authCacheMs');
+  }
+
+  /** 실제 호출과 같은 환경으로 로그인 상태를 읽는다. fresh 가 아니면 잠깐 기억해 둔 값을 쓴다 */
+  private async readAuth(fresh: boolean): Promise<AuthStatus | null> {
+    if (!fresh && this.authCache && Date.now() - this.authCache.at < this.authCacheMs) return this.authCache.status;
+    const r = await runProcess(this.bin, ['auth', 'status', '--json'], { timeoutMs: DETECT_TIMEOUT_MS, env: subscriptionEnv() });
+    let status: AuthStatus | null;
+    try {
+      status = JSON.parse(r.stdout) as AuthStatus;
+    } catch {
+      status = null;
+    }
+    this.authCache = { status, at: Date.now() };
+    return status;
   }
 
   async detect(): Promise<ProviderStatus> {
@@ -76,13 +145,7 @@ export class ClaudeCodeProvider implements AiProvider {
     }
     const version = ver.stdout.trim().split(/\s+/)[0] ?? null;
     // 로그인 확인도 실제 호출과 같은 환경으로 한다 — 셸의 API 키 때문에 "로그인됨"으로 잘못 보이지 않게
-    const auth = await runProcess(this.bin, ['auth', 'status', '--json'], { timeoutMs: DETECT_TIMEOUT_MS, env: subscriptionEnv() });
-    let parsed: { loggedIn?: boolean; authMethod?: string; subscriptionType?: string } | null;
-    try {
-      parsed = JSON.parse(auth.stdout);
-    } catch {
-      parsed = null;
-    }
+    const parsed = await this.readAuth(true);
     if (!parsed) {
       return {
         ...base,
@@ -92,8 +155,7 @@ export class ClaudeCodeProvider implements AiProvider {
       };
     }
     const loggedIn = parsed.loggedIn === true;
-    // 키 변수를 뺐는데도 구독이 아닌 방식으로 잡히면(예: 설정 파일의 apiKeyHelper) 구독 경로가 아니므로 알린다
-    const nonSubscription = loggedIn && parsed.authMethod !== undefined && parsed.authMethod !== 'claude.ai';
+    const subscription = isSubscriptionAuth(parsed, subscriptionEnv());
     return {
       ...base,
       installed: true,
@@ -101,15 +163,25 @@ export class ClaudeCodeProvider implements AiProvider {
       loggedIn,
       authMethod: parsed.authMethod ?? null,
       subscription: parsed.subscriptionType ?? null,
-      hint: !loggedIn
-        ? 'Claude Code 에 로그인되어 있지 않습니다. 터미널에서 `claude` 를 실행해 로그인한 뒤 [다시 확인]을 누르세요.'
-        : nonSubscription
-          ? `Claude Code 가 구독(claude.ai)이 아닌 방식(${parsed.authMethod})으로 인증되어 있습니다. 구독 요금이 아닌 API 요금이 나갈 수 있으니, 터미널에서 \`claude auth status\` 로 확인하세요.`
-          : null,
+      // 구독이 아니면 이 앱에서는 쓸 수 없다 (run() 이 막는다)
+      supported: loggedIn ? subscription : true,
+      hint: !loggedIn ? NOT_LOGGED_IN_HINT : subscription ? null : notSubscriptionHint(parsed),
     };
   }
 
   async run(input: ProviderRunInput): Promise<ProviderRunOutput> {
+    // 실행 직전에 구독인지 확인하고, 아니면 부르지 않는다 — 경고만 하면 그사이 다른 요금으로 돈다
+    const auth = await this.readAuth(false);
+    if (auth && auth.loggedIn !== true) {
+      throw new AiError('not_logged_in', 'Claude Code 에 로그인되어 있지 않습니다.', NOT_LOGGED_IN_HINT);
+    }
+    if (auth && !isSubscriptionAuth(auth, subscriptionEnv())) {
+      throw new AiError(
+        'not_subscription',
+        `Claude Code 가 구독(claude.ai)이 아닌 방식(${auth.authMethod ?? '알 수 없음'}${auth.apiProvider && auth.apiProvider !== 'firstParty' ? ` · ${auth.apiProvider}` : ''})으로 인증되어 있어 호출을 막았습니다.`,
+        notSubscriptionHint(auth),
+      );
+    }
     // 호출마다 빈 임시 폴더를 작업 폴더로 쓴다 — 이 레포의 CLAUDE.md 같은 파일이 자동으로 읽히지 않게.
     const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'firstfeed-ai-'));
     const cwd = this.isolation.tempCwd ? tmp : (this.isolation.cwd ?? process.cwd());

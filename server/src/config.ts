@@ -61,6 +61,8 @@ export const DEFAULTS = {
   'ai.timeoutMs': 180_000,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
   'ai.webTimeoutMs': 300_000,
+  /** 로그인(구독) 확인 결과를 기억하는 시간(ms). 실행 직전 확인을 매번 하면 호출마다 1초 남짓 느려진다 */
+  'ai.authCacheMs': 60_000,
   /** 과제별 프롬프트 활성 버전. 없으면 v1 */
   'prompts.activeVersions': {} as Record<string, string>,
 };

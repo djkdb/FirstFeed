@@ -18,6 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
   failed: '실패',
   timeout: '시간 초과',
   cancelled: '취소됨',
+  blocked: '막음(구독 아님)',
 };
 
 export function SmokeTest() {

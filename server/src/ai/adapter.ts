@@ -10,7 +10,7 @@ import { loadPrompt } from './prompts.ts';
 import { AiError, type AiProvider, type AiRequest } from './types.ts';
 
 export type RunKind = 'generate' | 'json_retry' | 'rewrite' | 'review';
-export type RunStatus = 'ok' | 'invalid_json' | 'schema_error' | 'rule_error' | 'failed' | 'timeout' | 'cancelled';
+export type RunStatus = 'ok' | 'invalid_json' | 'schema_error' | 'rule_error' | 'failed' | 'timeout' | 'cancelled' | 'blocked';
 
 /** 한 작업(생성 → 검증 → 재작성 묶음) 안에서 호출 순번을 이어 가기 위한 문맥 */
 export interface JobContext {
@@ -90,6 +90,8 @@ function statusOf(err: AiError): RunStatus {
       return 'invalid_json';
     case 'schema_error':
       return 'schema_error';
+    case 'not_subscription':
+      return 'blocked';
     default:
       return 'failed';
   }

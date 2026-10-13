@@ -64,7 +64,7 @@ export interface AiProvider {
   run(input: ProviderRunInput): Promise<ProviderRunOutput>;
 }
 
-export type AiErrorKind = 'not_installed' | 'not_logged_in' | 'timeout' | 'cancelled' | 'cli_failed' | 'invalid_json' | 'schema_error';
+export type AiErrorKind = 'not_installed' | 'not_logged_in' | 'not_subscription' | 'timeout' | 'cancelled' | 'cli_failed' | 'invalid_json' | 'schema_error';
 
 /** AI 호출 실패. 메시지는 사람 말로, hint 에는 "다음에 뭘 하면 되는지"를 적는다 */
 export class AiError extends Error {

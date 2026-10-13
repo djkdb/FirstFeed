@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from './api.ts';
+import { AiConnection } from './AiConnection.tsx';
 
 type ServerState =
   | { kind: 'checking' }
@@ -43,6 +44,7 @@ export function App() {
           </p>
         )}
       </section>
+      <AiConnection />
     </main>
   );
 }

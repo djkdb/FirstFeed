@@ -2,9 +2,12 @@
 import { Hono } from 'hono';
 import type { Db } from './db/index.ts';
 import { localOnly } from './lib/local-only.ts';
+import { detectProviders, type DetectResult } from './ai/detect.ts';
 
 export interface AppDeps {
   db: Db;
+  /** 테스트에서 실제 CLI 대신 가짜 결과를 넣을 수 있게 주입받는다 */
+  detect?: () => Promise<DetectResult>;
 }
 
 export function createApp(deps: AppDeps) {
@@ -15,7 +18,8 @@ export function createApp(deps: AppDeps) {
         | { id: number; name: string }
         | undefined;
       return c.json({ ok: true as const, brand: brand ?? null });
-    });
+    })
+    .get('/api/ai/providers', async (c) => c.json(await (deps.detect ?? detectProviders)()));
   return app;
 }
 

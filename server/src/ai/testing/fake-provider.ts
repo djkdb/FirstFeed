@@ -14,7 +14,10 @@ export class FakeProvider implements AiProvider {
   running = 0;
   maxRunning = 0;
   private i = 0;
-  constructor(private readonly steps: FakeStep[]) {}
+  private readonly steps: FakeStep[];
+  constructor(steps: FakeStep[]) {
+    this.steps = steps;
+  }
 
   async detect(): Promise<ProviderStatus> {
     return { id: 'fake', name: 'Fake', installed: true, version: '0', loggedIn: true, authMethod: null, subscription: null, supported: true, hint: null };

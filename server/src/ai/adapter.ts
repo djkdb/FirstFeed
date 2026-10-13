@@ -33,7 +33,10 @@ export interface AiCallResult<T> {
 class Limiter {
   private running = 0;
   private readonly waiting: Array<{ resolve: () => void; reject: (e: unknown) => void; signal: AbortSignal; onAbort: () => void }> = [];
-  constructor(private readonly limit: () => number) {}
+  private readonly limit: () => number;
+  constructor(limit: () => number) {
+    this.limit = limit;
+  }
 
   acquire(signal: AbortSignal): Promise<void> {
     if (signal.aborted) return Promise.reject(cancelledError());

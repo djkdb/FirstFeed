@@ -29,44 +29,56 @@
 
 ## 2. 기술 스택
 
-| 영역 | 선택 | 상태 |
+| 영역 | 선택 | 비고 |
 |---|---|---|
-| 화면 | React + TypeScript + Vite | 확정 |
-| 로컬 서버 | Node.js + TypeScript (Hono 또는 Fastify) | 프레임워크는 뼈대 계획 때 이유와 함께 결정 → 「이미 내린 결정」에 기록 |
-| 로컬 저장 | SQLite | 드라이버는 뼈대 계획 때 결정 |
-| 카드 렌더링 | HTML/CSS 템플릿 → Playwright 캡처 | 확정 (FR-TP 착수 때 도입) |
-| AI | Claude Code CLI (`claude -p`) | 확정 · Codex/Gemini/API 어댑터는 11월 |
+| 화면 | React 19 + TypeScript + Vite 8 | 서버 라우트 타입을 Hono RPC(`hc<AppType>`)로 가져와 쓴다 |
+| 로컬 서버 | Node 24 + TypeScript + **Hono** 4 | `tsx` 로 실행. 127.0.0.1 에서만 열고 Host·Origin 검사 |
+| 로컬 저장 | SQLite — **`node:sqlite`**(Node 내장) | DB 접근은 `server/src/db/` 한 곳. 마이그레이션은 번호 붙은 SQL 파일 |
+| 스키마 | zod 4 | 정의 하나에서 TS 타입 · CLI 용 JSON Schema · 응답 검증 |
+| 카드 렌더링 | HTML/CSS 템플릿 → Playwright 캡처 | FR-TP 착수 때 도입 |
+| AI | Claude Code CLI (`claude -p`) | Codex/Gemini/API 어댑터는 11월 |
+| 도구 | TypeScript **6.0.3**(7 아님) · ESLint 10 · Vitest 5 · npm workspaces | 보조 스크립트는 `node scripts/x.ts` 로 바로 실행(Node 24 타입 제거) |
 | 동기화 | Supabase | F (중간 발표 이후) |
-| 개발 환경 | macOS, Node v24, npm | 현재 개발 컴퓨터 기준 |
 
 ## 3. 폴더 구조
 
-> 뼈대(작업 4)를 만든 뒤 실제 구조로 갱신한다. 아래는 합의된 큰 틀이다.
-
 ```
-app/              화면 (React + Vite)
-server/           로컬 서버 (AI 어댑터 · 검증기 · 렌더러 · DB)
-prompts/          프롬프트 파일. prompts/<이름>/v1.md, v2.md … 나란히 두고 활성 버전은 설정에서 고른다
-tests/fixtures/   고정 테스트 세트
-  real/           실제 자료 (사용자·지인 답변, 실제 소재, 가린 공지)
-  generated/      AI로 만든 보충 자료 — real 과 절대 섞지 않는다
-references/       디자인 참고용 게시물 캡처 (따라 하지 말고 참고만)
-docs/
-  PRD.md          제품 요구사항 (기획 기준)
-  devlog/         세션 기록 — 최종 발표 자료의 원천
-scripts/          대화 기록 내보내기 등 보조 스크립트
+app/                    화면 (React + Vite) — src/api.ts 가 서버 호출의 유일한 통로
+server/src/
+  index.ts              서버 시작점 (127.0.0.1:4317)
+  app.ts                라우트 정의 + AppType 내보내기
+  config.ts             설정 기본값의 유일한 출처 + getSetting()/modelForTask()
+  db/                   연결 · 마이그레이션 (migrations/NNN_이름.sql)
+  ai/                   AI 어댑터 (작업 5)
+  lib/redact.ts         개인정보·비밀 값 찾기/가리기 — 내보내기와 check:privacy 가 같이 쓴다
+prompts/<이름>/vN.md    프롬프트. 기존 파일을 고치지 않고 새 버전을 만든다. 활성 버전은 설정 'prompts.activeVersions'
+tests/fixtures/
+  real/                 실제 · 공개 — 운영자 본인 인터뷰 답변, 본인 계정 소재·원문
+  private/              실제 · 비공개 — 지인 인터뷰, 대외활동 공지 (.gitignore, 커밋 금지)
+  private.manifest.json 비공개 자료의 파일 목록·건수만 (내용 없음)
+  generated/            AI 생성 보충 자료
+tests/results/          측정 표 — 실제·공개 / 실제·비공개(숫자만) / AI 생성 으로 나눈다
+references/             디자인 참고 캡처 (따라 하지 말고 참고만)
+docs/PRD.md · docs/devlog/
+scripts/                check-privacy · fixtures-manifest · export-transcripts · setup-git-hooks
+.githooks/pre-commit    커밋 전: 개인정보 검사 → 린트 → 타입 체크
+privacy-allowlist.json  개인정보 검사 오탐 허용 목록 (항목마다 이유 한 줄 필수)
+data/                   로컬 DB 등 (.gitignore)
+exports/                대화 원본 내보내기 결과 (.gitignore)
 ```
 
 ## 4. 실행 · 테스트 명령
 
-> 뼈대(작업 4) 완료 후 채운다. 린트·타입체크·테스트가 처음부터 돌아가야 한다.
-
 | 하는 일 | 명령 |
 |---|---|
-| 개발 실행 | (미정) |
-| 린트 | (미정) |
-| 타입 체크 | (미정) |
-| 테스트 | (미정) |
+| 설치 (커밋 전 훅도 같이 켜짐) | `npm install` |
+| 개발 실행 (서버 4317 + 화면 5173) | `npm run dev` → http://localhost:5173 |
+| 린트 · 타입 체크 · 테스트 한 번에 | `npm run check` |
+| 린트 / 타입 체크 / 테스트 | `npm run lint` / `npm run typecheck` / `npm test` |
+| 실제 AI 호출 테스트 (구독 사용량 듦) | `*.live.test.ts` — 기본 `npm test` 에서 빠져 있다. 작업 5에서 명령 추가 |
+| 공개 레포 개인정보 검사 | `npm run check:privacy` (커밋 때는 훅이 `--staged` 로 자동 실행) |
+| 비공개 자료 목록 갱신 | `npm run fixtures:manifest` |
+| 대화 원본 내보내기 (제출용) | `npm run export:transcripts -- <세션ID>` 또는 `--latest` / `--all` → `exports/` |
 | 프롬프트 평가 | (미정) — 같은 테스트 세트로 버전별 결과 비교 표 생성 |
 
 ## 5. 작업 규칙
@@ -83,7 +95,8 @@ scripts/          대화 기록 내보내기 등 보조 스크립트
 
 ### AI 호출
 - 모든 AI 호출은 **어댑터 한 곳**을 거친다. 요청 `{task, prompt, schema, images, web, timeout}` → 응답: 검증된 JSON
-- CLI는 **빈 임시 폴더를 작업 폴더로** 실행한다. 이 레포 안에서 실행하면 개발용 CLAUDE.md가 앱의 프롬프트에 섞인다 (`--bare` 는 구독 로그인을 못 써서 사용 불가)
+- CLI는 **`--safe-mode` + 빈 임시 폴더**에서 실행한다. 이 레포 안에서 그냥 실행하면 개발용 CLAUDE.md가 앱의 프롬프트에 섞인다 (`--bare` 는 구독 로그인을 못 써서 사용 불가)
+- 모델은 과제별 설정(`ai.taskModels`)을 따른다. 동시 호출 수(`ai.concurrency`)를 넘기면 줄을 세우고, 실행 중 호출은 취소할 수 있어야 한다
 - **도구 권한 최소화**: 기본은 도구 전부 끔. 웹 검색이 필요한 호출만 검색 도구, 이미지가 필요한 호출만 읽기 도구. 파일 쓰기·명령 실행은 절대 열지 않는다
 - 흐름: **생성 → 규칙 검증(코드) → 자기 평가(AI) → 필요하면 재작성**
   - 재시도 횟수: JSON·스키마 깨짐 → 다시 요청 **1회** / 규칙 위반 → 재작성 **2회** (둘 다 설정값)
@@ -104,7 +117,7 @@ scripts/          대화 기록 내보내기 등 보조 스크립트
 - 완료를 보고할 때는 **무엇을 실행해서 무엇을 봤는지**를 적는다. 확인하지 못한 것은 "확인 못 함"이라고 적는다
 - 실패하면 실패했다고 그대로 보고하고, 원인을 고친 뒤 다시 시도한다
 - 기준값(유사도 임계치 등)은 감으로 정하지 않고 **테스트 세트로 재서** 정한다. 그 과정을 devlog에 남긴다
-- 실제 자료(`tests/fixtures/real`)와 AI 생성 자료(`tests/fixtures/generated`)의 결과는 **나눠서** 보고한다
+- 측정 결과는 **실제·공개 / 실제·비공개 / AI 생성** 세 갈래로 나눠 보고한다. 비공개 결과에는 숫자만 적는다
 
 ## 7. 진행 · 기록 · 커밋
 
@@ -116,7 +129,8 @@ scripts/          대화 기록 내보내기 등 보조 스크립트
   - 오래 유지될 결정은 아래 「이미 내린 결정」에, 다시 겪을 수 있는 오류는 「겪은 오류」에도 올린다
 - **커밋**: 한 커밋에 한 가지 변경. 메시지는 한국어로 첫 줄에 무엇을, 본문에 왜를 적는다
 - 대화 원본은 레포에 넣지 않는다. devlog에는 요약과 세션 ID만 남기고, 제출용 원본은 내보내기 스크립트로 꺼낸다(키·토큰·이메일·전화번호 가림)
-- **이 레포는 공개(public)다**. 실제 자료(지인 답변·공지·개인 캡처)를 커밋하기 전에 개인정보가 가려졌는지 확인한다
+- **이 레포는 공개(public)다**. 지인 인터뷰·대외활동 공지는 `tests/fixtures/private/` 에만 두고 목록만 공개한다. 공개 쪽 자료를 넣은 뒤에는 `npm run check:privacy`, 이미지는 직접 열어 확인한다
+- 커밋 전 훅을 `--no-verify` 로 건너뛰었다면 devlog 에 이유를 남긴다
 
 ---
 
@@ -144,6 +158,19 @@ scripts/          대화 기록 내보내기 등 보조 스크립트
 - **인터뷰는 매 턴 전체 대화를 다시 넘긴다(무상태)** — CLI 세션 이어가기는 공급자마다 달라서, 공급자를 바꿔도 같게 동작하도록
 - **CLI는 빈 임시 폴더에서 실행** — `claude --help` 확인 결과 `--bare` 는 구독(OAuth) 로그인을 읽지 않음. 레포 안에서 실행하면 개발용 CLAUDE.md가 섞일 수 있음 (작업 5에서 실제 확인 예정)
 
+### 2026-10-13 · 뼈대 계획 확인 (devlog: [2026-10-13-02](docs/devlog/2026-10-13-02-뼈대와-AI-어댑터.md))
+- **서버는 Hono** — 화면이 서버 라우트 타입을 RPC 로 그대로 써 공유 타입 폴더가 필요 없고, AI 진행 상황용 SSE 가 내장. Fastify 의 생태계·성능 장점은 라우트 10~20개 로컬 서버에서 거의 안 쓰임
+- **SQLite 는 `node:sqlite`** — 네이티브 빌드가 없어 12월 Windows·패키징 위험이 적다. 문제가 생기면 better-sqlite3 로, 고칠 곳은 `server/src/db/` 로 한정
+- **TypeScript 6.0.3 고정** — 최신 7.0 은 typescript-eslint(6.1 미만 지원)와 맞지 않음
+- **서버는 127.0.0.1 에서만, Host·Origin 검사** — 이 서버는 사용자 구독으로 AI 를 돌리므로 다른 웹사이트(CSRF·DNS 리바인딩)나 같은 네트워크 기기가 요청을 보내지 못하게
+- **모델은 과제별 설정**: sonnet = 인터뷰 왕복·사실 추출·스모크 / opus = 정체성 프로필·브랜딩·카피 생성·자기 평가. 기본값은 `config.ts`, 사용자 변경은 DB
+- **AI 동시 호출 수는 설정값(기본 1), 실행 중 호출은 취소 가능** — 취소하면 CLI 프로세스를 끝내고 `ai_runs` 에 "cancelled" 로 남긴다
+- **테스트 자료 세 갈래**: 공개 커밋 = 운영자 본인 인터뷰·본인 계정 소재·`references/` 캡처(본인 것이거나 이미 공개) / 커밋 제외 = 지인 인터뷰·대외활동 공지(`tests/fixtures/private/`, 목록·건수만 공개) / AI 생성. 측정 결과도 세 갈래
+- **가리기 함수 하나를 대화 내보내기와 커밋 검사가 같이 쓴다** — 한쪽만 고쳐 규칙이 어긋나는 일을 막으려고
+- **커밋 전 훅: 개인정보 검사 + 린트 + 타입 체크**, `npm install`(prepare)로 켜짐 — 사람이(AI가) 기억해서 돌리는 검사는 빠진다 (「겪은 오류」 참고)
+- **오탐 허용 목록은 항목마다 이유 한 줄 필수** — 이유 없는 예외가 쌓이면 검사가 무력해져서
+- **앱의 CLI 호출은 `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence`** — `--safe-mode` 는 CLAUDE.md·훅·MCP 를 끄면서 구독 로그인은 그대로 쓴다(`--help` 확인). 임시 폴더는 이중 안전장치. 실제 효과는 작업 5 대조 실험으로 확인
+
 ## 겪은 오류
 
 > 증상이 아니라 **원인의 모양**으로 적는다. 다음에 같은 모양을 만나면 바로 알아보도록.
@@ -152,4 +179,5 @@ scripts/          대화 기록 내보내기 등 보조 스크립트
 >
 > 예시 형식(실제 항목 아님): **CLI가 실행 위치의 설정 파일을 자동으로 읽는다** — 증상: 앱 프롬프트에 개발 규칙이 섞임 / 해결: 빈 임시 폴더에서 실행 / 다시 안 겪으려면: 어댑터 테스트에 "작업 폴더에 CLAUDE.md 없음" 검사
 
-(아직 없음)
+- **사람(AI)이 기억해서 돌리는 검사는 빠진다** — 증상: 린트 오류가 있는 상태로 커밋이 들어감(타입 체크·테스트만 돌리고 린트는 커밋 뒤에 돌림) / 해결: 푸시 전이라 고친 뒤 합침 / 다시 안 겪으려면: 린트·타입 체크를 pre-commit 훅에 넣어 기억에 의존하지 않게 함 (2026-10-13 · [devlog](docs/devlog/2026-10-13-02-뼈대와-AI-어댑터.md))
+- **정규식 `\b` 는 ASCII 기준이라 한글 앞에서는 단어 경계가 아니다** — 증상: "앱 비밀번호 = …" 를 비밀 값으로 못 잡음 / 해결: `\b` 대신 `(?<![A-Za-z0-9_])` / 다시 안 겪으려면: 한글이 들어가는 정규식은 한글 예문을 테스트에 넣는다 (2026-10-13 · [devlog](docs/devlog/2026-10-13-02-뼈대와-AI-어댑터.md))

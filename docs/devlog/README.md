@@ -36,9 +36,10 @@ Claude Code 대화는 `~/.claude/projects/-Users-lee-Claude-FirstFeed/<세션ID>
 ```bash
 ls -t ~/.claude/projects/-Users-lee-Claude-FirstFeed/*.jsonl | head -1
 ```
-대화 원본은 레포에 넣지 않는다. 제출용은 내보내기 스크립트(예정: `scripts/`)로 꺼내며, 그때 키·토큰·이메일·전화번호를 가린다.
+대화 원본은 레포에 넣지 않는다. 제출용은 `npm run export:transcripts -- <세션ID>`(또는 `--latest`)로 `exports/` 에 꺼내며, 그때 키·토큰·이메일·전화번호를 가린다.
 
 ## 목록
 | 날짜 | 파일 | 주제 | 태그 |
 |---|---|---|---|
 | 2026-10-13 | [2026-10-13-01](2026-10-13-01-PRD-질의응답과-규칙-문서.md) | PRD 저장 · 질의응답 19개 · CLAUDE.md · 기록 체계 | #결정 #AI협업 |
+| 2026-10-13 | [2026-10-13-02](2026-10-13-02-뼈대와-AI-어댑터.md) | 뼈대 · 개인정보 검사 · AI 어댑터 · 실제 호출 · CLAUDE.md 섞임 대조 실험 | #결정 #트러블슈팅 #측정 #AI협업 |

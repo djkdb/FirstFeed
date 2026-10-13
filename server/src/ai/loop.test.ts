@@ -1,0 +1,94 @@
+import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
+import { openDb, type Db } from '../db/index.ts';
+import { quoteInSources } from '../rules/grounding.ts';
+import type { Rule } from '../rules/types.ts';
+import { AiService } from './adapter.ts';
+import { generateChecked } from './loop.ts';
+import { FakeProvider, type FakeStep } from './testing/fake-provider.ts';
+
+const SOURCE = '첫 달에 팔로워 1,500명을 모았다.';
+const Schema = z.object({ quote: z.string() });
+type Out = z.infer<typeof Schema>;
+const quoteRule: Rule<Out> = (d) =>
+  quoteInSources(d.quote, [SOURCE]) ? [] : [{ level: 'error', code: 'quote_not_in_source', message: '인용이 원문에 없음', where: 'quote', from: 'rule' }];
+
+const good = { structured: { quote: '첫 달에 팔로워 1,500명을 모았다.' } };
+const bad = { structured: { quote: '팔로워가 2,000명이 됐다' } };
+const noIssues = { structured: { issues: [] } };
+
+function setup(steps: FakeStep[]) {
+  const db = openDb(':memory:');
+  const provider = new FakeProvider(steps);
+  return { db, provider, ai: new AiService({ db, provider }) };
+}
+const runs = (db: Db) => db.prepare('SELECT attempt, task, kind, status FROM ai_runs ORDER BY id').all();
+const req = { task: 'smoke_extract', prompt: '원문에서 인용하라', schema: Schema, rules: [quoteRule] };
+
+describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
+  it('규칙과 자기 평가를 통과하면 결과를 돌려준다', async () => {
+    const { db, ai } = setup([good, noIssues]);
+    const r = await generateChecked(ai, req);
+    expect(r).toMatchObject({ ok: true, data: { quote: SOURCE }, rewrites: 0, calls: 2 });
+    expect(runs(db)).toMatchObject([
+      { kind: 'generate', status: 'ok', task: 'smoke_extract' },
+      { kind: 'review', status: 'ok', task: 'self_review' },
+    ]);
+  });
+
+  it('코드 규칙 위반이면 자기 평가 없이 바로 재작성하고, 재작성 프롬프트에 문제와 직전 답을 넣는다', async () => {
+    const { db, ai, provider } = setup([bad, good, noIssues]);
+    const r = await generateChecked(ai, req);
+    expect(r).toMatchObject({ ok: true, rewrites: 1 });
+    const rewritePrompt = provider.calls[1]!.prompt;
+    expect(rewritePrompt).toContain('quote_not_in_source');
+    expect(rewritePrompt).toContain('팔로워가 2,000명이 됐다');
+    expect(runs(db)).toMatchObject([
+      { kind: 'generate', status: 'rule_error' },
+      { kind: 'rewrite', status: 'ok' },
+      { kind: 'review', status: 'ok' },
+    ]);
+  });
+
+  it('자기 평가가 사실 오류(fact)를 찾으면 재작성한다', async () => {
+    const fact = { structured: { issues: [{ kind: 'fact', where: 'quote', message: '원문과 다름' }] } };
+    const { ai } = setup([good, fact, good, noIssues]);
+    const r = await generateChecked(ai, req);
+    expect(r).toMatchObject({ ok: true, rewrites: 1, calls: 4 });
+  });
+
+  it('자기 평가의 말투 지적(style)은 경고만 하고 재작성하지 않는다', async () => {
+    const style = { structured: { issues: [{ kind: 'style', where: 'quote', message: '딱딱함' }] } };
+    const { ai } = setup([good, style]);
+    const r = await generateChecked(ai, req);
+    expect(r).toMatchObject({ ok: true, rewrites: 0, warnings: [{ code: 'review_style', level: 'warn' }] });
+  });
+
+  it('재작성 2회(설정값) 뒤에도 규칙 위반이면 결과 없이 실패한다', async () => {
+    const { db, ai } = setup([bad, bad, bad]);
+    const r = await generateChecked(ai, req);
+    expect(r.ok).toBe(false);
+    expect(r).not.toHaveProperty('data');
+    expect(r).toMatchObject({ rewrites: 2, errors: [{ code: 'quote_not_in_source' }] });
+    expect(runs(db)).toMatchObject([{ status: 'rule_error' }, { status: 'rule_error' }, { status: 'rule_error' }]);
+  });
+
+  it('자기 평가 호출이 실패해도 코드 규칙을 통과한 결과는 살리고 경고로 남긴다', async () => {
+    const { ai } = setup([good, { text: '평가 불가' }, { text: '여전히 불가' }]);
+    const r = await generateChecked(ai, req);
+    expect(r).toMatchObject({ ok: true, warnings: [{ code: 'review_failed' }] });
+  });
+
+  it('selfReview: false 면 자기 평가를 부르지 않는다', async () => {
+    const { ai, provider } = setup([good]);
+    const r = await generateChecked(ai, { ...req, selfReview: false });
+    expect(r.ok).toBe(true);
+    expect(provider.calls).toHaveLength(1);
+  });
+
+  it('자기 평가는 과제별 설정의 self_review 모델(opus)로 부른다', async () => {
+    const { ai, provider } = setup([good, noIssues]);
+    await generateChecked(ai, req);
+    expect(provider.calls.map((c) => c.model)).toEqual(['sonnet', 'opus']);
+  });
+});

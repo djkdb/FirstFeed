@@ -106,7 +106,7 @@ export interface AiServiceDeps {
 }
 
 export class AiService {
-  private readonly db: Db;
+  readonly db: Db;
   private readonly provider: AiProvider;
   private readonly limiter: Limiter;
   private readonly jobs = new Map<string, AbortController>();

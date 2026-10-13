@@ -79,7 +79,10 @@ export function AiConnection() {
                     <td>{yesNo(p.installed)}</td>
                     <td>{yesNo(p.loggedIn)}</td>
                     <td>{p.subscription ?? '—'}</td>
-                    <td className={ready ? 'ok' : 'muted'}>{ready ? '사용 가능' : (p.hint ?? '사용 불가')}</td>
+                    <td className={ready ? 'ok' : 'muted'}>
+                      {ready ? '사용 가능' : (p.hint ?? '사용 불가')}
+                      {ready && p.hint && <div className="error-text">{p.hint}</div>}
+                    </td>
                   </tr>
                 );
               })}

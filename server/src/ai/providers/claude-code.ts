@@ -18,6 +18,22 @@ export interface ClaudeCodeOptions {
 
 const DETECT_TIMEOUT_MS = 15_000;
 
+/**
+ * 구독(claude.ai 로그인) 대신 쓰이는 인증·접속 변수. 셸에 하나라도 있으면 `claude` 는 구독보다 이것을 먼저 쓴다
+ * (2026-10-13 확인: ANTHROPIC_API_KEY → authMethod "api_key", ANTHROPIC_AUTH_TOKEN → "oauth_token" 으로 바뀌고
+ * 가짜 값이면 401, ANTHROPIC_BASE_URL 은 그 주소로 접속을 시도 — devlog 2026-10-13-03).
+ * 사용자가 다른 개발 작업용으로 셸에 키를 넣어 둔 경우, 앱이 모르게 API 요금으로 돌지 않도록 구독 경로에서는 뺀다.
+ * API 키 경로는 11월 API 어댑터에서 키체인 값을 명시적으로 넘긴다.
+ */
+export const NON_SUBSCRIPTION_ENV = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL'] as const;
+
+/** 구독 경로로 실행할 환경 변수: 지금 환경에서 구독을 우회하는 변수만 뺀다 */
+export function subscriptionEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env = { ...base };
+  for (const key of NON_SUBSCRIPTION_ENV) delete env[key];
+  return env;
+}
+
 /** `--output-format json` 의 결과 봉투 중 쓰는 칸. 2026-10-13 실제 호출로 확인 (devlog 2026-10-13-02) */
 interface ResultEnvelope {
   type?: string;
@@ -51,7 +67,7 @@ export class ClaudeCodeProvider implements AiProvider {
       supported: true,
       hint: null,
     };
-    const ver = await runProcess(this.bin, ['--version'], { timeoutMs: DETECT_TIMEOUT_MS });
+    const ver = await runProcess(this.bin, ['--version'], { timeoutMs: DETECT_TIMEOUT_MS, env: subscriptionEnv() });
     if (ver.notFound || ver.code !== 0) {
       return {
         ...base,
@@ -59,7 +75,8 @@ export class ClaudeCodeProvider implements AiProvider {
       };
     }
     const version = ver.stdout.trim().split(/\s+/)[0] ?? null;
-    const auth = await runProcess(this.bin, ['auth', 'status', '--json'], { timeoutMs: DETECT_TIMEOUT_MS });
+    // 로그인 확인도 실제 호출과 같은 환경으로 한다 — 셸의 API 키 때문에 "로그인됨"으로 잘못 보이지 않게
+    const auth = await runProcess(this.bin, ['auth', 'status', '--json'], { timeoutMs: DETECT_TIMEOUT_MS, env: subscriptionEnv() });
     let parsed: { loggedIn?: boolean; authMethod?: string; subscriptionType?: string } | null;
     try {
       parsed = JSON.parse(auth.stdout);
@@ -75,6 +92,8 @@ export class ClaudeCodeProvider implements AiProvider {
       };
     }
     const loggedIn = parsed.loggedIn === true;
+    // 키 변수를 뺐는데도 구독이 아닌 방식으로 잡히면(예: 설정 파일의 apiKeyHelper) 구독 경로가 아니므로 알린다
+    const nonSubscription = loggedIn && parsed.authMethod !== undefined && parsed.authMethod !== 'claude.ai';
     return {
       ...base,
       installed: true,
@@ -82,7 +101,11 @@ export class ClaudeCodeProvider implements AiProvider {
       loggedIn,
       authMethod: parsed.authMethod ?? null,
       subscription: parsed.subscriptionType ?? null,
-      hint: loggedIn ? null : 'Claude Code 에 로그인되어 있지 않습니다. 터미널에서 `claude` 를 실행해 로그인한 뒤 [다시 확인]을 누르세요.',
+      hint: !loggedIn
+        ? 'Claude Code 에 로그인되어 있지 않습니다. 터미널에서 `claude` 를 실행해 로그인한 뒤 [다시 확인]을 누르세요.'
+        : nonSubscription
+          ? `Claude Code 가 구독(claude.ai)이 아닌 방식(${parsed.authMethod})으로 인증되어 있습니다. 구독 요금이 아닌 API 요금이 나갈 수 있으니, 터미널에서 \`claude auth status\` 로 확인하세요.`
+          : null,
     };
   }
 
@@ -123,7 +146,7 @@ export class ClaudeCodeProvider implements AiProvider {
       if (imageNames.length > 0) args.push('--add-dir', tmp);
 
       const started = Date.now();
-      const r = await runProcess(this.bin, args, { cwd, stdin: prompt, timeoutMs: input.timeoutMs, signal: input.signal });
+      const r = await runProcess(this.bin, args, { cwd, stdin: prompt, timeoutMs: input.timeoutMs, signal: input.signal, env: subscriptionEnv() });
       const durationMs = Date.now() - started;
 
       if (r.notFound) {

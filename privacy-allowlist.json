@@ -15,6 +15,10 @@
     {
       "path": "scripts/transcript.test.ts",
       "reason": "대화 기록 가리기 테스트용 가짜 이메일·키"
+    },
+    {
+      "path": "server/src/ai/providers/claude-code.test.ts",
+      "reason": "가짜 claude 실행 파일 코드의 삼항식(인증 방식 이름 비교)이 이름 붙은 비밀 값 규칙과 모양이 겹치는 오탐, 실제 값 없음"
     }
   ]
 }

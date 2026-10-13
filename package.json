@@ -19,7 +19,8 @@
     "check:privacy": "node scripts/check-privacy.ts",
     "fixtures:manifest": "node scripts/fixtures-manifest.ts",
     "prepare": "node scripts/setup-git-hooks.ts",
-    "export:transcripts": "node scripts/export-transcripts.ts"
+    "export:transcripts": "node scripts/export-transcripts.ts",
+    "ai:probe": "node scripts/ai-context-probe.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

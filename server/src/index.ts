@@ -4,9 +4,12 @@ import { serve } from '@hono/node-server';
 import { env } from './config.ts';
 import { openDb } from './db/index.ts';
 import { createApp } from './app.ts';
+import { AiService } from './ai/adapter.ts';
+import { ClaudeCodeProvider } from './ai/providers/claude-code.ts';
 
 const db = openDb(path.join(env.dataDir, 'firstfeed.sqlite'));
-const app = createApp({ db });
+const ai = new AiService({ db, provider: new ClaudeCodeProvider() });
+const app = createApp({ db, ai });
 
 const server = serve({ fetch: app.fetch, hostname: env.host, port: env.port }, (info) => {
   console.log(`[서버] http://${env.host}:${info.port} 에서 실행 중 (데이터: ${env.dataDir})`);

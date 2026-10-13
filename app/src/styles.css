@@ -27,3 +27,8 @@ button:disabled { opacity: 0.6; cursor: default; }
 .providers { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
 .providers th, .providers td { text-align: left; padding: 8px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
 .providers th { color: var(--muted); font-weight: 500; }
+textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 8px; border-radius: 8px; border: 1px solid #ddd; resize: vertical; }
+.error-text { color: var(--error); }
+.facts { padding-left: 20px; }
+.facts li { margin: 8px 0; }
+.facts blockquote { margin: 4px 0 0; padding-left: 10px; border-left: 3px solid #ddd; color: var(--muted); font-size: 14px; }

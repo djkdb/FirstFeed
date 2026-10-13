@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.ts';
 import { openDb } from '../db/index.ts';
+import { AiService } from '../ai/adapter.ts';
+import { FakeProvider } from '../ai/testing/fake-provider.ts';
 import { isLocalHost, isLocalOrigin } from './local-only.ts';
 
 describe('로컬 전용 접근', () => {
@@ -21,7 +23,8 @@ describe('로컬 전용 접근', () => {
   });
 
   it('실제 요청에서도 막힌다', async () => {
-    const app = createApp({ db: openDb(':memory:') });
+    const db = openDb(':memory:');
+    const app = createApp({ db, ai: new AiService({ db, provider: new FakeProvider([]) }) });
     // app.request 는 URL 에서 Host 헤더를 만들어 주지 않으므로 실제 브라우저처럼 직접 넣는다
     const ok = await app.request('/api/health', { headers: { host: 'localhost:4317' } });
     expect(ok.status).toBe(200);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api.ts';
 import { AiConnection } from './AiConnection.tsx';
+import { SmokeTest } from './SmokeTest.tsx';
 
 type ServerState =
   | { kind: 'checking' }
@@ -45,6 +46,7 @@ export function App() {
         )}
       </section>
       <AiConnection />
+      <SmokeTest />
     </main>
   );
 }

@@ -75,7 +75,7 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 | 개발 실행 (서버 4317 + 화면 5173) | `npm run dev` → http://localhost:5173 |
 | 린트 · 타입 체크 · 테스트 한 번에 | `npm run check` |
 | 린트 / 타입 체크 / 테스트 | `npm run lint` / `npm run typecheck` / `npm test` |
-| 실제 AI 호출 테스트 (구독 사용량 듦) | `*.live.test.ts` — 기본 `npm test` 에서 빠져 있다. 작업 5에서 명령 추가 |
+| 실제 AI 호출 시험 (구독 사용량 듦) | 화면의 「AI 시험 호출」(생성→규칙→자기 평가, 취소 가능) · `npm run ai:probe` (CLAUDE.md 섞임 대조 실험) |
 | 공개 레포 개인정보 검사 | `npm run check:privacy` (커밋 때는 훅이 `--staged` 로 자동 실행) |
 | 비공개 자료 목록 갱신 | `npm run fixtures:manifest` |
 | 대화 원본 내보내기 (제출용) | `npm run export:transcripts -- <세션ID>` 또는 `--latest` / `--all` → `exports/` |

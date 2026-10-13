@@ -2,6 +2,7 @@
 // 작업 ID 를 먼저 돌려준 뒤 화면이 상태를 물어보게 한다(취소 버튼도 이 ID 로).
 import type { AiService, JobContext } from './adapter.ts';
 import { AiError } from './types.ts';
+import { FlowError } from '../identity/flow.ts';
 
 export type JobPhase = 'running' | 'done' | 'failed' | 'cancelled';
 
@@ -46,8 +47,8 @@ export class JobStore {
         state.result = result;
       })
       .catch((err: unknown) => {
-        const e = err instanceof AiError ? err : null;
-        state.phase = e?.kind === 'cancelled' ? 'cancelled' : 'failed';
+        const e = err instanceof AiError || err instanceof FlowError ? err : null;
+        state.phase = err instanceof AiError && err.kind === 'cancelled' ? 'cancelled' : 'failed';
         state.error = { message: e?.message ?? String(err), hint: e?.hint ?? '오류 내용을 확인한 뒤 다시 실행하세요.' };
       })
       .finally(() => {

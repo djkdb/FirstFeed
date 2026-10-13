@@ -1,0 +1,26 @@
+# 의존성·빌드 결과
+node_modules/
+dist/
+build/
+coverage/
+
+# 비밀 값 — .env 는 개발자용 값만, 절대 커밋하지 않는다 (CLAUDE.md 5장)
+.env
+.env.*
+!.env.example
+
+# 로컬 앱 데이터 (SQLite·렌더링 결과·업로드 폴더) — 사용자 컴퓨터에만 둔다
+data/
+*.sqlite
+*.sqlite-journal
+*.db
+
+# 대화 원본 내보내기 결과 — 제출용으로만 쓰고 레포에는 넣지 않는다
+exports/
+
+# OS · 에디터
+.DS_Store
+.vscode/*
+!.vscode/settings.json
+.idea/
+*.log

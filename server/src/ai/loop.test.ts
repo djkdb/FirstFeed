@@ -121,4 +121,27 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
     expect(provider.calls.map((c) => c.model)).toEqual(['sonnet', 'opus', 'sonnet', 'opus']);
     expect(r).toMatchObject({ ok: true, rewrites: 1, dropped: [] });
   });
+
+  it('lateRules: 앞 규칙을 통과했을 때만 돌고, 걸리면 같은 재작성 한도로 다시 쓴다 (렌더링 넘침 자리)', async () => {
+    const long = { structured: { quote: '첫 달에 팔로워 1,500명을 모았다.' } };
+    let seen = 0;
+    const late = async (d: Out) => {
+      seen++;
+      return seen === 1 ? [{ level: 'error' as const, code: 'text_overflow', message: `넘침 (${d.quote.length}자)`, where: 'quote', from: 'rule' as const }] : [];
+    };
+    const { ai, provider } = setup([bad, long, long, noIssues]);
+    const r = await generateChecked(ai, { ...req, lateRules: [late] });
+    // 1번째: 앞 규칙 위반 → 그리지 않고 재작성 / 2번째: 앞 규칙 통과 → 그림 → 넘침 → 재작성 / 3번째: 통과 → 자기 평가
+    expect(seen).toBe(2);
+    expect(r).toMatchObject({ ok: true, rewrites: 2 });
+    expect(provider.calls[2]!.prompt).toContain('[text_overflow]');
+  });
+
+  it('lateRules 문제도 재작성 2회 한도 안에서 — 끝까지 넘치면 결과 없이 실패', async () => {
+    const late = async () => [{ level: 'error' as const, code: 'text_overflow', message: '넘침', where: 'quote', from: 'rule' as const }];
+    const { ai, provider } = setup([good, good, good]);
+    const r = await generateChecked(ai, { ...req, lateRules: [late] });
+    expect(r).toMatchObject({ ok: false, rewrites: 2 });
+    expect(provider.calls).toHaveLength(3);
+  });
 });

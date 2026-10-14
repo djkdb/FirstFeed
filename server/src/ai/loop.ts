@@ -32,6 +32,12 @@ export interface CheckedRequest<T> extends AiRequest<T> {
    * 이때 문제들은 결과의 dropped 로 넘겨 부르는 쪽이 그 후보를 뺀다. 일부 후보만 걸렸는데 전체를 다시 쓰면 opus 호출만 는다
    */
   acceptByDropping?: (errors: Issue[], data: T) => boolean;
+  /**
+   * 비싼 코드 규칙(예: 카드를 실제로 그려 넘침 재기). 앞의 규칙을 통과했을 때만(또는 걸린 후보만 빼면 될 때) 돈다 —
+   * 어차피 다시 쓸 결과를 그리지 않으려고. 앞에서 걸린 문제를 받아 그 후보는 건너뛸 수 있다.
+   * 같은 재작성 한도를 쓴다(결정 2026-10-15 · FR-MK-1: 글 규칙과 렌더링이 끝없이 왕복하지 않게)
+   */
+  lateRules?: Array<(data: T, earlier: Issue[]) => Promise<Issue[]>>;
 }
 
 interface Base {
@@ -81,6 +87,10 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
     for (;;) {
       const gen = await ai.call({ ...req, prompt }, job, rewrites === 0 ? 'generate' : 'rewrite');
       const issues: Issue[] = req.rules.flatMap((rule) => rule(gen.data));
+      const earlyErrors = issues.filter((i) => i.level === 'error');
+      if (req.lateRules?.length && (earlyErrors.length === 0 || (req.acceptByDropping?.(earlyErrors, gen.data) ?? false))) {
+        for (const late of req.lateRules) issues.push(...(await late(gen.data, earlyErrors)));
+      }
 
       // 자기 평가는 결과가 쓰일 수 있을 때만 부른다 — 어차피 다시 쓸 결과에 opus 호출을 쓰지 않으려고.
       // "쓰일 수 있다" = 코드 규칙 통과, 또는 걸린 후보만 빼면 충분(acceptByDropping). 뒤의 경우도 남은 후보는 평가해야

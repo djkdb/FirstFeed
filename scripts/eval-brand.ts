@@ -1,12 +1,12 @@
 // 브랜딩 키트 측정 (FR-BR-1~4). 프로필은 고정 스냅숏을 쓴다 — 매번 프로필부터 만들면 프로필 쪽 변동·시간 초과가 섞여서
 // (실제로 다른 방향 측정에서 프로필 단계 시간 초과 3번).
 //   npm run eval:brand -- --snapshot            # 스냅숏이 없는 사람만 프로필을 만들어 저장 (tests/fixtures/<세트>/profiles/<id>.json)
-//   npm run eval:brand -- [--only=me] [--runs=2] [--label=brand-v1]
+//   npm run eval:brand -- [--only=me] [--runs=2] [--label=brand-v1] [--prompt brand_visual=v2 --prompt brand_words_review=v2]
 //   npm run eval:brand -- --reflect=me          # FR-ID-6: 말투 규칙 하나(존댓말→반말)·축 하나를 바꾸기 전/후 바이오 비교
 // 결과에는 숫자와 함께 후보 본문을 쓴다 — 바이오가 계정 정의·축을 담는지는 사람이 읽고 판정 (devlog 에 적는다). 비공개 세트는 숫자만.
 import fs from 'node:fs';
 import path from 'node:path';
-import { env, getSetting } from '../server/src/config.ts';
+import { env, getSetting, setSetting } from '../server/src/config.ts';
 import { openDb, type Db } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { ClaudeCodeProvider } from '../server/src/ai/providers/claude-code.ts';
@@ -18,6 +18,8 @@ import type { SurveyAnswers } from '../server/src/identity/survey.ts';
 import { generateVisual, type VisualResult } from '../server/src/brand/visual.ts';
 import { generateWords, type WordsResult } from '../server/src/brand/words.ts';
 import { instagramLength } from '../server/src/brand/limits.ts';
+import { fontById } from '../server/src/brand/fonts.ts';
+import { startStopwatch } from '../server/src/lib/sleep-clock.ts';
 
 interface Fixture {
   id: string;
@@ -35,8 +37,11 @@ const args = process.argv.slice(2);
 const arg = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
 const only = arg('only');
 const runs = Number(arg('runs') ?? 2);
-const versions: Record<string, string> = { brand_words: 'v1', brand_visual: 'v1', ...getSetting(null, 'prompts.activeVersions') };
-const label = arg('label') ?? `brand-${versions.brand_words}-${versions.brand_visual}`;
+const promptVersions: Record<string, string> = Object.fromEntries(
+  args.flatMap((a, i) => (a === '--prompt' && args[i + 1]?.includes('=') ? [args[i + 1]!.split('=') as [string, string]] : [])),
+);
+const versions: Record<string, string> = { brand_words: 'v1', brand_visual: 'v1', brand_words_review: 'v1', ...getSetting(null, 'prompts.activeVersions'), ...promptVersions };
+const label = arg('label') ?? `brand-visual${versions.brand_visual}-review${versions.brand_words_review}`;
 const date = new Date().toISOString().slice(0, 10);
 
 function load(): Fixture[] {
@@ -58,6 +63,7 @@ const snapshotPath = (fx: Fixture) => path.join(env.repoRoot, fx.dir, 'profiles'
 function seed(fx: Fixture, content?: ProfileContent): { db: Db; ai: AiService; sid: number } {
   const db = openDb(':memory:');
   const ai = new AiService({ db, provider: new ClaudeCodeProvider() });
+  if (Object.keys(promptVersions).length) setSetting(db, 'prompts.activeVersions', promptVersions);
   const sid = createSession(db, 1, fx.survey);
   for (const t of fx.turns) addAnsweredTurn(db, sid, t.question, t.answer, t.answerKind);
   if (content) saveProfileVersion(db, 1, content, { reason: 'interview', sessionId: sid, basedOn: null, jobId: null, activate: true });
@@ -116,8 +122,27 @@ interface Run {
   visual: VisualResult | null;
   wordsSec: number;
   visualSec: number;
+  /** 이 회차에 컴퓨터 잠자기가 낀 시간(초) — 시간 지표를 믿을 수 없는 회차 표시 */
+  sleptSec: number;
+  /** brand_visual 생성 회차(재작성 전 포함)에서 걸린 실사 인물·나이 규칙 수 */
+  realPersonHits: number;
+  /** brand_words 자기 평가가 「하지 않은 약속」으로 올린 fact */
+  promiseFacts: string[];
+  /** brand_words 자기 평가의 fact·broken 전체 */
+  reviewFlags: string[];
   wordsError?: string;
   visualError?: string;
+}
+
+type IssueRow = { code: string; where?: string; message: string };
+const issuesOf = (db: Db, sql: string): IssueRow[] =>
+  (db.prepare(sql).all() as Array<{ issues_json: string | null }>).flatMap((r) => (r.issues_json ? (JSON.parse(r.issues_json) as IssueRow[]) : []));
+
+/** 폰트 짝 3안의 다양성: 제목 폰트 느낌(sans·serif·display) 수, 서로 다른 폰트 수, 같은 폰트 짝 수 */
+function fontVariety(pairs: Array<{ title: string; body: string }>) {
+  const styles = new Set(pairs.map((p) => fontById(p.title)?.style ?? '?'));
+  const families = new Set(pairs.flatMap((p) => [p.title, p.body]));
+  return { titleStyles: styles.size, families: families.size, samePairs: pairs.filter((p) => p.title === p.body).length };
 }
 
 const codesOf = (dropped: Array<{ reasons: string[] }>) => dropped.flatMap((d) => d.reasons.map((r) => /^\[([a-z_]+)\]/.exec(r)?.[1] ?? '?'));
@@ -134,8 +159,9 @@ async function measure() {
     const rs: Run[] = [];
     for (let n = 0; n < runs; n++) {
       console.log(`[브랜딩 측정] ${fx.set}/${fx.id} ${n + 1}/${runs} …`);
-      const { ai } = seed(fx, profile);
-      const run: Run = { words: null, visual: null, wordsSec: 0, visualSec: 0 };
+      const { ai, db } = seed(fx, profile);
+      const sw = startStopwatch();
+      const run: Run = { words: null, visual: null, wordsSec: 0, visualSec: 0, sleptSec: 0, realPersonHits: 0, promiseFacts: [], reviewFlags: [] };
       let t = Date.now();
       try {
         run.words = await generateWords(ai, 1);
@@ -150,10 +176,17 @@ async function measure() {
         run.visualError = (err as Error).message;
       }
       run.visualSec = (Date.now() - t) / 1000;
+      run.sleptSec = Math.round(sw.sleptMs() / 1000);
+      run.realPersonHits = issuesOf(db, "SELECT issues_json FROM ai_runs WHERE task = 'brand_visual'").filter((i) =>
+        ['prompt_realistic_person', 'prompt_age_appearance'].includes(i.code),
+      ).length;
+      const review = issuesOf(db, "SELECT issues_json FROM ai_runs WHERE task = 'self_review'").filter((i) => ['review_fact', 'review_broken'].includes(i.code));
+      run.reviewFlags = review.map((i) => `[${i.code}] ${i.where ?? ''} ${i.message}`);
+      run.promiseFacts = review.filter((i) => i.code === 'review_fact' && /약속|다짐|하겠|밝히/.test(i.message)).map((i) => `${i.where ?? ''} ${i.message}`);
       const w = run.words;
       const v = run.visual;
       console.log(
-        `  → 글 ${w ? `호출 ${w.calls}·재작성 ${w.rewrites}·바이오 ${w.candidates.bios.length}` : `오류 ${run.wordsError}`} ${run.wordsSec.toFixed(0)}초 / 시각 ${v ? `호출 ${v.calls}·재작성 ${v.rewrites}·팔레트 ${v.candidates.palettes.length}` : `오류 ${run.visualError}`} ${run.visualSec.toFixed(0)}초`,
+        `  → ${run.sleptSec ? `[잠자기 ${run.sleptSec}초 포함] ` : ''}글 ${w ? `호출 ${w.calls}·재작성 ${w.rewrites}·바이오 ${w.candidates.bios.length}` : `오류 ${run.wordsError}`} ${run.wordsSec.toFixed(0)}초 / 시각 ${v ? `호출 ${v.calls}·재작성 ${v.rewrites}·팔레트 ${v.candidates.palettes.length}` : `오류 ${run.visualError}`} ${run.visualSec.toFixed(0)}초`,
       );
       rs.push(run);
     }
@@ -194,6 +227,14 @@ async function measure() {
     lines.push(`| 빠진 후보 — 명암비 미달 | — | ${count(vCodes, 'low_contrast', 'low_contrast_on_primary')} |`);
     lines.push(`| 빠진 후보 — 목록 밖 폰트·쓰임 | — | ${count(vCodes, 'font_not_in_list', 'font_role')} |`);
     lines.push(`| 빠진 후보 — 그림 프롬프트 위반 | — | ${count(vCodes, 'prompt_not_english', 'prompt_missing_no_text', 'prompt_missing_size', 'bad_filename')} |`);
+    const fv = vs.map((v) => fontVariety(v.candidates.fontPairs));
+    lines.push(`| 실사 인물·나이 프로필 프롬프트 (재작성 전 포함) | — | ${all.reduce((n, r) => n + r.realPersonHits, 0)} |`);
+    lines.push(`| 폰트 3안 — 제목 느낌 수 평균 (최대 3) | — | ${avg(fv.map((f) => f.titleStyles))} |`);
+    lines.push(`| 폰트 3안 — 서로 다른 폰트 수 평균 (최대 6) | — | ${avg(fv.map((f) => f.families))} |`);
+    lines.push(`| 폰트 3안 — 같은 폰트 짝 (전체) | — | ${fv.reduce((n, f) => n + f.samePairs, 0)} |`);
+    lines.push(`| 자기 평가가 잡은 「하지 않은 약속」 fact | ${all.reduce((n, r) => n + r.promiseFacts.length, 0)} | — |`);
+    lines.push(`| 자기 평가 fact·broken 전체 | ${all.reduce((n, r) => n + r.reviewFlags.length, 0)} | — |`);
+    lines.push(`| 잠자기가 낀 회차 | ${all.filter((r) => r.sleptSec > 0).length}/${all.length} | |`);
     lines.push('');
     if (all.some((r) => r.wordsError || r.visualError)) {
       lines.push('오류:', ...all.flatMap((r) => [r.wordsError && `- 글: ${r.wordsError}`, r.visualError && `- 시각: ${r.visualError}`].filter(Boolean) as string[]), '');
@@ -202,7 +243,8 @@ async function measure() {
     for (const r of rs) {
       lines.push(`### ${r.fx.id}`, '', `프로필 — ${r.profile.accountLine} · 축: ${r.profile.pillars.map((p) => p.name).join(' / ')} · 말투: ${r.profile.voiceRules.map((v) => v.text).join(' / ')} · 보여 주는 방식: ${r.profile.presence?.text ?? '(없음)'}`, '');
       r.runs.forEach((run, n) => {
-        lines.push(`#### ${n + 1}회`, '');
+        lines.push(`#### ${n + 1}회${run.sleptSec ? ` (잠자기 ${run.sleptSec}초 포함 — 시간 지표 제외 대상)` : ''}`, '');
+        if (run.reviewFlags.length) lines.push('- 자기 평가 fact·broken:', ...run.reviewFlags.map((x) => `  - ${x}`));
         const w = run.words;
         if (w) {
           lines.push(`- 아이디: ${w.candidates.handles.map((c) => `\`${c.value}\``).join(' · ')}`);

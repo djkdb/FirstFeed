@@ -21,6 +21,9 @@ export const env = {
 /** AI 모델 별칭. CLI 의 --model 에 그대로 넘긴다 (`claude --help`: 'sonnet', 'opus' 같은 별칭 허용). */
 export type ModelAlias = 'sonnet' | 'opus' | 'fable' | 'haiku';
 
+/** CLI 의 --effort 단계 (`claude --help`: low, medium, high, xhigh, max) */
+export type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
 /**
  * 사용자가 바꿀 수 있는 설정의 기본값.
  * 키를 더할 때는 여기에만 더한다. DB 에는 이 중 사용자가 바꾼 키만 저장된다.
@@ -51,6 +54,11 @@ export const DEFAULTS = {
     self_review: 'opus',
   } as Record<string, ModelAlias>,
 
+  /**
+   * 과제별 노력 단계(--effort). 여기에 없으면 CLI 기본값.
+   * 앱 호출은 --safe-mode 라 사용자 설정의 effort 를 읽지 않는다. 값은 실측(scripts/ai-effort-probe.ts)으로 정한다.
+   */
+  'ai.taskEffort': {} as Record<string, Effort>,
   /** JSON·스키마가 깨졌을 때 다시 요청하는 횟수 */
   'ai.maxJsonRetries': 1,
   /** 코드 규칙 위반·자기 평가의 사실 오류/깨짐으로 재작성하는 횟수 (성공 지표 "재작성 2회 이내") */
@@ -59,6 +67,15 @@ export const DEFAULTS = {
   'ai.concurrency': 1,
   /** 일반 호출 제한 시간(ms) */
   'ai.timeoutMs': 180_000,
+  /**
+   * 과제별 제한 시간(ms). 여기에 없으면 ai.timeoutMs.
+   * opus 과제는 응답 시간이 크게 흔들려(2026-10-13 실측: 프로필 생성 27~149초, 자기 평가 18~74초)
+   * 재작성처럼 프롬프트가 길어지면 180초를 넘을 수 있어서 늘린다.
+   */
+  'ai.taskTimeoutsMs': {
+    identity_profile: 360_000,
+    self_review: 240_000,
+  } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
   'ai.webTimeoutMs': 300_000,
   /** 로그인(구독) 확인 결과를 기억하는 시간(ms). 실행 직전 확인을 매번 하면 호출마다 1초 남짓 느려진다 */

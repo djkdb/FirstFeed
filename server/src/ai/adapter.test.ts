@@ -92,4 +92,11 @@ describe('AI 어댑터', () => {
     await expect(ai.call({ task: 't', prompt: 'p', schema: Schema })).rejects.toMatchObject({ kind: 'timeout', hint: /다시 시도/ });
     expect(runs(db)).toMatchObject([{ status: 'timeout' }]);
   });
+
+  it('제한 시간은 과제별 설정을 따르고, 없으면 기본값', async () => {
+    const { ai, provider } = setup([{ structured: { title: 'a' } }, { structured: { title: 'b' } }]);
+    await ai.call({ task: 'identity_profile', prompt: 'p', schema: Schema });
+    await ai.call({ task: 'smoke_extract', prompt: 'p', schema: Schema });
+    expect(provider.calls.map((c) => c.timeoutMs)).toEqual([360_000, 180_000]);
+  });
 });

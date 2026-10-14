@@ -1,6 +1,6 @@
 // AI 어댑터의 공통 형식. 공급자(Claude Code·Codex·Gemini·API)가 바뀌어도 바깥에서 보는 모양은 같다 (FR-AI-2).
 import type { z } from 'zod';
-import type { ModelAlias } from '../config.ts';
+import type { Effort, ModelAlias } from '../config.ts';
 
 /** 바깥(기능 코드)이 AI 에 보내는 요청 */
 export interface AiRequest<T> {
@@ -18,6 +18,8 @@ export interface AiRequest<T> {
   timeoutMs?: number;
   /** 취소 신호 */
   signal?: AbortSignal;
+  /** 노력 단계. 없으면 과제별 설정, 그것도 없으면 CLI 기본값 */
+  effort?: Effort;
   /** 로그용: 어느 프롬프트 파일·버전인지 */
   promptRef?: { name: string; version: string };
 }
@@ -27,6 +29,7 @@ export interface ProviderRunInput {
   prompt: string;
   jsonSchema: Record<string, unknown>;
   model: ModelAlias;
+  effort?: Effort;
   images: string[];
   web: boolean;
   timeoutMs: number;

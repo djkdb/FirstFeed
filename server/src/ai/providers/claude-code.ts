@@ -208,6 +208,7 @@ export class ClaudeCodeProvider implements AiProvider {
         JSON.stringify(input.jsonSchema),
         '--model',
         input.model,
+        ...(input.effort ? ['--effort', input.effort] : []),
         '--tools',
         tools.join(','),
         '--strict-mcp-config', // 사용자 컴퓨터에 설정된 MCP 서버(메일·노션 등)를 불러오지 않는다

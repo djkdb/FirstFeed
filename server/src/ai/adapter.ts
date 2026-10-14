@@ -156,7 +156,9 @@ export class AiService {
     const ownJob = job === undefined;
     const ctx = job ?? this.startJob(req.signal);
     const model = modelForTask(this.db, req.task);
-    const timeoutMs = req.timeoutMs ?? getSetting(this.db, req.web ? 'ai.webTimeoutMs' : 'ai.timeoutMs');
+    const effort = req.effort ?? getSetting(this.db, 'ai.taskEffort')[req.task];
+    const timeoutMs =
+      req.timeoutMs ?? (req.web ? getSetting(this.db, 'ai.webTimeoutMs') : (getSetting(this.db, 'ai.taskTimeoutsMs')[req.task] ?? getSetting(this.db, 'ai.timeoutMs')));
     const maxRetries = getSetting(this.db, 'ai.maxJsonRetries');
     const jsonSchema = toCliSchema(req.schema);
 
@@ -183,6 +185,7 @@ export class AiService {
             prompt,
             jsonSchema,
             model,
+            ...(effort ? { effort } : {}),
             images: req.images ?? [],
             web: req.web ?? false,
             timeoutMs,

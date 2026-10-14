@@ -20,7 +20,9 @@
     "fixtures:manifest": "node scripts/fixtures-manifest.ts",
     "prepare": "node scripts/setup-git-hooks.ts",
     "export:transcripts": "node scripts/export-transcripts.ts",
-    "ai:probe": "node scripts/ai-context-probe.ts"
+    "ai:probe": "node scripts/ai-context-probe.ts",
+    "eval:identity": "node scripts/eval-identity.ts",
+    "ai:effort": "node scripts/ai-effort-probe.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,0 +1,134 @@
+{
+  "note": "AI(identity_profile@v2)가 이 사람의 인터뷰(../interviews/doyun.json)로 만든 프로필 스냅숏 · 2026-10-14. 브랜딩 측정의 입력을 고정하려고 저장 (scripts/eval-brand.ts)",
+  "profile": {
+    "accountLine": "돈 관리가 귀찮은 직장인을 위한 가계부 앱 제작 일지",
+    "accountLineOrigin": "interview",
+    "audience": "돈 관리를 귀찮아하는 20대 직장인",
+    "audienceOrigin": "interview",
+    "pillars": [
+      {
+        "id": "c51a558c17fbb186",
+        "name": "기능 제작기",
+        "description": "새로 만든 기능 하나를 골라 어떤 귀찮음을 덜어 주는지, 만드는 데 무엇이 들었는지 보여 줍니다.",
+        "evidence": [
+          {
+            "quote": "보여줄 수 있는 것: 만든 것, 과정/비하인드",
+            "source": "S4",
+            "sourceLabel": "설문 S4 보여줄 수 있는 것",
+            "weight": "primary"
+          },
+          {
+            "quote": "영수증 사진을 찍으면 항목이 자동으로 나뉘는 기능이요.",
+            "source": "A2",
+            "sourceLabel": "인터뷰 2번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "주말 세 번을 통째로 썼어요.",
+            "source": "A2",
+            "sourceLabel": "인터뷰 2번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "id": "2530d46dc15dc680",
+        "name": "지운 기능 노트",
+        "description": "친구들이 먼저 써 보고 안 쓴 기능을 왜, 어떻게 지웠는지 기록합니다.",
+        "evidence": [
+          {
+            "quote": "기능을 넣기 전에 친구들한테 먼저 써 보게 하고, 안 쓰는 기능은 과감하게 지워요.",
+            "source": "A3",
+            "sourceLabel": "인터뷰 3번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "지운 기능 목록이 만든 기능보다 길어요.",
+            "source": "A3",
+            "sourceLabel": "인터뷰 3번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "id": "b101b92318823e11",
+        "name": "혼자 만드는 근황",
+        "description": "기능 얘기 말고, 광고비 없이 퇴근 후 혼자 앱을 키워 가는 솔직한 근황을 나눕니다.",
+        "evidence": [
+          {
+            "quote": "지금 떠오르는 계정 소개 한 줄: 혼자 만드는 가계부 앱 개발 일지",
+            "source": "S8",
+            "sourceLabel": "설문 S8 지금 떠오르는 계정 소개 한 줄",
+            "weight": "primary"
+          },
+          {
+            "quote": "가계부 앱을 6개월째 혼자 만들고 있는데 쓰는 사람이 친구 몇 명뿐이에요.",
+            "source": "A1",
+            "sourceLabel": "인터뷰 1번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "광고비는 없으니 만드는 과정을 보여 주면서 사람을 모아 보고 싶어요.",
+            "source": "A1",
+            "sourceLabel": "인터뷰 1번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "dropped": [],
+    "voiceRules": [
+      {
+        "text": "개발 용어 대신 앱을 쓰는 사람이 바로 알아듣는 말로 씁니다",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "앱 자랑보다 만들고 지우며 겪은 일을 솔직하게 털어놓습니다",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "친구에게 먼저 써 보라고 권하듯 가볍고 편하게 말합니다",
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "avoid": [
+      {
+        "text": "앱 광고만 계속 올리는 계정처럼 보이는 게시물",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "개발 용어로 가득 찬 글",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "얼굴이 나오는 사진이나 영상",
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "unknown": [
+      "앱 이름, 출시 여부, 어디서 받을 수 있는지",
+      "돈 관리 방법·팁을 따로 다룰지 (직접 쓴 답이 없음)",
+      "카드뉴스·영상 등 주로 쓸 게시물 형식",
+      "얼굴 없이 보여 줄 화면 구성과 앱 화면 공개 범위",
+      "반말·존댓말 등 말투 선호",
+      "주 1회 게시를 세 축에 어떻게 나눌지"
+    ],
+    "presence": {
+      "text": "안 한다",
+      "source": "S6",
+      "origin": "interview"
+    }
+  }
+}

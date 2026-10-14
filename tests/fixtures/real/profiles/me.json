@@ -1,0 +1,148 @@
+{
+  "note": "AI(identity_profile@v2)가 이 사람의 인터뷰(../interviews/me.json)로 만든 프로필 스냅숏 · 2026-10-14. 브랜딩 측정의 입력을 고정하려고 저장 (scripts/eval-brand.ts)",
+  "profile": {
+    "accountLine": "AI 입문자에게 직접 써 본 도구를 바로 쓰게 정리",
+    "accountLineOrigin": "interview",
+    "audience": "AI 도구를 막 쓰기 시작한 대학생과 주니어 개발자, 전공자가 아니어도 따라 해 보고 싶은 분",
+    "audienceOrigin": "interview",
+    "pillars": [
+      {
+        "id": "1a73b8075a69b404",
+        "name": "직접 써 본 새 도구",
+        "description": "새로 나온 AI·개발 도구를 공식 문서로 확인하고 직접 써 본 뒤, 좋아진 점과 더 잘 쓰는 법, 다들 하는 실수를 정리한다",
+        "evidence": [
+          {
+            "quote": "지금 떠오르는 계정 소개 한 줄: 새로 나온 AI·개발 도구를 직접 써 보고, 바로 쓸 수 있게 정리하는 계정",
+            "source": "S8",
+            "sourceLabel": "설문 S8 지금 떠오르는 계정 소개 한 줄",
+            "weight": "primary"
+          },
+          {
+            "quote": "남이 정리한 걸 옮기지 않고, 발표 원문이나 공식 문서를 직접 보고 써 본 것만 쓴다.",
+            "source": "A3",
+            "sourceLabel": "인터뷰 3번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "뭐가 좋아졌는지, 어떻게 써야 더 잘 되는지, 다들 하는 실수가 뭔지.",
+            "source": "A4",
+            "sourceLabel": "인터뷰 4번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "id": "d504e3e51e772165",
+        "name": "AI로 만든 것",
+        "description": "바이브코딩으로 직접 만든 결과물과 만드는 과정, 비하인드를 보여 준다",
+        "evidence": [
+          {
+            "quote": "보여줄 수 있는 것: 정보 정리, 만든 것, 과정/비하인드",
+            "source": "S4",
+            "sourceLabel": "설문 S4 보여줄 수 있는 것",
+            "weight": "primary"
+          },
+          {
+            "quote": "관심 분야: IT·AI, 개발, 바이브코딩",
+            "source": "S2",
+            "sourceLabel": "설문 S2 관심 분야",
+            "weight": "primary"
+          },
+          {
+            "quote": "8월부터 Claude Max를 쓰면서 AI로 이것저것 만들어 봤는데, 써 보고 알게 된 걸 정리해 두면 나 같은 학생한테 도움이 되겠다 싶었다.",
+            "source": "A1",
+            "sourceLabel": "인터뷰 1번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "id": "555fe14aff188a1e",
+        "name": "대외활동 기록",
+        "description": "계정 덕분에 이어진 대외활동과 협업 이야기를 기록으로 남긴다",
+        "evidence": [
+          {
+            "quote": "그 계정 덕분에 네이버 AI 디깅클럽과 행정안전부 주관 청년 공공 AX 서포터즈에 선정됐다.",
+            "source": "A2",
+            "sourceLabel": "인터뷰 2번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "계정 목표: 포트폴리오, 홍보 — 대외활동·협업 기회",
+            "source": "S3",
+            "sourceLabel": "설문 S3 계정 목표",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "dropped": [],
+    "voiceRules": [
+      {
+        "text": "원문·공식 문서로 확인하고 직접 써 본 것만 말한다",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "전공자가 아니어도 따라 할 수 있게, 궁금한 것만 쉽게 쓴다",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "소개로 끝내지 않고 본 그날 바로 다르게 해 볼 수 있는 것 하나로 마무리한다",
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "avoid": [
+      {
+        "text": "궁금하지도 않은 걸 어렵게 설명하기",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "요금제 비교, 스펙 나열, 벤치마크 논쟁",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "확인 안 한 소문을 퍼 나르기",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "과장된 낚시 제목",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "남이 정리한 걸 그대로 옮기기",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "얼굴 노출 — 직접 만든 캐릭터 ZUN으로 대신한다",
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "unknown": [
+      "팔로워를 모았다는 기존 계정과 이번 새 계정이 어떤 관계인지 (이어 가는지, 따로 하는지)",
+      "캐릭터 ZUN의 생김새와 게시물에서 쓰는 방식",
+      "선호하는 게시물 형식 (카드뉴스, 릴스 등)",
+      "'AI로 만든 것' 축에서 보여 줄 구체적인 결과물",
+      "주 4~5회 게시를 축별로 어떻게 나눌지"
+    ],
+    "presence": {
+      "text": "안 한다 — 직접 만든 캐릭터(ZUN)로 대신한다",
+      "source": "S6",
+      "origin": "interview"
+    }
+  }
+}

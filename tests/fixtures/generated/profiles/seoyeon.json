@@ -1,0 +1,121 @@
+{
+  "note": "AI(identity_profile@v2)가 이 사람의 인터뷰(../interviews/seoyeon.json)로 만든 프로필 스냅숏 · 2026-10-14. 브랜딩 측정의 입력을 고정하려고 저장 (scripts/eval-brand.ts)",
+  "profile": {
+    "accountLine": "줄 서도 아깝지 않은 디저트만 솔직하게 골라요",
+    "accountLineOrigin": "interview",
+    "audience": "주말에 갈 카페를 찾는 서울·경기 사는 20~30대",
+    "audienceOrigin": "interview",
+    "pillars": [
+      {
+        "id": "b71a4c4fa1621260",
+        "name": "두 번 가 본 판정 리뷰",
+        "description": "평일과 주말에 한 번씩 가 보고, 웨이팅·자리 잡기 팁과 함께 가도 될지 말지를 판정해요",
+        "evidence": [
+          {
+            "quote": "같은 가게를 평일과 주말에 두 번 가 보고 써요. 웨이팅 시간이랑 자리 잡기 팁까지 적어요.",
+            "source": "A3",
+            "sourceLabel": "인터뷰 3번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "가도 되는지 말아야 하는지 30초 안에 판단할 수 있게요.",
+            "source": "A4",
+            "sourceLabel": "인터뷰 4번 답",
+            "weight": "primary"
+          },
+          {
+            "quote": "줄 서서 먹었는데 실망한 디저트가 너무 많았어요.",
+            "source": "A1",
+            "sourceLabel": "인터뷰 1번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "id": "ed41b8a0a79468ef",
+        "name": "동네 디저트 지도",
+        "description": "한 동네의 디저트 가게를 직접 그린 지도로 정리해서 저장해 두고 쓸 수 있게 해요",
+        "evidence": [
+          {
+            "quote": "성수동 디저트 지도를 직접 그려서 올렸는데 저장이 제일 많이 됐어요.",
+            "source": "A2",
+            "sourceLabel": "인터뷰 2번 답",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "id": "1e59c16c113c468f",
+        "name": "디저트 일상 기록",
+        "description": "카페를 다니는 날의 일상과 그날 먹은 디저트를 기록으로 남겨요",
+        "evidence": [
+          {
+            "quote": "보여줄 수 있는 것: 리뷰/추천, 일상",
+            "source": "S4",
+            "sourceLabel": "설문 S4 보여줄 수 있는 것",
+            "weight": "primary"
+          },
+          {
+            "quote": "계정 목표: 수익, 기록",
+            "source": "S3",
+            "sourceLabel": "설문 S3 계정 목표",
+            "weight": "primary"
+          }
+        ],
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "dropped": [],
+    "voiceRules": [
+      {
+        "text": "맛없으면 맛없다고, 실망했으면 실망했다고 솔직하게 써요",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "가도 될지 말지 결론부터 말해서 30초 안에 판단할 수 있게 해요",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "친구가 물어볼 때 알려 주듯 편하게, 웨이팅·자리 팁까지 구체적으로 써요",
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "avoid": [
+      {
+        "text": "협찬인데 협찬 아닌 척하기 — 협찬은 꼭 밝힌다",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "맛없는데 맛있다고 쓰기",
+        "origin": "interview",
+        "expiresAt": null
+      },
+      {
+        "text": "결론 없이 길기만 해서 갈지 말지 판단이 안 되는 리뷰",
+        "origin": "interview",
+        "expiresAt": null
+      }
+    ],
+    "unknown": [
+      "수익을 어떤 방식으로 낼지 (협찬·광고·기타 등 구체적 방법)",
+      "성수동 말고 다룰 동네·지역 범위",
+      "관심 분야인 여행을 계정에 어떻게 담을지",
+      "얼굴을 어떤 형식으로 보여 줄지 (릴스·사진·스토리 등 주력 형식)",
+      "매일 올릴 때 축별로 어떻게 나눌지"
+    ],
+    "presence": {
+      "text": "괜찮다",
+      "source": "S6",
+      "origin": "interview"
+    }
+  }
+}

@@ -1,8 +1,11 @@
 #!/bin/sh
 # 커밋 전 검사. npm install 때 scripts/setup-git-hooks.ts 가 core.hooksPath 로 연결한다.
-# 1) 개인정보·비밀 값  2) 린트  3) 타입 체크 — 2·3 은 린트 오류가 섞인 커밋이 실제로 한 번 들어갔던 일 때문에 넣었다.
+# 1) 개인정보·비밀 값  2) 린트  3) 타입 체크  4) 테스트(실제 AI 호출 제외)
+# 2·3 은 린트 오류가 섞인 커밋이, 4 는 실패한 테스트가 섞인 커밋이 실제로 들어갔던 일 때문에 넣었다
+# (테스트를 "vitest | grep" 으로 확인하다 grep 의 성공이 테스트 실패를 가렸다 — devlog 2026-10-14-03).
 # 급하게 건너뛰어야 하면 git commit --no-verify (그 경우 devlog 에 이유를 남긴다)
 set -e
 npm run -s check:privacy -- --staged
 npm run -s lint
 npm run -s typecheck
+npm test --silent

@@ -121,8 +121,15 @@ export const DEFAULTS = {
    * 과제별 프롬프트 활성 버전. 없으면 v1.
    * self_review v2: 프로필의 축 겹침을 broken 으로 잡는다 (전후 측정 tests/results/2026-10-14-identity-v1-review-*.md, 결정 2026-10-14)
    * identity_profile v2 · identity_followup v2: 전후 측정 tests/results/2026-10-14-identity-{profile,followup}-v*.md (devlog 2026-10-14-01)
+   * brand_visual v2 · brand_words_review v2: 전후 측정 tests/results/2026-10-14-brand-visualv{1,2}-reviewv{1,2}.md (devlog 2026-10-14-04)
    */
-  'prompts.activeVersions': { self_review: 'v2', identity_profile: 'v2', identity_followup: 'v2' } as Record<string, string>,
+  'prompts.activeVersions': {
+    self_review: 'v2',
+    identity_profile: 'v2',
+    identity_followup: 'v2',
+    brand_visual: 'v2',
+    brand_words_review: 'v2',
+  } as Record<string, string>,
 };
 
 export type Settings = typeof DEFAULTS;

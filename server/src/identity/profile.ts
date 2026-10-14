@@ -222,9 +222,19 @@ export async function runProfile(ai: AiService, sources: EvidenceSource[], job?:
   };
   const minPillars = 3;
   const prompt = loadPrompt(ai.db, 'identity_profile', { sources: formatSourcesForPrompt(sources) });
+  // 축 겹침은 글자 유사도로는 거의 못 잡는다(실측 축 쌍 최대 0.04~0.09, 의미가 겹친 쌍도 0.07) — 자기 평가에 기준으로 넘긴다
+  const criteria = loadPrompt(ai.db, 'identity_profile_review', {}).text;
   const r = await generateChecked(
     ai,
-    { task: 'identity_profile', prompt: prompt.text, promptRef: prompt.ref, schema: ProfileSchema, rules: profileRules(ctx), signal: job?.signal },
+    {
+      task: 'identity_profile',
+      prompt: prompt.text,
+      promptRef: prompt.ref,
+      schema: ProfileSchema,
+      rules: profileRules(ctx),
+      reviewCriteria: criteria,
+      signal: job?.signal,
+    },
     job,
   );
   const meta = { jobId: r.jobId, calls: r.calls, rewrites: r.rewrites, warnings: r.warnings };

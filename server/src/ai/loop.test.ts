@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { openDb, type Db } from '../db/index.ts';
+import { setSetting } from '../config.ts';
 import { quoteInSources } from '../rules/grounding.ts';
 import type { Rule } from '../rules/types.ts';
 import { AiService } from './adapter.ts';
@@ -91,5 +92,16 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
     const { ai, provider } = setup([good, noIssues]);
     await generateChecked(ai, req);
     expect(provider.calls.map((c) => c.model)).toEqual(['sonnet', 'opus']);
+  });
+
+  it('과제별 자기 평가 기준은 self_review v2 에만 들어가고, v1 은 기준 없이도 그대로 돈다', async () => {
+    const v1 = setup([good, noIssues]);
+    await generateChecked(v1.ai, { ...req, reviewCriteria: '축이 겹치면 broken' });
+    expect(v1.provider.calls[1]!.prompt).not.toContain('축이 겹치면 broken');
+
+    const v2 = setup([good, noIssues]);
+    setSetting(v2.db, 'prompts.activeVersions', { self_review: 'v2' });
+    await generateChecked(v2.ai, { ...req, reviewCriteria: '축이 겹치면 broken' });
+    expect(v2.provider.calls[1]!.prompt).toContain('## 이 과제에서 따로 볼 것\n축이 겹치면 broken');
   });
 });

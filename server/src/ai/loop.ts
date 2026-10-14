@@ -25,6 +25,8 @@ export interface CheckedRequest<T> extends AiRequest<T> {
   rules: Rule<T>[];
   /** 자기 평가를 할지 (기본 true). 비용이 큰 opus 호출이라 과제마다 끌 수 있게 */
   selfReview?: boolean;
+  /** 자기 평가에 넘길 이 과제만의 판단 기준 (prompts/<과제>_review 파일 내용). self_review v2 부터 쓴다 */
+  reviewCriteria?: string;
 }
 
 interface Base {
@@ -72,7 +74,13 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
 
       // 코드 규칙을 통과했을 때만 자기 평가를 부른다 — 어차피 다시 쓸 결과에 opus 호출을 쓰지 않으려고
       if (!issues.some((i) => i.level === 'error') && req.selfReview !== false) {
-        const review = loadPrompt(ai.db, 'self_review', { requirements: req.prompt, output: JSON.stringify(gen.data, null, 2) });
+        const review = loadPrompt(
+          ai.db,
+          'self_review',
+          { requirements: req.prompt, output: JSON.stringify(gen.data, null, 2), criteria: req.reviewCriteria ?? '(이 과제만의 추가 기준 없음)' },
+          undefined,
+          ['criteria'],
+        );
         try {
           const r = await ai.call({ task: 'self_review', prompt: review.text, schema: ReviewSchema, promptRef: review.ref, signal: req.signal }, job, 'review');
           const reviewIssues = reviewToIssues(r.data);

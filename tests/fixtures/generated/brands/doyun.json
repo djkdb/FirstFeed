@@ -1,0 +1,18 @@
+{
+  "note": "템플릿 측정용 고정 브랜드 — AI(brand_visual v2·brand_words) 측정 결과(tests/results/2026-10-14-brand-visualv2-reviewv2.md, doyun 1회차)에서 팔레트 1번째·폰트 짝 2번째·아이디·표시 이름 첫 후보를 골랐다. 사람마다 폰트 느낌(장식·명조·고딕)과 배경 밝기가 다르게 고름",
+  "look": {
+    "palette": {
+      "name": "퇴근 후 남색",
+      "primary": "#1F2A44",
+      "secondary": "#F2B84B",
+      "accent": "#E86A4F",
+      "background": "#FAF7F0",
+      "text": "#1F2433"
+    },
+    "titleFont": "gowun-batang",
+    "bodyFont": "gowun-dodum",
+    "handle": "gagyebu.diary",
+    "displayName": "혼자 만드는 가계부 앱 일지",
+    "profileImage": null
+  }
+}

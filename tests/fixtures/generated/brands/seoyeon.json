@@ -1,0 +1,18 @@
+{
+  "note": "템플릿 측정용 고정 브랜드 — AI(brand_visual v2·brand_words) 측정 결과(tests/results/2026-10-14-brand-visualv2-reviewv2.md, seoyeon 1회차)에서 팔레트 1번째·폰트 짝 3번째·아이디·표시 이름 첫 후보를 골랐다. 사람마다 폰트 느낌(장식·명조·고딕)과 배경 밝기가 다르게 고름",
+  "look": {
+    "palette": {
+      "name": "딸기 크림",
+      "primary": "#B0304A",
+      "secondary": "#F2B8C0",
+      "accent": "#6B8E4E",
+      "background": "#FFF8F0",
+      "text": "#2B1B17"
+    },
+    "titleFont": "suit",
+    "bodyFont": "noto-sans-kr",
+    "handle": "julseodo.dessert",
+    "displayName": "줄 서도 아깝지 않은 디저트",
+    "profileImage": null
+  }
+}

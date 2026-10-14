@@ -89,6 +89,17 @@ describe('시각 후보 규칙 (FR-BR-2·3·4, 자기 평가 없이 코드만)',
     expect(codes(d('A slice of shortcake, 1:1, 1080x1080. No people, no faces, no hands. No text.'))).toEqual([]);
     // 실사 사진이라는 말만 있어도 사람 표현으로 본다 (결정의 목록대로)
     expect(codes(d('A realistic photo of a cake, 1:1, 1080x1080, no text'))).toEqual(['image_prompts.0:prompt_realistic_person']);
+    // 신체 일부 (사용자 결정 2026-10-15) — 측정에서 실제로 나온 v1 seoyeon 2회 (tests/results/2026-10-14-brand-visualv1-reviewv1.md)
+    expect(codes(d('Square profile photo, 1:1, 1080x1080, no text. Close-up of two hands holding a small ceramic plate with a glossy strawberry tart and a fork. No face visible, no logos, no watermark.'))).toEqual([
+      'image_prompts.0:prompt_realistic_person',
+    ]);
+    expect(codes(d('Square profile image, 1:1, 1080x1080. Warm hand-drawn gouache illustration of two hands holding a small plate. No faces, no people beyond hands, no logos, no text.'))).toEqual([
+      'image_prompts.0:prompt_realistic_person',
+    ]);
+    // 흔한 그림 용어는 통과 — 실제 출력의 "hands-on"·"hand-drawn"·"by hand" 와 handwritten·handmade·hand-lettered
+    expect(codes(d('1:1 square, 1080x1080, flat vector icon symbolizing trying new AI tools hands-on. No people, no faces, no text.'))).toEqual([]);
+    expect(codes(d('1:1, 1080x1080, hand-drawn map, handwritten-style doodles, handmade paper texture, hand-lettered feel, a tool tested by hand, no text'))).toEqual([]);
+    expect(codes(d('A notebook, 1:1, 1080x1080, no hands, no people, no text'))).toEqual([]);
     // 하이라이트 커버는 「보여 주는 방식」을 따른다 — 이 규칙을 걸지 않는다
     expect(codes(d('A person at a cafe centered within a circle, 9:16, 1080x1920, realistic photography, no text', 'highlight'))).toEqual([]);
   });

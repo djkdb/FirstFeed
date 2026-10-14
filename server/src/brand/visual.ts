@@ -62,6 +62,13 @@ const REAL_PERSON =
   /\b(?<!non-)(?:person|people|persons|man|men|woman|women|girl|boy|guy|lady|human|selfie|headshot|portrait|face (?:clearly )?visible|visible face|realistic photo(?:graph|graphy)?|photorealistic|photo-realistic)\b/i;
 const AGE_LOOKS =
   /\b(?:in (?:his|her|their) (?:early |mid |late )?\d0s|\d{1,2}[- ]years?[- ]old|teen(?:ager)?s?|twenties|thirties|forties|middle-aged|elderly|hair(?:style)?|skin tone|beard|makeup|ethnicity|asian|korean (?:man|woman|girl|boy|person))\b/i;
+/**
+ * 신체 일부 (사용자 결정 2026-10-15): 본인이 아닌 사람의 몸이라 얼굴과 같은 이유로 막는다.
+ * 흔한 그림 용어는 빼고 — hand-drawn·handwritten·handmade·hand-lettered·hands-on·by hand.
+ * 넣기 전 실제 프롬프트 76개에 돌려 profile 19개 중 seoyeon v1 의 "two hands holding" 2개만 걸리는 것을 확인했다
+ */
+const BODY_PART =
+  /(?<!\bby )\b(?:hands?|fingers?|fingertips?|palms?|wrists?|arms?|elbows?|legs?|knees?|feet|foot|toes?|shoulders?|torso|lap)\b(?![- ]?(?:drawn|written|writing|made|lettered|painted|crafted|held|picked|stitched|knit|cut)\b)(?!-on\b)/i;
 export function withoutNegations(prompt: string): string {
   return prompt.replace(/\b(?:no|not|without|never|avoid)\b[^,.;:]*/gi, ' ');
 }
@@ -103,7 +110,7 @@ export function visualRules(minContrast: number): Rule<VisualOutput>[] {
         if (!/^[a-z0-9-]+\.png$/.test(p.filename)) out.push(issue(where, 'bad_filename', `파일 이름 "${p.filename}" 은 영문 소문자·숫자·하이픈과 .png 로 쓰세요.`));
         if (p.target === 'profile') {
           const affirmed = withoutNegations(p.prompt);
-          const person = REAL_PERSON.exec(affirmed);
+          const person = REAL_PERSON.exec(affirmed) ?? BODY_PART.exec(affirmed);
           if (person)
             out.push(issue(where, 'prompt_realistic_person', `프로필 사진 프롬프트에 실사 인물 표현 "${person[0]}" 이 있습니다. 프로필 사진의 사람은 본인이어야 해서 사람 없는 그림(사물·캐릭터·상징)으로 쓰세요.`));
           const looks = AGE_LOOKS.exec(affirmed);

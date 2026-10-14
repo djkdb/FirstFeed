@@ -89,3 +89,6 @@ h4 { margin: 18px 0 8px; font-size: 14px; }
 .history { margin-top: 16px; font-size: 14px; }
 .history li { margin: 8px 0; }
 .history button { margin-left: 8px; font-size: 12px; padding: 2px 8px; }
+.directions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin: 8px 0; }
+.direction { border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-size: 14px; }
+.direction.failed { opacity: 0.7; }

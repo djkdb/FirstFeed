@@ -6,6 +6,7 @@ import { Interview } from './Interview.tsx';
 import { ProfileView } from './ProfileView.tsx';
 import { ProfileEditor, hasEditDraft } from './ProfileEditor.tsx';
 import { ProfileHistory } from './ProfileHistory.tsx';
+import { Alternatives } from './Alternatives.tsx';
 import { clearSurveyDraft, SurveyForm } from './SurveyForm.tsx';
 import type { Current, SurveyAnswers } from './types.ts';
 
@@ -194,6 +195,7 @@ export function IdentityPage() {
               {hasEditDraft(state.profile.id) ? '고치던 것 이어서 고치기' : '고치기'}
             </button>
           </div>
+          <Alternatives baseId={state.profile.id} onChosen={() => void refresh()} />
           <ProfileHistory refreshKey={historyKey} onChanged={() => void refresh()} />
         </>
       )}

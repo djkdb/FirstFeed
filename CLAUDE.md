@@ -83,6 +83,8 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 | 꼬리질문 측정 (구독 사용량 듦) | `npm run eval:followup -- --repeat=2 --prompt identity_followup=v2 --label=followup-v2` — 고정 세트 + 함정 시나리오(`tests/fixtures/generated/followup`) |
 | 다른 방향 측정 (구독 사용량 듦) | `npm run eval:alternatives` — 사람마다 지금 판을 만들어 확정한 뒤 두 방향 요청. 결과에 지금 판·두 방향의 축 목록 본문을 함께 쓴다 |
 | 브랜딩 키트 측정 (구독 사용량 듦) | `npm run eval:brand -- --snapshot`(프로필 스냅숏, 없는 사람만) → `npm run eval:brand -- --runs=2` · `--reflect=me`(FR-ID-6: 말투·축 바꾸기 전/후 바이오). 오래 걸리는 측정은 `caffeinate -i` 로 감싸고 덮개를 연 채로 |
+| 템플릿 넘침 측정 (구독 사용량 없음, 기준 브라우저 필요) | `npm run eval:templates` — 시안 × 브랜드(tests/fixtures/*/brands) × 넘침 테스트 세트 → `tests/results/<날짜>-templates/<시안>-<브랜드>/*.png`(`_sheet.png` 한눈에 보기) + 요약 표. 판정 통과인데 잘린 PNG 가 없는지 직접 열어 대조 |
+| 렌더링 브라우저 준비 (처음 한 번) | `npx playwright install chromium` — 앱은 브라우저를 내려받지 않는다. 테스트 중 실제 브라우저로 그리는 것은 `*.browser.test.ts`(단위 테스트 뒤에 파일 하나씩) |
 | 노력 단계별 응답 시간 측정 | `npm run ai:effort -- --fixture=seoyeon --levels=default,low,medium,high --repeat=2` |
 
 ## 5. 작업 규칙
@@ -258,3 +260,6 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 - **문자열 치환 스크립트가 바꿀 자리를 못 찾으면 조용히 넘어간다** — 증상: 커밋 메시지엔 `brand.*` 설정 추가라고 썼는데 실제로는 빠짐(치환 대상 문장이 달라 아무것도 안 바뀜) / 해결: 따로 커밋해 넣음 / 다시 안 겪으려면: 치환은 `assert s.count(old) == 1` 로 자리를 확인한 뒤에만 쓴다 (2026-10-14 · [devlog](docs/devlog/2026-10-14-03-브랜딩-키트.md))
 - **벽시계로 잰 시간에 컴퓨터 잠자기가 섞인다** — 증상: 제한 360초 호출이 4172초로 기록, 「opus 가 특정 시간대에 수 분 늦다」로 잘못 읽고 한도까지 의심 / 원인: pmset 로그상 그 구간이 덮개 닫힘·유휴 잠자기. 타이머(단조 시계)는 잠든 동안 멈추고 `Date.now()` 는 흐른다 / 해결: 둘의 차이를 "잠자기 N초 포함"으로 로그·안내에 표시 / 다시 안 겪으려면: 느림을 의심하면 먼저 `pmset -g log` 로 잠자기를 확인하고, 긴 측정은 `caffeinate -i` 로 감싼다 (2026-10-14 · [devlog](docs/devlog/2026-10-14-03-브랜딩-키트.md))
 - **개발 서버의 파일 감시 재시작이 메모리에만 있는 작업을 지운다** — 증상: 생성 중에 서버 파일을 고치자 화면이 「만드는 중」에서 영원히 멈춤(상태 조회 404 를 화면이 조용히 무시) / 해결: 404 면 실패로 끝내고 다시 하라고 안내 / 다시 안 겪으려면: 긴 AI 작업이 도는 동안 `server/src` 를 고치지 않는다. 화면은 "응답 없음·찾을 수 없음"을 반드시 사용자에게 보인다 (2026-10-14 · [devlog](docs/devlog/2026-10-14-03-브랜딩-키트.md))
+- **글자 조각(Range 사각형)의 높이는 줄 상자가 아니라 폰트 내용 영역이다** — 증상: line-height 를 좁힌 제목(1.06~1.24)이 PNG 는 멀쩡한데 "넘침 7~25px"(고운바탕이 가장 큼), scrollHeight 도 같이 넘침 / 해결: 세로 범위를 (내용 영역 − line-height)/2 만큼 줄여 보고 scrollHeight 도 그만큼 뺌 / 다시 안 겪으려면: 넘침 규칙을 바꾸면 PNG 를 열어 판정과 대조한다 (2026-10-15 · [devlog](docs/devlog/2026-10-15-01-템플릿.md))
+- **tsx(esbuild keepNames)는 함수 안에 `__name` 도우미를 끼워서, page.evaluate 로 브라우저에 넘긴 함수가 ReferenceError** — 증상: 개발 서버에서만 렌더링 실패(테스트·node 는 통과) / 해결: 페이지에 `__name` 을 먼저 정의, tsx 로 그려 보는 테스트 / 다시 안 겪으려면: 브라우저로 넘기는 함수는 실행기(tsx·node·vitest)마다 다르게 변환될 수 있다 — 개발 서버 경로로도 한 번 돌린다 (2026-10-15 · [devlog](docs/devlog/2026-10-15-01-템플릿.md))
+- **브라우저를 띄우는 테스트를 다른 테스트와 같이 돌리면 CPU 를 잡아 상관없는 테스트가 시간 제한에 걸린다** — 증상: npm test 3번 중 1번 6개 실패 / 해결: vitest 프로젝트 unit · browser(파일 병렬 끔)로 나눠 차례로 / 다시 안 겪으려면: 실제 브라우저·외부 프로세스를 쓰는 테스트는 `*.browser.test.ts` 로 (2026-10-15 · [devlog](docs/devlog/2026-10-15-01-템플릿.md))

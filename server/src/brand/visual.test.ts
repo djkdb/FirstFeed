@@ -78,6 +78,21 @@ describe('시각 후보 규칙 (FR-BR-2·3·4, 자기 평가 없이 코드만)',
     ]);
   });
 
+  it('프로필 사진 프롬프트의 실사 인물·나이 — 측정에서 실제로 나온 seoyeon 1회차 출력 (결정 2026-10-14 · 다듬기)', () => {
+    // tests/results/2026-10-14-brand-v1-v1.md · seoyeon 1회 · [profile]
+    const seoyeon =
+      'Square 1:1 profile photo, 1080x1080. A friendly person in their late 20s sitting at a sunlit cafe window table, casual knit sweater, smiling naturally while holding a fork above a slice of strawberry shortcake, face clearly visible and well lit. Warm natural daylight, soft creamy background with gentle bokeh, cozy Seoul cafe mood, honest and approachable vibe. Subject centered so it still reads well when cropped to a circle. Realistic photography, shallow depth of field, warm cream and raspberry tones. No text, no logos, no watermark.';
+    const d = (prompt: string, target: 'profile' | 'highlight' = 'profile') => ({ ...base, image_prompts: [{ target, label: '', prompt, filename: 'p.png' }] });
+    expect(codes(d(seoyeon))).toEqual(['image_prompts.0:prompt_realistic_person', 'image_prompts.0:prompt_age_appearance']);
+    // 부정한 말은 통과 (me 1회차·화면 확인 회차의 실제 문구)
+    expect(codes(d('Mascot ZUN, 1:1, 1080x1080, non-human rounded body, not a human. No human face, no real person, no text.'))).toEqual([]);
+    expect(codes(d('A slice of shortcake, 1:1, 1080x1080. No people, no faces, no hands. No text.'))).toEqual([]);
+    // 실사 사진이라는 말만 있어도 사람 표현으로 본다 (결정의 목록대로)
+    expect(codes(d('A realistic photo of a cake, 1:1, 1080x1080, no text'))).toEqual(['image_prompts.0:prompt_realistic_person']);
+    // 하이라이트 커버는 「보여 주는 방식」을 따른다 — 이 규칙을 걸지 않는다
+    expect(codes(d('A person at a cafe centered within a circle, 9:16, 1080x1920, realistic photography, no text', 'highlight'))).toEqual([]);
+  });
+
   it('걸린 후보만 빼고 3개씩 — 명암비 숫자를 함께 저장', () => {
     const d = { ...base, palettes: [pal('흐림', '#1a2a6c', '#ffffff', '#999999'), ...base.palettes.slice(1)] };
     const errors = visualRules(4.5).flatMap((r) => r(d));

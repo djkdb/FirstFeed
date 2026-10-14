@@ -53,6 +53,19 @@ const PROMPT_NEEDS: Record<ImagePrompt['target'], Array<[RegExp, string]>> = {
   ],
 };
 
+/**
+ * 프로필 사진 프롬프트의 실사 인물·나이·외모 (결정 2026-10-14 · 브랜딩 키트 다듬기).
+ * 프로필 사진의 사람은 본인이어야 한다 — 얼굴 공개 여부와 상관없이 실사 인물을 만들게 하지 않는다.
+ * "no people, not a real person" 처럼 부정한 말은 빼고 본다: no/not/without/never 부터 쉼표·마침표까지를 지운 나머지에서 찾는다
+ */
+const REAL_PERSON =
+  /\b(?<!non-)(?:person|people|persons|man|men|woman|women|girl|boy|guy|lady|human|selfie|headshot|portrait|face (?:clearly )?visible|visible face|realistic photo(?:graph|graphy)?|photorealistic|photo-realistic)\b/i;
+const AGE_LOOKS =
+  /\b(?:in (?:his|her|their) (?:early |mid |late )?\d0s|\d{1,2}[- ]years?[- ]old|teen(?:ager)?s?|twenties|thirties|forties|middle-aged|elderly|hair(?:style)?|skin tone|beard|makeup|ethnicity|asian|korean (?:man|woman|girl|boy|person))\b/i;
+export function withoutNegations(prompt: string): string {
+  return prompt.replace(/\b(?:no|not|without|never|avoid)\b[^,.;:]*/gi, ' ');
+}
+
 export function visualRules(minContrast: number): Rule<VisualOutput>[] {
   return [
     (d) =>
@@ -88,6 +101,14 @@ export function visualRules(minContrast: number): Rule<VisualOutput>[] {
         if (!/\bno text\b/i.test(p.prompt)) out.push(issue(where, 'prompt_missing_no_text', '그림 프롬프트에 "no text" 가 없습니다(FR-BR-4 수용 기준).'));
         for (const [re, label] of PROMPT_NEEDS[p.target]) if (!re.test(p.prompt)) out.push(issue(where, 'prompt_missing_size', `그림 프롬프트에 ${label} 이 없습니다(FR-BR-4 수용 기준).`));
         if (!/^[a-z0-9-]+\.png$/.test(p.filename)) out.push(issue(where, 'bad_filename', `파일 이름 "${p.filename}" 은 영문 소문자·숫자·하이픈과 .png 로 쓰세요.`));
+        if (p.target === 'profile') {
+          const affirmed = withoutNegations(p.prompt);
+          const person = REAL_PERSON.exec(affirmed);
+          if (person)
+            out.push(issue(where, 'prompt_realistic_person', `프로필 사진 프롬프트에 실사 인물 표현 "${person[0]}" 이 있습니다. 프로필 사진의 사람은 본인이어야 해서 사람 없는 그림(사물·캐릭터·상징)으로 쓰세요.`));
+          const looks = AGE_LOOKS.exec(affirmed);
+          if (looks) out.push(issue(where, 'prompt_age_appearance', `프로필 사진 프롬프트에 나이·외모 묘사 "${looks[0]}" 가 있습니다. 원문에 없는 사람 묘사는 빼세요.`));
+        }
         return out;
       }),
   ];

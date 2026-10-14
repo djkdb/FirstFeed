@@ -6,8 +6,6 @@ CREATE TABLE identity_sessions (
   brand_id    INTEGER NOT NULL REFERENCES brands(id),
   survey_json TEXT NOT NULL,                -- { S1: {choices, other, text}, … }
   status      TEXT NOT NULL,                -- interview | ready | profiled
-  -- 프로필 단계에서 인터뷰로 돌아왔거나 실패했을 때 화면에 다시 보여 줄 안내 { kind, message, missing[] }
-  note_json   TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );

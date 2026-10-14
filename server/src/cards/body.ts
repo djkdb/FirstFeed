@@ -151,6 +151,8 @@ export type BodyResult =
   | {
       /** 2회를 다 쓰고도 넘침만 남았다 — 사용자가 직접 줄이면 저장 (저장 전) */
       status: 'needs_edit';
+      /** 직접 줄여 저장할 때 다시 쓰는 생성 입력 */
+      input: BodyJobInput;
       draft: BodyOutput;
       overflows: Overflow[];
       /** 넘치지 않은 카드는 미리 보기로 */
@@ -247,6 +249,7 @@ export async function generateBody(ai: AiService, brandId: number, input: BodyJo
     const rendered = done && done.key === JSON.stringify(r.rejected) ? done.rendered : (await renderAll(ai, c, input.cover, r.rejected)).rendered;
     return {
       status: 'needs_edit',
+      input,
       draft: r.rejected,
       overflows: r.errors.map((e) => ({ where: e.where ?? '', slot: e.where?.split('.').pop() ?? '', message: e.message })),
       previews: rendered.map((x, idx) => ({ where: whereOf(idx, r.rejected.cards.length), png: x.result.png ? `data:image/png;base64,${x.result.png.toString('base64')}` : null })),

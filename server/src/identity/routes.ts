@@ -8,6 +8,7 @@ import { getSetting } from '../config.ts';
 import { answerTurn, askNext, FlowError, makeProfile } from './flow.ts';
 import { activeProfile, confirmProfile, createSession, getSessionState, latestSessionId, listProfiles } from './store.ts';
 import { EditError, EditInput, rollbackTo, saveEdit } from './edit.ts';
+import { chooseDirection, runAlternatives, type AlternativesResult } from './alternatives.ts';
 import { SURVEY, SurveyAnswers, validateSurvey } from './survey.ts';
 
 const BRAND_ID = 1; // 브랜드 여러 개(FR-AC-3)는 F 범위 — 지금은 로컬 브랜드 하나
@@ -111,6 +112,33 @@ export function identityRoutes(ai: AiService, jobs: JobStore) {
         throw err;
       }
     })
+    // 다른 방향 2개 더: 작업 ID 를 먼저 돌려주고 진행·취소는 /api/ai/jobs 로
+    .post('/profiles/:id/alternatives', (c) => {
+      const id = Number(c.req.param('id'));
+      const jobId = jobs.start('identity_alternatives', (job) => runAlternatives(ai, id, job));
+      return c.json({ jobId });
+    })
+    // 고른 방향 → 새 판, 바로 활성. 결과는 서버가 기억한 작업 결과에서 꺼낸다 (화면이 보낸 내용을 믿지 않는다)
+    .post(
+      '/alternatives/choose',
+      validator('json', (value, c) => {
+        const body = z.object({ jobId: z.string(), index: z.number().int().min(0).max(1) }).safeParse(value);
+        return body.success ? body.data : c.json(bad('고른 방향의 형식이 맞지 않습니다. 다시 골라 주세요.'), 400);
+      }),
+      (c) => {
+        const { jobId, index } = c.req.valid('json');
+        const job = jobs.get(jobId);
+        if (!job || job.task !== 'identity_alternatives' || job.phase !== 'done') {
+          return c.json(bad('다른 방향 결과를 찾지 못했습니다. 서버가 다시 시작됐다면 「다른 방향 2개 더」를 다시 요청하세요.'), 404);
+        }
+        try {
+          return c.json({ profileId: chooseDirection(ai, job.result as AlternativesResult, index) });
+        } catch (err) {
+          if (err instanceof FlowError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+          throw err;
+        }
+      },
+    )
     .post('/profiles/:id/confirm', (c) => {
       const ok = confirmProfile(db, Number(c.req.param('id')));
       return ok ? c.json({ ok: true as const }) : c.json(bad('프로필을 찾지 못했습니다. 화면을 새로고침하세요.'), 404);

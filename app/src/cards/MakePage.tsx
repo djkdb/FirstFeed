@@ -1,0 +1,356 @@
+// 카드뉴스 만들기 (FR-MK-1): 소재 붙여넣기 → 표지 제목 후보(고정 틀로 그린 PNG) → 고르기 → 본문 → 세트.
+// 2회 재작성 뒤에도 넘친 카드는 어느 칸이 약 몇 자 넘쳤는지 보이고 직접 줄이게 한다(줄여야 저장).
+// 긴 AI 작업은 진행·취소를 보이고, 새로고침해도 이어서 보도록 작업 ID 를 이 브라우저에 임시 저장한다
+import { useCallback, useEffect, useState } from 'react';
+import type { InferResponseType } from 'hono/client';
+import { api } from '../api.ts';
+import { useJob, type JobView } from '../useJob.ts';
+
+type State = InferResponseType<typeof api.api.cards.$get>;
+interface Candidate {
+  index: number;
+  headline: string;
+  sub: string | null;
+  chip: string | null;
+  png: string;
+  scale: number;
+}
+interface CoversResult {
+  candidates: Candidate[];
+  dropped: Array<{ headline: string; reasons: string[] }>;
+  calls: number;
+  rewrites: number;
+}
+interface Overflow {
+  where: string;
+  slot: string;
+  message: string;
+}
+interface Draft {
+  cards: Array<{ title: string; text: string }>;
+  closing: { headline: string; sub: string | null };
+}
+type BodyResult =
+  | { status: 'saved'; setId: number; calls: number; rewrites: number }
+  | { status: 'needs_edit'; draft: Draft; overflows: Overflow[]; previews: Array<{ where: string; png: string | null }>; calls: number; rewrites: number }
+  | { status: 'failed'; errors: string[]; calls: number; rewrites: number };
+
+const KEY = { cover: 'firstfeed.cards.coverJob', body: 'firstfeed.cards.bodyJob' } as const;
+const RUN_LABEL: Record<string, string> = { generate: '생성', json_retry: 'JSON 재요청', rewrite: '재작성', review: '자기 평가' };
+const load = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const save = (k: string, v: string | null) => {
+  try {
+    if (v) localStorage.setItem(k, v);
+    else localStorage.removeItem(k);
+  } catch {
+    /* 임시 저장 없이 동작 */
+  }
+};
+
+function Progress({ job, onCancel, label }: { job: JobView | null; onCancel: () => void; label: string }) {
+  return (
+    <div className="job">
+      <p>
+        {label}
+        <button type="button" onClick={onCancel}>
+          취소
+        </button>
+      </p>
+      {job && job.runs.length > 0 && (
+        <ol className="runs muted small">
+          {job.runs.map((r) => (
+            <li key={r.attempt}>
+              {RUN_LABEL[r.kind] ?? r.kind} · {r.model} · {r.status === 'ok' ? '통과' : r.status} · {((r.duration_ms ?? 0) / 1000).toFixed(1)}초
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+function SetView({ setId }: { setId: number }) {
+  const [set, setSet] = useState<{ cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; render: { scale: number; browser: string; reference: boolean } }> } | null>(null);
+  useEffect(() => {
+    void (async () => {
+      const r = await api.api.cards.sets[':id'].$get({ param: { id: String(setId) } });
+      const b = (await r.json()) as { set?: unknown };
+      setSet((b.set as never) ?? null);
+    })();
+  }, [setId]);
+  if (!set) return <p className="muted">불러오는 중…</p>;
+  return (
+    <>
+      <div className="frames">
+        {set.cards.map((c) => (
+          <figure key={c.idx} className="frame">
+            <img src={`/api/cards/sets/${setId}/png/${c.pngFile}`} alt={`${c.idx + 1}번 카드`} />
+            <figcaption className="small">
+              {c.idx + 1}. {c.kind === 'cover' ? '표지' : c.kind === 'closing' ? '마무리' : '본문'}
+              {c.render.scale < 1 && <span className="muted"> · 글자 {Math.round(c.render.scale * 100)}%</span>}
+              {c.edited && <span className="tag">직접 고침</span>}
+            </figcaption>
+            {c.image && (
+              <details className="small">
+                <summary>그림 프롬프트 · {c.image.filename}</summary>
+                <pre>{c.image.prompt}</pre>
+              </details>
+            )}
+          </figure>
+        ))}
+      </div>
+      <p className="muted small">찍은 브라우저: {set.cards[0]?.render.browser}{set.cards[0] && !set.cards[0].render.reference && ' · 기준 브라우저 아님'}</p>
+    </>
+  );
+}
+
+export function MakePage() {
+  const [state, setState] = useState<State | null>(null);
+  const [body, setBody] = useState('');
+  const [memo, setMemo] = useState('');
+  const [requested, setRequested] = useState<number | null>(null);
+  const [coverJobId, setCoverJobId] = useState<string | null>(() => load(KEY.cover));
+  const [bodyJobId, setBodyJobId] = useState<string | null>(() => load(KEY.body));
+  const [covers, setCovers] = useState<CoversResult | null>(null);
+  const [bodyResult, setBodyResult] = useState<BodyResult | null>(null);
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [viewSet, setViewSet] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(() => api.api.cards.$get().then((r) => r.json()).then(setState), []);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const coverJob = useJob(coverJobId, (j) => {
+    if (j.phase === 'done') setCovers(j.result as unknown as CoversResult);
+    else setError(j.phase === 'cancelled' ? '취소했습니다.' : `${j.error?.message ?? '실패했습니다.'} ${j.error?.hint ?? ''}`);
+    if (j.phase !== 'done') {
+      save(KEY.cover, null);
+      setCoverJobId(null);
+    }
+  });
+  const bodyJob = useJob(bodyJobId, (j) => {
+    if (j.phase === 'done') {
+      const r = j.result as unknown as BodyResult;
+      setBodyResult(r);
+      if (r.status === 'saved') {
+        setViewSet(r.setId);
+        void refresh();
+      }
+    } else {
+      setError(j.phase === 'cancelled' ? '취소했습니다.' : `${j.error?.message ?? '실패했습니다.'} ${j.error?.hint ?? ''}`);
+      save(KEY.body, null);
+      setBodyJobId(null);
+    }
+  });
+
+  const startCovers = async () => {
+    setError(null);
+    setCovers(null);
+    setBodyResult(null);
+    setViewSet(null);
+    const s = await api.api.cards.sources.$post({ json: { body, memo: memo || null } });
+    const sb = await s.json();
+    if ('error' in sb) return setError(sb.error);
+    const r = await api.api.cards.covers.$post({ json: { sourceId: sb.sourceId, requested } });
+    const b = await r.json();
+    if ('error' in b) return setError(b.error);
+    save(KEY.cover, b.jobId);
+    save(KEY.body, null);
+    setBodyJobId(null);
+    setCoverJobId(b.jobId);
+  };
+
+  const choose = async (index: number) => {
+    if (!coverJobId) return;
+    setError(null);
+    setBodyResult(null);
+    const r = await api.api.cards.body.$post({ json: { coverJobId, index } });
+    const b = await r.json();
+    if ('error' in b) return setError(b.error);
+    save(KEY.body, b.jobId);
+    setBodyJobId(b.jobId);
+  };
+
+  const finish = async () => {
+    if (!bodyJobId || bodyResult?.status !== 'needs_edit') return;
+    setBusy(true);
+    setError(null);
+    try {
+      const list = Object.entries(edits).map(([key, value]) => {
+        const [where, field] = key.split('|') as [string, string];
+        return { where, [field]: value };
+      });
+      const r = await api.api.cards.finish.$post({ json: { bodyJobId, edits: list } });
+      const b = (await r.json().catch(() => ({ error: `서버 오류(HTTP ${r.status})` }))) as { status?: string; setId?: number; overflows?: Overflow[]; problems?: string[]; error?: string };
+      if (b.error) return setError(b.error);
+      if (b.status === 'saved' && b.setId) {
+        setViewSet(b.setId);
+        setBodyResult(null);
+        void refresh();
+      } else setError(['아직 넘칩니다:', ...(b.overflows ?? []).map((o) => `${o.where} — ${o.message}`), ...(b.problems ?? [])].join(' '));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!state) return <section className="card">불러오는 중…</section>;
+  const notReady = !state.ready.profile ? '「정체성」에서 프로필을 먼저 확정하세요.' : !state.ready.template ? '「템플릿」에서 틀을 먼저 고정하세요. 카드 글자 수는 고정한 틀에서 정해져요.' : null;
+  const coverRunning = coverJobId !== null && !covers && (coverJob.job === null || coverJob.job.phase === 'running');
+  const bodyRunning = bodyJobId !== null && !bodyResult && (bodyJob.job === null || bodyJob.job.phase === 'running');
+
+  return (
+    <>
+      <section className="card">
+        <h2>카드뉴스 만들기</h2>
+        {notReady ? (
+          <p className="note">{notReady}</p>
+        ) : (
+          <p className="muted small">
+            고정한 틀: 시안 {state.ready.template!.draftId} · v{state.ready.template!.version}. 소재를 붙여 넣으면 표지 제목 후보를 그 틀로 그려 보여 드려요.
+          </p>
+        )}
+        <label className="block small">
+          소재 원문 (메모·공식 문서·릴리스 노트 등 — 숫자·이름은 여기 있는 것만 카드에 들어가요)
+          <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} />
+        </label>
+        <label className="block small">
+          메모 (선택 — 내가 직접 쓴 말이라 카드에 써도 되는 사실이 돼요)
+          <input value={memo} onChange={(e) => setMemo(e.target.value)} disabled={!!notReady} />
+        </label>
+        <div className="actions">
+          <label className="small">
+            본문 카드 수{' '}
+            <select value={requested ?? ''} onChange={(e) => setRequested(e.target.value ? Number(e.target.value) : null)}>
+              <option value="">자동 (소재 양에 따라 {state.range[0]}~{state.range[1]}장)</option>
+              {Array.from({ length: state.range[1] - state.range[0] + 1 }, (_, i) => state.range[0] + i).map((n) => (
+                <option key={n} value={n}>
+                  {n}장
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="primary" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
+            표지 제목 후보 만들기
+          </button>
+          <span className="muted small">AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1~2분(측정 전 추정)</span>
+        </div>
+        {error && <p className="status error">{error}</p>}
+      </section>
+
+      {coverRunning && <Progress job={coverJob.job} onCancel={() => void coverJob.cancel()} label="표지 제목 후보를 만드는 중… (생성 → 규칙 → 고정 틀로 그려 넘침 재기 → 자기 평가)" />}
+
+      {covers && (
+        <section className="card">
+          <h2>표지 고르기</h2>
+          <p className="muted small">
+            AI 호출 {covers.calls}번 · 재작성 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개. 표지를 누르면 본문을 만들어요(AI 호출 2번 · 보통 2~4분, 측정 전 추정).
+          </p>
+          <div className="frames">
+            {covers.candidates.map((c) => (
+              <figure key={c.index} className="frame">
+                <button type="button" className="pick-cover" disabled={bodyRunning} onClick={() => void choose(c.index)}>
+                  <img src={c.png} alt={c.headline} />
+                </button>
+                <figcaption className="small">{c.headline.replace(/\*\*/g, '')}</figcaption>
+              </figure>
+            ))}
+          </div>
+          {covers.dropped.length > 0 && (
+            <details className="small muted">
+              <summary>뺀 후보 {covers.dropped.length}개</summary>
+              <ul>
+                {covers.dropped.map((d, i) => (
+                  <li key={i}>
+                    <strong>{d.headline}</strong> — {d.reasons.join(' / ')}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </section>
+      )}
+
+      {bodyRunning && <Progress job={bodyJob.job} onCancel={() => void bodyJob.cancel()} label="본문 카드를 만드는 중… (생성 → 근거 대조 → 모든 카드를 그려 넘침 재기 → 자기 평가)" />}
+
+      {bodyResult?.status === 'failed' && (
+        <section className="card">
+          <p className="status error">본문을 만들지 못했어요(재작성 {bodyResult.rewrites}번 뒤에도 규칙 위반). 다른 표지를 고르거나 다시 시도하세요.</p>
+          <ul className="small">
+            {bodyResult.errors.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {bodyResult?.status === 'needs_edit' && (
+        <section className="card">
+          <h2>넘친 칸 직접 줄이기</h2>
+          <p className="note small">재작성 {bodyResult.rewrites}번 뒤에도 아래 칸이 틀을 넘쳐요. 직접 줄이면 다시 그려서 저장해요(줄이기 전엔 저장하지 않아요).</p>
+          {bodyResult.overflows.map((o) => {
+            const m = /^cards\.(\d+)/.exec(o.where);
+            const card = m ? bodyResult.draft.cards[Number(m[1])] : null;
+            const isClosing = o.where.startsWith('closing');
+            const field = isClosing ? 'headline' : o.slot === 'title' ? 'title' : 'text';
+            const where = isClosing ? 'closing' : `cards.${m?.[1]}`;
+            const key = `${where}|${field}`;
+            const initial = isClosing ? bodyResult.draft.closing.headline : field === 'title' ? card?.title : card?.text;
+            return (
+              <div key={o.where} className="editor">
+                <p className="small">
+                  <strong>{isClosing ? '마무리' : `${Number(m?.[1]) + 2}번 카드`}</strong> — {o.message}
+                </p>
+                <textarea rows={field === 'text' ? 6 : 2} value={edits[key] ?? initial ?? ''} onChange={(e) => setEdits({ ...edits, [key]: e.target.value })} />
+              </div>
+            );
+          })}
+          <div className="actions">
+            <button type="button" className="primary" disabled={busy || Object.keys(edits).length === 0} onClick={() => void finish()}>
+              줄여서 저장
+            </button>
+          </div>
+          <div className="frames">
+            {bodyResult.previews.map((p) => (
+              <figure key={p.where} className={p.png ? 'frame' : 'frame bad'}>
+                {p.png ? <img src={p.png} alt={p.where} /> : <div className="noimg">넘침</div>}
+                <figcaption className="small">{p.where}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {viewSet !== null && (
+        <section className="card">
+          <h2>카드 세트 #{viewSet}</h2>
+          <SetView setId={viewSet} />
+        </section>
+      )}
+
+      {state.sets.length > 0 && (
+        <section className="card history">
+          <h2>만든 세트</h2>
+          <ul>
+            {state.sets.map((s) => (
+              <li key={s.id}>
+                #{s.id} · {s.cover.replace(/\*\*/g, '').replace(/\n/g, ' ')} · 본문 {s.bodyCount}장 · {s.createdAt}
+                <button type="button" onClick={() => setViewSet(s.id)}>
+                  보기
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </>
+  );
+}

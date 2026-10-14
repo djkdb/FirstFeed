@@ -122,3 +122,11 @@ h4 { margin: 18px 0 8px; font-size: 14px; }
 .frame img{width:100%;display:block;border-radius:6px;border:1px solid #0002}
 .frame.bad img{outline:3px solid var(--error)}
 .noimg{aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#f0f0ee;color:var(--muted);border-radius:6px;font-size:13px}
+
+/* 만들기 — 기능 확인용 최소 모양 */
+label.block{display:block;margin:10px 0}
+label.block textarea,label.block input{display:block;width:100%;margin-top:4px;font:inherit}
+.pick-cover{padding:0;border:0;background:none;cursor:pointer;width:100%}
+.pick-cover img{width:100%;display:block;border-radius:6px}
+.pick-cover:hover img{outline:3px solid var(--text)}
+.frame pre{white-space:pre-wrap;font-size:11px}

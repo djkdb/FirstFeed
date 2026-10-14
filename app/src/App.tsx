@@ -5,14 +5,15 @@ import { SmokeTest } from './SmokeTest.tsx';
 import { IdentityPage } from './identity/IdentityPage.tsx';
 import { BrandPage } from './brand/BrandPage.tsx';
 import { TemplatePage } from './templates/TemplatePage.tsx';
+import { MakePage } from './cards/MakePage.tsx';
 
 type ServerState =
   | { kind: 'checking' }
   | { kind: 'ok'; brandName: string | null }
   | { kind: 'error'; message: string };
 
-type Tab = 'identity' | 'brand' | 'template' | 'check';
-const TABS: Tab[] = ['identity', 'brand', 'template', 'check'];
+type Tab = 'identity' | 'brand' | 'template' | 'make' | 'check';
+const TABS: Tab[] = ['identity', 'brand', 'template', 'make', 'check'];
 const tabFromHash = (): Tab => TABS.find((t) => window.location.hash === `#/${t}`) ?? 'identity';
 
 export function App() {
@@ -53,6 +54,9 @@ export function App() {
           <a href="#/template" className={tab === 'template' ? 'on' : ''}>
             템플릿
           </a>
+          <a href="#/make" className={tab === 'make' ? 'on' : ''}>
+            만들기
+          </a>
           <a href="#/check" className={tab === 'check' ? 'on' : ''}>
             점검
           </a>
@@ -66,6 +70,7 @@ export function App() {
       {tab === 'identity' && <IdentityPage />}
       {tab === 'brand' && <BrandPage />}
       {tab === 'template' && <TemplatePage />}
+      {tab === 'make' && <MakePage />}
       {tab === 'check' && (
         <>
           <section className="card" aria-live="polite">

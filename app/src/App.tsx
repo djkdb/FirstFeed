@@ -4,14 +4,16 @@ import { AiConnection } from './AiConnection.tsx';
 import { SmokeTest } from './SmokeTest.tsx';
 import { IdentityPage } from './identity/IdentityPage.tsx';
 import { BrandPage } from './brand/BrandPage.tsx';
+import { TemplatePage } from './templates/TemplatePage.tsx';
 
 type ServerState =
   | { kind: 'checking' }
   | { kind: 'ok'; brandName: string | null }
   | { kind: 'error'; message: string };
 
-type Tab = 'identity' | 'brand' | 'check';
-const tabFromHash = (): Tab => (window.location.hash === '#/check' ? 'check' : window.location.hash === '#/brand' ? 'brand' : 'identity');
+type Tab = 'identity' | 'brand' | 'template' | 'check';
+const TABS: Tab[] = ['identity', 'brand', 'template', 'check'];
+const tabFromHash = (): Tab => TABS.find((t) => window.location.hash === `#/${t}`) ?? 'identity';
 
 export function App() {
   const [server, setServer] = useState<ServerState>({ kind: 'checking' });
@@ -48,6 +50,9 @@ export function App() {
           <a href="#/brand" className={tab === 'brand' ? 'on' : ''}>
             브랜드
           </a>
+          <a href="#/template" className={tab === 'template' ? 'on' : ''}>
+            템플릿
+          </a>
           <a href="#/check" className={tab === 'check' ? 'on' : ''}>
             점검
           </a>
@@ -60,6 +65,7 @@ export function App() {
       )}
       {tab === 'identity' && <IdentityPage />}
       {tab === 'brand' && <BrandPage />}
+      {tab === 'template' && <TemplatePage />}
       {tab === 'check' && (
         <>
           <section className="card" aria-live="polite">

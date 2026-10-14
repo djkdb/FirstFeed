@@ -115,3 +115,10 @@ h4 { margin: 18px 0 8px; font-size: 14px; }
 .profile-image { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
 .avatar { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; display: block; border: 1px solid #0001; }
 .avatar.empty { display: flex; align-items: center; justify-content: center; background: #f0f0ee; color: var(--muted); }
+
+/* 템플릿 — 기능 확인용 최소 모양 */
+.frames{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:start}
+.frame{margin:0}
+.frame img{width:100%;display:block;border-radius:6px;border:1px solid #0002}
+.frame.bad img{outline:3px solid var(--error)}
+.noimg{aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;background:#f0f0ee;color:var(--muted);border-radius:6px;font-size:13px}

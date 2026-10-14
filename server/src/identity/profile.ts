@@ -33,7 +33,8 @@ export interface VerifiedEvidence {
   quote: string;
   source: string;
   sourceLabel: string;
-  countsAsUserInput: boolean;
+  /** primary(설문·직접 입력) 또는 supporting(선택지를 고른 답 — 화면에 「보조 근거」) */
+  weight: 'primary' | 'supporting';
 }
 export interface VerifiedPillar {
   name: string;
@@ -70,14 +71,24 @@ export function checkEvidence(ev: { quote: string; source: string }, ctx: Profil
   return { ok: true, source: src };
 }
 
-/** 축 하나의 유효한 근거: 원문 대조를 통과하고, 사용자가 직접 입력한 답에서 온 것 */
+/**
+ * 축 하나의 유효한 근거: 원문 대조를 통과한 인용 중 주 근거(설문·직접 입력)가 하나라도 있어야 한다.
+ * 주 근거가 있으면 보조 근거(선택지를 고른 답)도 함께 남기고, 없으면 축 전체가 근거 없음([]).
+ */
 export function validEvidence(p: ProfileDraft['pillars'][number], ctx: ProfileContext): VerifiedEvidence[] {
   const out: VerifiedEvidence[] = [];
   for (const ev of p.evidence) {
     const c = checkEvidence(ev, ctx);
-    if (c.ok && c.source.countsAsUserInput) out.push({ quote: ev.quote, source: ev.source, sourceLabel: c.source.label, countsAsUserInput: true });
+    if (c.ok && c.source.weight !== 'none') out.push({ quote: ev.quote, source: ev.source, sourceLabel: c.source.label, weight: c.source.weight });
   }
-  return out;
+  return out.some((e) => e.weight === 'primary') ? out : [];
+}
+
+/** 원문 대조는 통과했지만 주 근거가 없을 때, 무엇만으로 근거를 댔는지 (규칙 코드·화면 이유에 쓴다) */
+function weakOnlyKind(p: ProfileDraft['pillars'][number], ctx: ProfileContext): 'choice' | 'example' | null {
+  const found = p.evidence.map((ev) => checkEvidence(ev, ctx)).filter((c): c is Extract<EvidenceCheck, { ok: true }> => c.ok);
+  if (found.length === 0 || found.some((c) => c.source.weight === 'primary')) return null;
+  return found.some((c) => c.source.weight === 'supporting') ? 'choice' : 'example';
 }
 
 export function profileRules(ctx: ProfileContext): Rule<ProfileDraft>[] {
@@ -91,19 +102,27 @@ export function profileRules(ctx: ProfileContext): Rule<ProfileDraft>[] {
           return c.ok ? [] : [{ level: 'error', code: c.code, where: `pillars.${i}.evidence.${j}`, message: c.message, from: 'rule' }];
         }),
       ),
-    // 직접 입력한 근거가 하나도 없는 축 (예시를 그대로 고른 답만으로 근거를 대는 축 포함)
+    // 주 근거(설문·직접 입력)가 하나도 없는 축 — 예시를 그대로 고른 답이나 선택지를 고른 답만으로 근거를 대는 축
     (d) =>
       d.pillars.flatMap((p, i): Issue[] => {
-        const found = p.evidence.filter((ev) => checkEvidence(ev, ctx).ok);
-        if (found.length === 0 || validEvidence(p, ctx).length > 0) return [];
+        const weak = weakOnlyKind(p, ctx);
+        if (weak === null) return [];
         return [
-          {
-            level: 'error',
-            code: 'example_only_evidence',
-            where: `pillars.${i}`,
-            message: `축 "${p.name}" 의 근거가 예시 답을 그대로 고른 답뿐입니다. 사용자가 직접 쓴 답에서 인용하거나 이 축을 빼세요.`,
-            from: 'rule',
-          },
+          weak === 'choice'
+            ? {
+                level: 'error',
+                code: 'choice_only_evidence',
+                where: `pillars.${i}`,
+                message: `축 "${p.name}" 의 근거가 선택지를 고른 답뿐입니다. 선택지는 보조 근거라, 사용자가 직접 쓴 답이나 설문 답을 함께 인용하거나 이 축을 빼세요.`,
+                from: 'rule',
+              }
+            : {
+                level: 'error',
+                code: 'example_only_evidence',
+                where: `pillars.${i}`,
+                message: `축 "${p.name}" 의 근거가 예시 답을 그대로 고른 답뿐입니다. 사용자가 직접 쓴 답에서 인용하거나 이 축을 빼세요.`,
+                from: 'rule',
+              },
         ];
       }),
     // 축끼리 겹침
@@ -163,7 +182,7 @@ export type ProfileOutcome =
   /** 구제할 수 없는 실패 (축 겹침·지어낸 숫자 등이 남음) */
   | { kind: 'failed'; errors: Issue[] };
 
-const EVIDENCE_CODES = new Set(['unknown_source', 'quote_too_short', 'label_only_quote', 'quote_not_in_source', 'example_only_evidence']);
+const EVIDENCE_CODES = new Set(['unknown_source', 'quote_too_short', 'label_only_quote', 'quote_not_in_source', 'example_only_evidence', 'choice_only_evidence']);
 
 function pillarIndexOf(where: string | undefined): number | null {
   const m = /^pillars\.(\d+)/.exec(where ?? '');
@@ -184,12 +203,13 @@ export function salvage(draft: ProfileDraft, errors: Issue[], ctx: ProfileContex
       kept.push({ name: p.name, description: p.description, evidence });
       return;
     }
-    const usedExample = p.evidence.some((ev) => {
-      const c = checkEvidence(ev, ctx);
-      return c.ok && !c.source.countsAsUserInput;
-    });
+    const weak = weakOnlyKind(p, ctx);
     droppedIdx.add(i);
-    dropped.push({ name: p.name, description: p.description, reason: usedExample ? '예시를 고른 답만 근거로 댐' : '답에서 찾을 수 있는 인용이 없음' });
+    dropped.push({
+      name: p.name,
+      description: p.description,
+      reason: weak === 'choice' ? '선택지를 고른 답만 근거로 댐' : weak === 'example' ? '예시를 고른 답만 근거로 댐' : '답에서 찾을 수 있는 인용이 없음',
+    });
   });
 
   // 근거 문제는 축을 빼거나 무효 인용을 덜어 내면 사라진다. 그 밖의 문제는 빠지는 축에 속할 때만 함께 사라진다

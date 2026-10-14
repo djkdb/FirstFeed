@@ -4,6 +4,7 @@ import { SURVEY, surveyAnswerText, type SurveyAnswers } from './survey.ts';
 
 /** text: 직접 입력 / example: 예시를 그대로 보냄 / choice: 선택지를 고름 / unknown: 잘 모르겠어요 */
 export type AnswerKind = 'text' | 'example' | 'choice' | 'unknown';
+export type EvidenceWeight = 'primary' | 'supporting' | 'none';
 
 export interface EvidenceSource {
   id: string; // S2, A3 …
@@ -15,7 +16,14 @@ export interface EvidenceSource {
   /** 설문 라벨 — 라벨만 인용한 것은 근거가 아니므로 가려내려고 */
   surveyLabel?: string;
   kind: 'survey' | AnswerKind;
-  /** "사용자가 직접 입력한 문장" 근거로 셀 수 있는가. 예시를 그대로 보낸 답은 AI 문장이라 아니다 */
+  /**
+   * 근거로서의 무게 (CLAUDE.md 결정 2026-10-14):
+   *  - primary: 설문 답·직접 입력 — 이것 하나로 축의 근거가 된다
+   *  - supporting: 모름 뒤 선택지를 고른 답 — 선택지도 AI 가 쓴 문장이라, 다른 주 근거와 함께일 때만 센다
+   *  - none: 예시를 그대로 보낸 답 — AI 가 쓴 문장이라 근거로 세지 않는다
+   */
+  weight: EvidenceWeight;
+  /** "사용자가 직접 입력한 문장"(허용 출처 4) — 숫자·영문 대조에 쓴다. 주 근거만 해당 */
   countsAsUserInput: boolean;
   question?: string;
 }
@@ -46,7 +54,15 @@ export function buildSources(survey: SurveyAnswers, turns: TurnLike[]): Evidence
     // 대조 원문은 프롬프트에 보이는 줄과 같은 "라벨: 답" 문장이어야 한다. 예전에는 답 글자만 넣어서, 보이는 줄 그대로 인용하면
     // quote_not_in_source, 짧은 답만 인용하면 quote_too_short 가 되는 어긋남이 있었다 (devlog 2026-10-14-01)
     if (answer) {
-      out.push({ id: q.id, label: `설문 ${q.id} ${q.label}`, text: `${q.label}: ${answer}`, surveyLabel: q.label, kind: 'survey', countsAsUserInput: true });
+      out.push({
+        id: q.id,
+        label: `설문 ${q.id} ${q.label}`,
+        text: `${q.label}: ${answer}`,
+        surveyLabel: q.label,
+        kind: 'survey',
+        weight: 'primary',
+        countsAsUserInput: true,
+      });
     }
   }
   for (const t of turns) {
@@ -57,7 +73,8 @@ export function buildSources(survey: SurveyAnswers, turns: TurnLike[]): Evidence
       label: `인터뷰 ${t.turnNo}번 답${suffix}`,
       text: t.answer,
       kind: t.answerKind,
-      countsAsUserInput: t.answerKind !== 'example',
+      weight: t.answerKind === 'example' ? 'none' : t.answerKind === 'choice' ? 'supporting' : 'primary',
+      countsAsUserInput: t.answerKind === 'text',
       question: t.question,
     });
   }
@@ -69,7 +86,12 @@ export function formatSourcesForPrompt(sources: EvidenceSource[]): string {
   return sources
     .map((s) => {
       if (s.kind === 'survey') return `[${s.id}] ${s.text}`;
-      const mark = s.kind === 'example' ? ' (※ 예시 답을 그대로 고른 것 — 근거로 인용하지 말 것)' : s.kind === 'choice' ? ' (선택지를 고른 답)' : '';
+      const mark =
+        s.kind === 'example'
+          ? ' (※ 예시 답을 그대로 고른 것 — 근거로 인용하지 말 것)'
+          : s.kind === 'choice'
+            ? ' (※ 선택지를 고른 답 — 보조 근거, 이것만으로는 근거가 되지 않음)'
+            : '';
       return `[${s.id}] 질문: ${s.question}\n     답${mark}: ${s.text}`;
     })
     .join('\n');

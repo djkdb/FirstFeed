@@ -30,7 +30,11 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
             <p>{p.description}</p>
             {p.evidence.map((e, i) => (
               <blockquote key={i}>
-                “{e.quote}”<span className="source">{e.sourceLabel}</span>
+                “{e.quote}”
+                <span className="source">
+                  {e.sourceLabel}
+                  {e.weight === 'supporting' && <span className="tag">보조 근거</span>}
+                </span>
               </blockquote>
             ))}
           </div>

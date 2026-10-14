@@ -6,6 +6,7 @@ import path from 'node:path';
 import { getSetting } from '../../config.ts';
 import { runProcess } from '../../lib/process.ts';
 import { AiError, type AiProvider, type ProviderRunInput, type ProviderRunOutput, type ProviderStatus } from '../types.ts';
+import { sleptNote, startStopwatch } from '../../lib/sleep-clock.ts';
 
 export interface ClaudeCodeOptions {
   /** 실행 파일 이름(테스트·다른 설치 위치용) */
@@ -218,19 +219,22 @@ export class ClaudeCodeProvider implements AiProvider {
       ];
       if (imageNames.length > 0) args.push('--add-dir', tmp);
 
-      const started = Date.now();
+      const sw = startStopwatch();
       const r = await runProcess(this.bin, args, { cwd, stdin: prompt, timeoutMs: input.timeoutMs, signal: input.signal, env: subscriptionEnv() });
-      const durationMs = Date.now() - started;
+      const durationMs = sw.wallMs();
 
       if (r.notFound) {
         throw new AiError('not_installed', 'Claude Code 를 찾지 못했습니다.', 'Claude Code 를 설치한 뒤 설정의 「AI 연결」에서 [다시 확인]을 누르세요.');
       }
       if (r.aborted) throw new AiError('cancelled', 'AI 호출을 취소했습니다.', '필요하면 다시 실행하세요.');
       if (r.timedOut) {
+        const slept = sw.sleptMs();
         throw new AiError(
           'timeout',
-          `AI 응답이 제한 시간(${Math.round(input.timeoutMs / 1000)}초) 안에 오지 않았습니다.`,
-          '잠시 뒤 다시 시도하세요. 계속 반복되면 설정에서 제한 시간을 늘리거나 더 빠른 모델(sonnet)을 고르세요.',
+          `AI 응답이 제한 시간(${Math.round(input.timeoutMs / 1000)}초) 안에 오지 않았습니다.${sleptNote(slept)}`,
+          slept > 0
+            ? '중간에 컴퓨터가 잠자기에 들어갔습니다. 덮개를 연 채(전원 연결 권장)로 다시 시도하세요.'
+            : '잠시 뒤 다시 시도하세요. 계속 반복되면 설정에서 제한 시간을 늘리거나 더 빠른 모델(sonnet)을 고르세요.',
         );
       }
       let env: ResultEnvelope;

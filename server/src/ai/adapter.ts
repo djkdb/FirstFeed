@@ -8,6 +8,7 @@ import type { Db } from '../db/index.ts';
 import { extractJson, type ExtractVia } from './extract.ts';
 import { loadPrompt } from './prompts.ts';
 import { AiError, type AiProvider, type AiRequest } from './types.ts';
+import { sleptNote, startStopwatch } from '../lib/sleep-clock.ts';
 
 export type RunKind = 'generate' | 'json_retry' | 'rewrite' | 'review';
 export type RunStatus = 'ok' | 'invalid_json' | 'schema_error' | 'rule_error' | 'failed' | 'timeout' | 'cancelled' | 'blocked';
@@ -170,7 +171,7 @@ export class AiService {
         const prompt = retry === 0 ? req.prompt : `${req.prompt}\n\n${loadPrompt(this.db, '_system/json_retry', { error: lastError }).text}`;
         ctx.attempt++;
         const startedAt = new Date().toISOString();
-        const started = Date.now();
+        const sw = startStopwatch();
         const base = { job: ctx, task: req.task, model, kind: runKind, startedAt, promptRef: req.promptRef };
 
         try {
@@ -193,7 +194,7 @@ export class AiService {
           });
         } catch (err) {
           const e = err instanceof AiError ? err : new AiError('cli_failed', String(err), '오류 내용을 확인한 뒤 다시 실행하세요.', { cause: err });
-          this.log({ ...base, status: statusOf(e), error: e.message, durationMs: Date.now() - started });
+          this.log({ ...base, status: statusOf(e), error: e.message, durationMs: sw.wallMs(), sleptMs: sw.sleptMs() });
           throw e;
         } finally {
           this.limiter.release();
@@ -204,17 +205,17 @@ export class AiService {
         if (!extracted.ok) {
           lastError = extracted.error;
           lastKind = 'invalid_json';
-          this.log({ ...base, model: usedModel, status: 'invalid_json', error: lastError, durationMs: out.durationMs });
+          this.log({ ...base, model: usedModel, status: 'invalid_json', error: lastError, durationMs: out.durationMs, sleptMs: sw.sleptMs() });
           continue;
         }
         const parsed = req.schema.safeParse(extracted.value);
         if (!parsed.success) {
           lastError = `스키마에 맞지 않음:\n${describeZodError(parsed.error)}`;
           lastKind = 'schema_error';
-          this.log({ ...base, model: usedModel, status: 'schema_error', error: lastError, durationMs: out.durationMs });
+          this.log({ ...base, model: usedModel, status: 'schema_error', error: lastError, durationMs: out.durationMs, sleptMs: sw.sleptMs() });
           continue;
         }
-        const runId = this.log({ ...base, model: usedModel, status: 'ok', error: null, durationMs: out.durationMs });
+        const runId = this.log({ ...base, model: usedModel, status: 'ok', error: null, durationMs: out.durationMs, sleptMs: sw.sleptMs() });
         return { data: parsed.data, runId, jobId: ctx.jobId, model: usedModel, via: extracted.via, durationMs: out.durationMs };
       }
       throw new AiError(
@@ -240,6 +241,8 @@ export class AiService {
     status: RunStatus;
     error: string | null;
     durationMs: number;
+    /** 그중 컴퓨터가 잠들어 있던 시간 — 로그에만 보인다 (duration_ms 는 벽시계 그대로) */
+    sleptMs?: number;
     startedAt: string;
     promptRef?: { name: string; version: string };
   }): number {
@@ -264,7 +267,7 @@ export class AiService {
         new Date().toISOString(),
       );
     const tag = r.status === 'ok' ? '성공' : r.status;
-    console.log(`[AI] ${r.task} #${r.job.attempt} ${r.kind} → ${tag} (${r.model}, ${(r.durationMs / 1000).toFixed(1)}초)${r.error ? ` — ${r.error.split('\n')[0]}` : ''}`);
+    console.log(`[AI] ${r.task} #${r.job.attempt} ${r.kind} → ${tag} (${r.model}, ${(r.durationMs / 1000).toFixed(1)}초${sleptNote(r.sleptMs ?? 0)})${r.error ? ` — ${r.error.split('\n')[0]}` : ''}`);
     return Number(res.lastInsertRowid);
   }
 }

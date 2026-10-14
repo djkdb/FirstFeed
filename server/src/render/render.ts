@@ -67,6 +67,9 @@ export async function withCardPage<T>(
   const context = await browser.newContext({ viewport: { width: input.width, height: input.height }, deviceScaleFactor: 1 });
   try {
     const page = await context.newPage();
+    // tsx(esbuild keepNames)로 돌 때는 함수 안에 __name(...) 도우미가 끼어 들어가는데, page.evaluate 로 브라우저에 넘긴
+    // 함수에는 그 도우미가 없어 ReferenceError 가 난다 — 개발 서버(npm run dev)에서만 실제로 겪음(테스트·node 실행은 안 끼움)
+    await page.addInitScript('globalThis.__name = globalThis.__name || ((f) => f);');
     // 네트워크로 나가지 않는다: 카드 HTML 과 폰트 파일만 디스크에서 채우고 나머지 요청은 막는다
     await page.route('**/*', async (route) => {
       const url = route.request().url();

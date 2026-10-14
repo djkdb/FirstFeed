@@ -1,6 +1,9 @@
 // 렌더링·측정 통합 테스트 — 실제 브라우저(기준: Playwright Chromium)로 그린다.
 // 브라우저가 없으면 건너뛰고 이유를 남긴다(설치: npx playwright install chromium)
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { env } from '../config.ts';
 import { closeBrowser, getBrowser, type BrowserInfo } from './browser.ts';
 import { fontFaceCss } from './fonts-css.ts';
 import { renderCard } from './render.ts';
@@ -124,5 +127,11 @@ describe('HTML → PNG 렌더링과 넘침 측정', () => {
     expect(codes(r)).toEqual(
       expect.arrayContaining(['title:text_overlap', 'foot:text_overlap', 'title:text_outside_safe', 'sub:text_outside_safe']),
     );
+  });
+
+  it('개발 서버처럼 tsx 로 돌아도 측정 함수가 브라우저에서 돈다 (esbuild 의 __name 도우미 — 개발 서버에서만 실제로 겪음)', () => {
+    if (!info) return;
+    const out = execFileSync(path.join(env.repoRoot, 'node_modules/.bin/tsx'), [path.join(env.repoRoot, 'server/src/render/testing/tsx-render.ts')], { encoding: 'utf8' });
+    expect(JSON.parse(out.trim().split('\n').at(-1)!)).toEqual({ ok: true, problems: [] });
   });
 });

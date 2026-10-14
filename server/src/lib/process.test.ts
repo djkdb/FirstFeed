@@ -33,8 +33,18 @@ describe('하위 프로세스 실행', () => {
     const r = await p;
     expect(r.aborted).toBe(true);
     const grandchild = Number(r.stdout.trim());
-    await new Promise((r) => setTimeout(r, 300));
-    expect(() => process.kill(grandchild, 0)).toThrow(); // 살아 있으면 throw 하지 않는다
+    expect(grandchild).toBeGreaterThan(0);
+    // 여러 테스트가 동시에 돌면 신호 처리가 늦을 수 있어 고정 대기 대신 최대 3초까지 확인한다
+    const alive = () => {
+      try {
+        process.kill(grandchild, 0); // 살아 있으면 throw 하지 않는다
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    for (let i = 0; i < 30 && alive(); i++) await new Promise((r) => setTimeout(r, 100));
+    expect(alive()).toBe(false);
   });
 });
 

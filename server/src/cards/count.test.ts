@@ -38,4 +38,10 @@ describe('개수 표현 찾기 (표지 ↔ 본문 카드 수)', () => {
     expect(countMismatch(['3분 만에 끝내는 설정'], 4)).toBeNull();
     expect(countMismatch(['3가지 방법과 5개 앱'], 3)).toContain('"5개"');
   });
+
+  it('소재 원문에 그대로 있는 개수 표현은 소재의 사실이라 카드 수와 비교하지 않는다 — 측정에서 나온 "항목 30개" 오탐', () => {
+    const src = ['자주 틀리는 항목 30개를 따로 정리해 넣은 뒤 88%까지 올랐다.'];
+    expect(countMismatch(['영수증 기능 고친 이야기', '자주 틀리는 항목 30개를 정리했더니'], 5, src)).toBeNull();
+    expect(countMismatch(['고친 4가지', '항목 30개 정리'], 5, src)).toContain('"4가지"');
+  });
 });

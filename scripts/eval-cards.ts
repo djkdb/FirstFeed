@@ -13,7 +13,7 @@ import { closeBrowser } from '../server/src/render/browser.ts';
 import { startStopwatch } from '../server/src/lib/sleep-clock.ts';
 import { findUngrounded } from '../server/src/rules/grounding.ts';
 import { cardContext } from '../server/src/cards/context.ts';
-import { countClaims } from '../server/src/cards/count.ts';
+import { cardCountClaims, countClaims } from '../server/src/cards/count.ts';
 import { generateCovers, reasonOf, type CoversResult } from '../server/src/cards/covers.ts';
 import { generateBody, type BodyResult } from '../server/src/cards/body.ts';
 import { getSet, rendersDir } from '../server/src/cards/store.ts';
@@ -106,7 +106,7 @@ for (const [setKey, dir, setLabel] of SETS) {
             for (const u of findUngrounded(plain, { ...ctx.grounding, structural: c.kind === 'cover' ? [] : [bodyCount] }, ctx.commonTerms)) row.ungrounded.push(`${c.idx + 1}번 "${u.value}"`);
             row.cardsText.push(`${c.idx + 1}. [${c.kind}] ${t.replace(/\n/g, ' ⏎ ')}${c.evidence ? `  ← 근거: "${c.evidence}"` : ''}${c.image ? `  🖼 ${c.image.prompt}` : ''}`);
           }
-          const claims = countClaims(`${first.headline}\n${first.sub ?? ''}`);
+          const claims = cardCountClaims([first.headline, first.sub ?? ''], [text]);
           row.countOk = claims.length ? claims.every((cl) => cl.value === bodyCount) : null;
         }
       } catch (err) {

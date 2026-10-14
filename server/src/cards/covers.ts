@@ -10,7 +10,7 @@ import type { Issue, Rule } from '../rules/types.ts';
 import { renderFrame } from '../templates/render-frame.ts';
 import type { CoverContent } from '../templates/types.ts';
 import { cardContext, estimatedLines, profileBlock, type CardContext } from './context.ts';
-import { countClaims, countMismatch } from './count.ts';
+import { cardCountClaims, countClaims, countMismatch } from './count.ts';
 
 export const CoversSchema = z.object({
   titles: z
@@ -50,10 +50,10 @@ export function coverRules(c: CardContext, requested: number | null): Rule<Cover
         if (t.sub && sub?.maxLines && estimatedLines(t.sub, sub.charsPerLine) > sub.maxLines)
           out.push(issue(i, 'too_long_for_template', `부제가 템플릿 기준(한 줄 약 ${sub.charsPerLine}자 × ${sub.maxLines}줄)보다 깁니다.`));
         if (requested) {
-          const m = countMismatch([t.headline, t.sub ?? ''], requested);
+          const m = countMismatch([t.headline, t.sub ?? ''], requested, c.grounding.source);
           if (m) out.push(issue(i, 'count_mismatch', m));
         } else {
-          const values = new Set(countClaims(`${t.headline}\n${t.sub ?? ''}`).map((x) => x.value));
+          const values = new Set(cardCountClaims([t.headline, t.sub ?? ''], c.grounding.source).map((x) => x.value));
           if (values.size > 1) out.push(issue(i, 'count_mismatch', `개수 표현이 서로 다릅니다(${[...values].join('·')}). 하나로 맞추세요.`));
           else if ([...values].some((v) => v < min || v > max)) out.push(issue(i, 'count_mismatch', `개수 표현은 본문 카드 수가 되므로 ${min}~${max} 사이여야 합니다.`));
         }

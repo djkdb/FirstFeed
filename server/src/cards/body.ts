@@ -14,7 +14,7 @@ import type { Issue, Rule } from '../rules/types.ts';
 import { renderFrame, type FrameResult } from '../templates/render-frame.ts';
 import type { BodyContent, ClosingContent, CoverContent, FrameContent } from '../templates/types.ts';
 import { cardContext, estimatedLines, profileBlock, type CardContext } from './context.ts';
-import { countClaims, countMismatch } from './count.ts';
+import { cardCountClaims, countMismatch } from './count.ts';
 import { reasonOf } from './covers.ts';
 import { saveSet, type CardToSave } from './store.ts';
 
@@ -49,8 +49,8 @@ export interface ChosenCover {
 const issue = (where: string, code: string, message: string): Issue => ({ level: 'error', code, where, message, from: 'rule' });
 
 /** 본문 카드 수: 표지의 개수 표현 > 사용자가 정한 수 > 없음(범위 안에서 AI) */
-export function targetCount(cover: ChosenCover, requested: number | null): number | null {
-  const claims = countClaims(`${cover.headline}\n${cover.sub ?? ''}`);
+export function targetCount(cover: ChosenCover, requested: number | null, sources: string[] = []): number | null {
+  const claims = cardCountClaims([cover.headline, cover.sub ?? ''], sources);
   return claims[0]?.value ?? requested;
 }
 
@@ -77,7 +77,7 @@ export function fixedRules(c: CardContext, cover: ChosenCover, count: number | n
       const out: Issue[] = [];
       if (count !== null && d.cards.length !== count) out.push(issue('cards', 'count_mismatch', `본문 카드가 ${d.cards.length}장입니다. 표지와 맞춰 정확히 ${count}장이어야 합니다.`));
       if (count === null && (d.cards.length < min || d.cards.length > max)) out.push(issue('cards', 'count_mismatch', `본문 카드는 ${min}~${max}장이어야 합니다(지금 ${d.cards.length}장).`));
-      const m = countMismatch([cover.headline, cover.sub ?? ''], d.cards.length);
+      const m = countMismatch([cover.headline, cover.sub ?? ''], d.cards.length, c.grounding.source);
       if (m && count === null) out.push(issue('cards', 'count_mismatch', m));
       if (!estimate) return out;
       d.cards.forEach((x, i) => {
@@ -189,7 +189,7 @@ function toSave(rendered: RenderedCard[], d: BodyOutput, editedWheres: Set<strin
 
 export async function generateBody(ai: AiService, brandId: number, input: BodyJobInput, job?: JobContext, dataDir = env.dataDir): Promise<BodyResult> {
   const c = cardContext(ai.db, brandId, input.sourceId, dataDir);
-  const count = targetCount(input.cover, input.requested);
+  const count = targetCount(input.cover, input.requested, c.grounding.source);
   const b = c.template.budget;
   const [min, max] = c.bodyRange;
   const prompt = loadPrompt(ai.db, 'card_body', {
@@ -301,7 +301,7 @@ export async function finishWithEdits(
     }
     edited.add(e.where);
   }
-  const count = targetCount(input.cover, input.requested);
+  const count = targetCount(input.cover, input.requested, c.grounding.source);
   const ruleProblems = fixedRules(c, input.cover, count, false).flatMap((r) => r(d));
   if (ruleProblems.length) return { status: 'needs_edit', overflows: [], problems: ruleProblems.map((p) => p.message) };
   const { rendered, issues } = await renderAll(ai, c, input.cover, d);

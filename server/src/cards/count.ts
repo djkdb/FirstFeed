@@ -25,9 +25,18 @@ export function countClaims(text: string): CountClaim[] {
   ];
 }
 
+/**
+ * 카드 수를 말하는 개수 표현만: 소재 원문에 그대로 있는 개수 표현("자주 틀리는 항목 30개")은 소재의 사실이지 카드 수가 아니라 뺀다.
+ * 측정(2026-10-15)에서 부제의 "항목 30개" 때문에 표지가 "개수는 3~7 이어야" 로 빠진 오탐을 보고 더했다
+ */
+export function cardCountClaims(texts: string[], sources: string[] = []): CountClaim[] {
+  const hay = sources.map((s) => s.replace(/\s/g, ''));
+  return texts.flatMap(countClaims).filter((c) => !hay.some((h) => h.includes(c.text.replace(/\s/g, ''))));
+}
+
 /** 표지 제목·부제의 개수 표현이 본문 카드 수와 다르면 문제 문구 (없으면 null) */
-export function countMismatch(texts: string[], bodyCount: number): string | null {
-  const claims = texts.flatMap(countClaims);
+export function countMismatch(texts: string[], bodyCount: number, sources: string[] = []): string | null {
+  const claims = cardCountClaims(texts, sources);
   const wrong = claims.filter((c) => c.value !== bodyCount);
   if (wrong.length === 0) return null;
   return `표지의 개수 표현 ${wrong.map((c) => `"${c.text.trim()}"`).join(', ')} 이 본문 카드 수(${bodyCount}장)와 다릅니다. 개수를 카드 수에 맞추거나 개수 표현을 빼세요.`;

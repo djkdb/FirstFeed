@@ -40,6 +40,16 @@ describe('HTML → PNG 렌더링과 넘침 측정', () => {
     expect(r.fontsUsed.every((f) => f.custom)).toBe(true);
   });
 
+  it('줄 간격을 좁힌 제목(고운바탕 line-height 1.06)은 글자 상자가 줄 상자보다 커도 넘침이 아니다 — 처음 측정에서 7~25px 거짓 넘침', async () => {
+    if (!info) return;
+    const html = page('<h1 class="t" style="top:300px;font-family:\'Gowun Batang\';line-height:1.06;font-size:124px" data-slot="title" data-max-lines="3">설정<br>5가지<br>3분이면 끝</h1>').replace(
+      '</style>',
+      `${fontFaceCss(['gowun-batang'])}</style>`,
+    );
+    const r = await renderCard(null, { html, width: W, height: H });
+    expect(codes(r)).toEqual([]);
+  });
+
   it('최대 줄 수를 넘으면 too_many_lines', async () => {
     if (!info) return;
     const r = await renderCard(null, {

@@ -3,6 +3,7 @@
 // - 캡처 직전에 실제로 쓰인 글꼴을 확인한다(Chromium DevTools 의 CSS.getPlatformFontsForNode). 대체 글꼴이면 PNG 를 만들지 않는다
 //   document.fonts.check() 는 쓰지 않는다 — 없는 글꼴에도 true 를 돌려줘서 대체 글꼴을 못 잡는다
 // - 템플릿 약속: 카드 루트 [data-card], 글 칸 [data-slot="이름"](data-max-lines), 겹치면 안 되는 상자 [data-box="이름"]
+//   글 칸이 들어가야 할 구역 [data-region] (높이가 정해지지 않은 칸은 구역 밖으로 나가면 넘침)
 import fs from 'node:fs';
 import { getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';

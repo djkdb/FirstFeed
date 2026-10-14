@@ -64,16 +64,28 @@ function measureInPage(opts: { width: number; height: number; safe: Rect | null 
   const card = { x: 0, y: 0, w: opts.width, h: opts.height };
   const slots = [...document.querySelectorAll<HTMLElement>('[data-slot]')].map((el) => {
     const rs = textRects(el);
-    const text = union(rs);
+    // 글자 조각의 높이는 폰트의 ascent+descent(내용 영역)라, line-height 를 좁게 준 제목에서는 줄 상자보다 위아래로 삐져나온다
+    // (고운바탕 등 실측 7~25px). 그 차이는 레이아웃이 자리를 잡은 것이 아니라서, 세로 범위는 줄 상자 기준으로 줄여서 본다
+    const lh = parseFloat(getComputedStyle(el).lineHeight);
+    const tallest = rs.length ? Math.max(...rs.map((r) => r.height)) : 0;
+    const over = Number.isFinite(lh) && tallest > lh ? (tallest - lh) / 2 : 0;
+    const raw = union(rs);
+    const text = raw ? { x: raw.x, y: raw.y + over, w: raw.w, h: Math.max(0, raw.h - 2 * over) } : null;
     const max = el.dataset.maxLines ? Number(el.dataset.maxLines) : null;
     return {
       slot: el.dataset.slot!,
       maxLines: max,
       lines: countLines(rs),
       overflowX: el.scrollWidth - el.clientWidth > 1,
-      overflowY: el.scrollHeight - el.clientHeight > 1,
+      // 스크롤 높이도 같은 삐져나옴을 포함한다 — 그만큼은 넘침으로 보지 않는다
+      overflowY: el.scrollHeight - el.clientHeight > 2 * over + 1,
       text,
-      outsideSlot: beyond(text, toRect(el.getBoundingClientRect())),
+      // 칸 자체를 넘거나, 칸이 속한 구역([data-region] — 예: 본문 가운데 칸) 밖으로 나간 정도 중 큰 값.
+      // 높이가 정해지지 않은 칸은 글이 길면 칸이 같이 자라서 칸 기준으로는 안 넘치므로 구역 기준이 필요하다
+      outsideSlot: Math.max(
+        beyond(text, toRect(el.getBoundingClientRect())),
+        el.parentElement?.closest('[data-region]') ? beyond(text, toRect(el.parentElement.closest('[data-region]')!.getBoundingClientRect())) : 0,
+      ),
       outsideCard: beyond(text, card),
       outsideSafe: opts.safe ? beyond(text, opts.safe) : 0,
     };

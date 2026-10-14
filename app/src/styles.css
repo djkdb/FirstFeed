@@ -92,3 +92,23 @@ h4 { margin: 18px 0 8px; font-size: 14px; }
 .directions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; margin: 8px 0; }
 .direction { border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-size: 14px; }
 .direction.failed { opacity: 0.7; }
+
+/* 브랜딩 키트 — 기능 확인용 최소 모양 */
+.pick { margin: 16px 0; }
+.pick h3, .card h3 { font-size: 15px; margin: 16px 0 6px; }
+.options { list-style: none; padding: 0; margin: 0 0 6px; }
+.options li { margin: 4px 0; }
+.option { text-align: left; font-size: 14px; }
+.option.on, .palette.on, .fontpair.on { outline: 2px solid var(--text); }
+.why { display: block; margin: 2px 0 0 4px; }
+.pre { white-space: pre-wrap; }
+.palettes, .fontpairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.palette, .fontpair { display: flex; flex-direction: column; gap: 6px; text-align: left; background: #fff; padding: 10px; }
+.swatches { display: flex; gap: 4px; }
+.swatch { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #0002; }
+.sample { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 8px; border: 1px solid #0001; font-size: 14px; }
+.sample-band { padding: 6px 8px; border-radius: 6px; }
+.font-title { font-size: 20px; }
+.font-body { font-size: 14px; }
+.prompts { padding-left: 18px; }
+.prompts pre { white-space: pre-wrap; font-size: 13px; background: #f6f6f4; padding: 8px; border-radius: 6px; }

@@ -3,14 +3,15 @@ import { api } from './api.ts';
 import { AiConnection } from './AiConnection.tsx';
 import { SmokeTest } from './SmokeTest.tsx';
 import { IdentityPage } from './identity/IdentityPage.tsx';
+import { BrandPage } from './brand/BrandPage.tsx';
 
 type ServerState =
   | { kind: 'checking' }
   | { kind: 'ok'; brandName: string | null }
   | { kind: 'error'; message: string };
 
-type Tab = 'identity' | 'check';
-const tabFromHash = (): Tab => (window.location.hash === '#/check' ? 'check' : 'identity');
+type Tab = 'identity' | 'brand' | 'check';
+const tabFromHash = (): Tab => (window.location.hash === '#/check' ? 'check' : window.location.hash === '#/brand' ? 'brand' : 'identity');
 
 export function App() {
   const [server, setServer] = useState<ServerState>({ kind: 'checking' });
@@ -44,6 +45,9 @@ export function App() {
           <a href="#/identity" className={tab === 'identity' ? 'on' : ''}>
             정체성
           </a>
+          <a href="#/brand" className={tab === 'brand' ? 'on' : ''}>
+            브랜드
+          </a>
           <a href="#/check" className={tab === 'check' ? 'on' : ''}>
             점검
           </a>
@@ -55,6 +59,7 @@ export function App() {
         </p>
       )}
       {tab === 'identity' && <IdentityPage />}
+      {tab === 'brand' && <BrandPage />}
       {tab === 'check' && (
         <>
           <section className="card" aria-live="polite">

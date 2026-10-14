@@ -112,3 +112,6 @@ h4 { margin: 18px 0 8px; font-size: 14px; }
 .font-body { font-size: 14px; }
 .prompts { padding-left: 18px; }
 .prompts pre { white-space: pre-wrap; font-size: 13px; background: #f6f6f4; padding: 8px; border-radius: 6px; }
+.profile-image { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.avatar { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; display: block; border: 1px solid #0001; }
+.avatar.empty { display: flex; align-items: center; justify-content: center; background: #f0f0ee; color: var(--muted); }

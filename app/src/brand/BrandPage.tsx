@@ -6,6 +6,7 @@ import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from './loadFonts.ts';
+import { ProfileImage } from './ProfileImage.tsx';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -335,7 +336,7 @@ export function BrandPage() {
             </div>
 
             <h3>그림 프롬프트</h3>
-            <p className="muted small">그림 생성 도구에 붙여 넣어 쓰세요.</p>
+            <p className="muted small">그림 생성 도구에 붙여 넣어 쓰세요. 만든 그림은 아래 「프로필 사진」에서 올리면 그대로 적용돼요.</p>
             <ul className="prompts">
               {visual.candidates.imagePrompts.map((p) => (
                 <li key={p.filename}>
@@ -352,6 +353,7 @@ export function BrandPage() {
         )}
       </section>
 
+      <ProfileImage selection={selection} fonts={fonts} save={save} />
     </>
   );
 }

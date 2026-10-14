@@ -19,6 +19,8 @@ export interface AppDeps {
   ai: AiService;
   /** 테스트에서 실제 CLI 대신 가짜 결과를 넣을 수 있게 주입받는다 */
   detect?: () => Promise<DetectResult>;
+  /** 올린 그림 등 데이터 폴더 (테스트는 임시 폴더) */
+  dataDir?: string;
 }
 
 const SmokeBody = z.object({ source: z.string().max(5000).optional() });
@@ -61,7 +63,7 @@ export function createApp(deps: AppDeps) {
     })
     .post('/api/ai/jobs/:jobId/cancel', (c) => c.json({ cancelled: jobs.cancel(c.req.param('jobId')) }))
     .route('/api/identity', identityRoutes(deps.ai, jobs))
-    .route('/api/brand', brandRoutes(deps.ai, jobs));
+    .route('/api/brand', brandRoutes(deps.ai, jobs, deps.dataDir));
   return app;
 }
 

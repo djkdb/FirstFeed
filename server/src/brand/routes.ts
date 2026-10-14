@@ -5,9 +5,11 @@ import { validator } from 'hono/validator';
 import { z } from 'zod';
 import type { AiService } from '../ai/adapter.ts';
 import type { JobStore } from '../ai/jobs.ts';
-import { getSetting } from '../config.ts';
+import fs from 'node:fs';
+import { env, getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { activeProfile } from '../identity/store.ts';
+import { AssetError, assetPath, MIME, saveAsset, type ImageType } from './assets.ts';
 import { FONTS, fontById } from './fonts.ts';
 import { contrastRatio, handleProblems, instagramLength, URL_IN_TEXT } from './limits.ts';
 import { currentSelection, latestKit, saveSelection, selectionHistory } from './store.ts';
@@ -50,7 +52,7 @@ export function brandLimits(db: Db) {
  * 고른 값(후보든 사용자가 고쳐 쓴 글이든) 검사 — 생성 규칙 중 "고정 규칙"만 다시 건다.
  * 지어낸 숫자·영문 같은 근거 규칙은 걸지 않는다: 사용자가 직접 쓴 글은 그 자체가 허용 출처(4번)다
  */
-export function selectionProblems(db: Db, p: SelectionPatch): string[] {
+export function selectionProblems(db: Db, p: SelectionPatch, dataDir: string): string[] {
   const l = brandLimits(db);
   const out: string[] = [];
   if (p.handle) out.push(...handleProblems(p.handle, l.handleMax).map((m) => `아이디: ${m}`));
@@ -75,11 +77,11 @@ export function selectionProblems(db: Db, p: SelectionPatch): string[] {
     if (!f) out.push(`${label} 폰트: 목록에 없는 폰트입니다.`);
     else if (!f.roles.includes(role)) out.push(`${label} 폰트: ${f.name} 은 ${label}용이 아닙니다.`);
   }
-  if (p.profileImage && !/^[a-z0-9-]+\.(png|jpg|jpeg|webp)$/.test(p.profileImage)) out.push('프로필 사진: 올린 파일 이름이 아닙니다.');
+  if (p.profileImage && !assetPath(dataDir, p.profileImage)) out.push('프로필 사진: 올린 파일을 찾지 못했습니다. 다시 올려 주세요.');
   return out;
 }
 
-export function brandRoutes(ai: AiService, jobs: JobStore) {
+export function brandRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir) {
   const db = ai.db;
   return new Hono()
     .get('/', (c) => {
@@ -102,7 +104,7 @@ export function brandRoutes(ai: AiService, jobs: JobStore) {
       validator('json', (value, c) => {
         const body = SelectionPatch.safeParse(value);
         if (!body.success) return c.json({ error: '고른 값의 형식이 맞지 않습니다. 화면을 새로고침한 뒤 다시 골라 주세요.' }, 400);
-        const problems = selectionProblems(db, body.data);
+        const problems = selectionProblems(db, body.data, dataDir);
         if (problems.length) return c.json({ error: problems.join(' ') }, 400);
         return body.data;
       }),
@@ -112,5 +114,22 @@ export function brandRoutes(ai: AiService, jobs: JobStore) {
         const id = saveSelection(db, BRAND_ID, activeProfile(db, BRAND_ID)?.id ?? null, patch);
         return c.json({ id, selection: currentSelection(db, BRAND_ID) });
       },
-    );
+    )
+    // 그림 올리기: 본문은 파일 그대로(바이트). 저장한 이름을 돌려주고, 적용은 /selection 으로 따로 한다
+    .post('/assets', async (c) => {
+      try {
+        const bytes = new Uint8Array(await c.req.arrayBuffer());
+        return c.json({ name: saveAsset(dataDir, bytes, getSetting(db, 'brand.maxUploadBytes')) });
+      } catch (err) {
+        if (err instanceof AssetError) return c.json({ error: `${err.message} ${err.hint}` }, 400);
+        throw err;
+      }
+    })
+    .get('/assets/:name', (c) => {
+      const name = c.req.param('name');
+      const p = assetPath(dataDir, name);
+      if (!p) return c.json({ error: '그림을 찾지 못했습니다.' }, 404);
+      const type = name.split('.').pop() as ImageType;
+      return c.body(fs.readFileSync(p), 200, { 'content-type': MIME[type], 'cache-control': 'no-store' });
+    });
 }

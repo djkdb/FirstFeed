@@ -107,6 +107,8 @@ export const DEFAULTS = {
   'brand.bioLinkReserve': 20,
   /** 글자/배경 최소 명암비 (FR-BR-2, WCAG AA 본문) */
   'brand.minContrast': 4.5,
+  /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
+  'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
    * 과제별 프롬프트 활성 버전. 없으면 v1.
    * self_review v2: 프로필의 축 겹침을 broken 으로 잡는다 (전후 측정 tests/results/2026-10-14-identity-v1-review-*.md, 결정 2026-10-14)

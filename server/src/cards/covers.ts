@@ -83,7 +83,7 @@ export interface CoversResult {
   templateVersionId: number;
   profileId: number;
   candidates: CoverCandidate[];
-  dropped: Array<{ headline: string; reasons: string[] }>;
+  dropped: Array<{ headline: string; sub: string | null; reasons: string[] }>;
   calls: number;
   rewrites: number;
   /** 재작성·뺀 후보의 사유를 갈래별로 (측정 표용) */
@@ -170,7 +170,7 @@ export async function generateCovers(
     const content = coverContent(c, t);
     const d = drawn.get(JSON.stringify(content));
     if (badIdx.has(i) || !d || errors.some((e) => indexOf(e) === null)) {
-      dropped.push({ headline: t.headline, reasons: errors.filter((e) => indexOf(e) === i || indexOf(e) === null).map((e) => `[${e.code}] ${e.message}`) });
+      dropped.push({ headline: t.headline, sub: t.sub, reasons: errors.filter((e) => indexOf(e) === i || indexOf(e) === null).map((e) => `[${e.code}] ${e.message}`) });
       continue;
     }
     if (candidates.length < show)

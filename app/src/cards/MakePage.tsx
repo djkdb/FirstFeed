@@ -17,7 +17,7 @@ interface Candidate {
 }
 interface CoversResult {
   candidates: Candidate[];
-  dropped: Array<{ headline: string; reasons: string[] }>;
+  dropped: Array<{ headline: string; sub: string | null; reasons: string[] }>;
   calls: number;
   rewrites: number;
 }
@@ -270,7 +270,8 @@ export function MakePage() {
               <ul>
                 {covers.dropped.map((d, i) => (
                   <li key={i}>
-                    <strong>{d.headline}</strong> — {d.reasons.join(' / ')}
+                    <strong>{d.headline}</strong>
+                    {d.sub && <span className="muted"> / 부제: {d.sub}</span>} — {d.reasons.join(' / ')}
                   </li>
                 ))}
               </ul>

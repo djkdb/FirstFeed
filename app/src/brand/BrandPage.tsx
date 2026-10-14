@@ -13,9 +13,10 @@ type Kind = 'words' | 'visual';
 type Patch = Parameters<typeof api.api.brand.selection.$put>[0]['json'];
 
 const RUN_LABEL: Record<string, string> = { generate: '생성', json_retry: 'JSON 재요청', rewrite: '재작성', review: '자기 평가' };
+// 시간은 측정값(tests/results/2026-10-14-brand-v1-v1.md, 3명 × 2회 평균: 글 58~82초, 시각 37~44초)
 const COST: Record<Kind, string> = {
-  words: 'AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 최대 5분씩',
-  visual: 'AI 호출 1번(규칙에 걸려 다시 쓰면 더) · 최대 5분',
+  words: 'AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1~1.5분',
+  visual: 'AI 호출 1번(규칙에 걸려 다시 쓰면 더) · 보통 40초 안팎',
 };
 const jobKey = (k: Kind) => `firstfeed.brandJob.${k}`;
 

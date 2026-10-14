@@ -14,7 +14,7 @@
     "dev": "concurrently -k -n server,app -c blue,green \"npm run dev -w @firstfeed/server\" \"npm run dev -w @firstfeed/app\"",
     "lint": "eslint .",
     "typecheck": "tsc -p server --noEmit && tsc -p app --noEmit && tsc -p scripts --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --project unit && vitest run --project browser",
     "check": "npm run lint && npm run typecheck && npm test",
     "check:privacy": "node scripts/check-privacy.ts",
     "fixtures:manifest": "node scripts/fixtures-manifest.ts",

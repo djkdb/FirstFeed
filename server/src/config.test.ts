@@ -46,7 +46,7 @@ describe('DB 초기 상태', () => {
 
   it('활성 프롬프트 버전: 자기 평가·프로필·꼬리질문·브랜딩 시각·바이오 평가 기준은 v2 (사용자가 과제 하나만 바꿔도 나머지는 유지)', () => {
     const db = openDb(':memory:');
-    const v2 = { self_review: 'v2', identity_profile: 'v2', identity_followup: 'v2', brand_visual: 'v2', brand_words_review: 'v2' };
+    const v2 = { self_review: 'v2', identity_profile: 'v2', identity_followup: 'v2', brand_visual: 'v2', brand_words_review: 'v2', card_body_review: 'v2' };
     expect(getSetting(db, 'prompts.activeVersions')).toEqual(v2);
     setSetting(db, 'prompts.activeVersions', { identity_profile: 'v1' });
     expect(getSetting(db, 'prompts.activeVersions')).toEqual({ ...v2, identity_profile: 'v1' });

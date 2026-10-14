@@ -161,6 +161,8 @@ export const DEFAULTS = {
     identity_followup: 'v2',
     brand_visual: 'v2',
     brand_words_review: 'v2',
+    // 첫 실제 실행에서 v1 의 "인용 밖 사실 = fact" 가 소재의 다른 곳에 있는 사실까지 막아 세트가 실패 (devlog 2026-10-15-02)
+    card_body_review: 'v2',
   } as Record<string, string>,
 };
 

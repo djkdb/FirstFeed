@@ -27,6 +27,11 @@ export interface CheckedRequest<T> extends AiRequest<T> {
   selfReview?: boolean;
   /** 자기 평가에 넘길 이 과제만의 판단 기준 (prompts/<과제>_review 파일 내용). self_review v2 부터 쓴다 */
   reviewCriteria?: string;
+  /**
+   * 후보 여러 개를 받는 과제용: 문제가 있어도 "걸린 후보만 빼면 충분한가"를 판단해 true 면 다시 쓰지 않고 받아들인다.
+   * 이때 문제들은 결과의 dropped 로 넘겨 부르는 쪽이 그 후보를 뺀다. 일부 후보만 걸렸는데 전체를 다시 쓰면 opus 호출만 는다
+   */
+  acceptByDropping?: (errors: Issue[], data: T) => boolean;
 }
 
 interface Base {
@@ -37,7 +42,12 @@ interface Base {
   warnings: Issue[];
 }
 export type CheckedResult<T> =
-  | (Base & { ok: true; data: T })
+  | (Base & {
+      ok: true;
+      data: T;
+      /** acceptByDropping 으로 받아들였을 때 빼야 할 후보의 문제들 (없으면 빈 배열) */
+      dropped: Issue[];
+    })
   | (Base & {
       ok: false;
       errors: Issue[];
@@ -103,7 +113,10 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
       ai.markRun(gen.runId, errors.length ? 'rule_error' : 'ok', issues);
 
       if (errors.length === 0) {
-        return { ok: true, data: gen.data, jobId: job.jobId, calls: job.attempt, rewrites, warnings };
+        return { ok: true, data: gen.data, dropped: [], jobId: job.jobId, calls: job.attempt, rewrites, warnings };
+      }
+      if (req.acceptByDropping?.(errors, gen.data)) {
+        return { ok: true, data: gen.data, dropped: errors, jobId: job.jobId, calls: job.attempt, rewrites, warnings };
       }
       if (rewrites >= maxRewrites) {
         console.warn(`[AI] ${req.task}: 재작성 ${rewrites}회 뒤에도 문제 ${errors.length}건 — 결과를 버립니다`);

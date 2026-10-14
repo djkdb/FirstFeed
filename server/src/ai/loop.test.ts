@@ -105,4 +105,11 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
     await generateChecked(v2.ai, { ...req, reviewCriteria: '축이 겹치면 broken' });
     expect(v2.provider.calls[1]!.prompt).toContain('## 이 과제에서 따로 볼 것\n축이 겹치면 broken');
   });
+
+  it('acceptByDropping: 걸린 후보만 빼도 충분하면 다시 쓰지 않고, 뺄 문제를 dropped 로 넘긴다', async () => {
+    const { ai, provider } = setup([bad, noIssues]);
+    const r = await generateChecked(ai, { ...req, selfReview: false, acceptByDropping: (errors) => errors.length === 1 });
+    expect(r).toMatchObject({ ok: true, rewrites: 0, dropped: [{ code: 'quote_not_in_source' }] });
+    expect(provider.calls).toHaveLength(1);
+  });
 });

@@ -225,6 +225,7 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 
 ### 2026-10-14 · 브랜딩 키트 다듬기 (devlog: [2026-10-14-04](docs/devlog/2026-10-14-04-브랜딩-다듬기.md))
 - **프로필 사진 대상(`target: profile`) 그림 프롬프트는 계정의 얼굴 공개 여부와 상관없이 실사 인물을 만들지 않는다** — 프로필 사진의 사람은 본인이어야 하고, 낯선 사람의 실사 얼굴은 계정 주인이 아닌 사람을 본인처럼 보이게 하는 그림이 된다. 얼굴 공개 계정은 "본인 사진을 쓰세요" 안내 + 사람 없는 대안 프롬프트. **코드 규칙으로 막는다**: profile 프롬프트에 실사 인물 표현(person·people·man·woman·face visible·portrait·realistic photo 등)이 있으면 위반. 원문에 없는 나이·외모 묘사도 같이 막는다. 하이라이트 커버는 지금처럼 「보여 주는 방식」을 따른다 (계기: seoyeon 측정에서 "A friendly person in their late 20s … face clearly visible … Realistic photography")
+- **프로필 사진 프롬프트의 실사 인물 규칙에 손 등 신체 일부도 넣는다** — "본인이 아닌 사람의 몸"이라 얼굴 규칙과 이유가 같다(계기: v1 seoyeon 이 2회 모두 "two hands holding a plate" 를 프로필로 냄). 그림 프롬프트에 흔한 hand-drawn · handwritten · handmade · hand-lettered · hands-on · by hand 는 걸리지 않게 한다. 규칙을 넣기 전 지금까지 나온 실제 profile·highlight 프롬프트 76개에 돌려 profile 19개 중 seoyeon v1 2개만 걸리는 것을 확인 (사용자 결정 2026-10-15)
 - **흔한 영문 약어는 설정의 허용 목록으로 통과시킨다**(예: DM) — `privacy-allowlist.json` 처럼 **항목마다 이유 한 줄 필수**, 처음엔 실제로 걸린 것만 넣고 짧게 유지. "대문자 몇 자 이하 통과" 같은 일반 규칙은 쓰지 않는다 — 지어낸 이름(GPT 등)까지 통과시킨다. **공용 근거 규칙(`findUngrounded`)에 적용되므로 바이오뿐 아니라 카드 문구 등 이후 모든 생성의 근거 대조에도 같이 적용된다**
 - **사용자가 하지 않은 약속·다짐을 바이오에 쓰는 것은 자기 평가에서 fact(사실 오류)로 본다** — 예: 원문은 "협찬인데 협찬 아닌 척하는 게 싫다"뿐인데 바이오에 "협찬은 꼭 밝혀요". 피할 것을 계정 주인의 약속으로 바꾸면, 계정 주인이 지켜야 하는 말을 AI 가 대신 정한 셈이라
 

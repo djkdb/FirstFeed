@@ -26,8 +26,7 @@ describe('설문 근거 = "라벨: 답" 한 줄', () => {
     }
   });
 
-  it('짧은 답만 옮기면 여전히 너무 짧고, 라벨만 옮기면 근거가 아니다', () => {
-    expect(check('만든 것', 'S4')).toBe('quote_too_short');
+  it('라벨만 옮기면 근거가 아니다', () => {
     expect(check('보여줄 수 있는 것', 'S4')).toBe('label_only_quote');
     expect(check('관심 분야', 'S2')).toBe('label_only_quote');
   });
@@ -54,5 +53,30 @@ describe('설문 근거 = "라벨: 답" 한 줄', () => {
       }
     }
     expect(checked).toBeGreaterThan(20);
+  });
+
+  it('라벨 + 답 한두 글자는 통과하지 않는다 — 길이는 답 부분에서만 잰다 (devlog 2026-10-14-02)', () => {
+    const long = buildSources({ S4: { choices: ['정보 정리', '만든 것', '과정/비하인드'] } }, []);
+    const c = (quote: string) => {
+      const r = checkEvidence({ quote, source: 'S4' }, { sources: long, overlapThreshold: 0.5, minQuoteChars: 4 });
+      return r.ok ? 'ok' : r.code;
+    };
+    expect(c('보여줄 수 있는 것: 정')).toBe('quote_too_short');
+    expect(c('보여줄 수 있는 것: 정보')).toBe('quote_too_short'); // 답 2자
+    expect(c('보여줄 수 있는 것: 정보 정리')).toBe('ok'); // 답 4자
+    expect(c('보여줄 수 있는 것: 정보 정리, 만든 것, 과정/비하인드')).toBe('ok');
+    expect(c('정보 정리, 만든 것')).toBe('ok'); // 라벨 없이 답만
+  });
+
+  it('답 전체가 기준보다 짧으면 답 전체를 옮길 때만 통과한다 (짧은 답도 근거에서 빼지 않는다)', () => {
+    const short = buildSources({ S5: { choices: ['1'] }, S4: { choices: ['만든 것'] } }, []);
+    const c = (quote: string, source: string) => {
+      const r = checkEvidence({ quote, source }, { sources: short, overlapThreshold: 0.5, minQuoteChars: 4 });
+      return r.ok ? 'ok' : r.code;
+    };
+    expect(c('한 주에 올릴 수 있는 횟수: 1', 'S5')).toBe('ok');
+    expect(c('보여줄 수 있는 것: 만든 것', 'S4')).toBe('ok');
+    expect(c('만든 것', 'S4')).toBe('ok'); // 답 전체(3자)
+    expect(c('보여줄 수 있는 것: 만든', 'S4')).toBe('quote_too_short'); // 답 일부(2자)
   });
 });

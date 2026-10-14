@@ -55,18 +55,36 @@ export interface ProfileContext {
 
 type EvidenceCheck = { ok: true; source: EvidenceSource } | { ok: false; code: string; message: string };
 
+/**
+ * 인용 가운데 "답"에 해당하는 글자 수 (공백·문장부호 제외).
+ * 설문 대조 원문은 "라벨: 답" 이라, 길이를 인용 전체로 재면 "라벨 + 답 한 글자"(예: "보여줄 수 있는 것: 정")도 통과한다 —
+ * 그래서 길이는 답 부분에서만 잰다 (devlog 2026-10-14-02). 인터뷰 출처는 원문 전체가 답이다.
+ */
+export function answerCharsInQuote(quote: string, src: EvidenceSource): number {
+  const q = normalizeForQuote(quote);
+  if (src.surveyLabel === undefined) return q.length;
+  const full = normalizeForQuote(src.text);
+  const labelLen = normalizeForQuote(`${src.surveyLabel}:`).length;
+  const pos = full.indexOf(q);
+  if (pos < 0) return 0;
+  return Math.max(0, pos + q.length - Math.max(pos, labelLen));
+}
+
 export function checkEvidence(ev: { quote: string; source: string }, ctx: ProfileContext): EvidenceCheck {
   const src = ctx.sources.find((s) => s.id === ev.source);
   if (!src) return { ok: false, code: 'unknown_source', message: `출처 ${ev.source} 가 없습니다. 목록에 있는 출처 ID 만 쓰세요.` };
-  if (normalizeForQuote(ev.quote).length < ctx.minQuoteChars) {
-    return { ok: false, code: 'quote_too_short', message: `인용 "${ev.quote}" 이 너무 짧아 근거가 되지 않습니다. 답의 문장을 더 길게 옮기세요.` };
-  }
-  // 설문 줄은 이제 "라벨: 답" 이라 라벨만 옮겨도 원문 안에 있다 — 답이 한 글자도 없는 인용은 근거가 아니다
+  // 설문 줄은 "라벨: 답" 이라 라벨만 옮겨도 원문 안에 있다 — 답이 한 글자도 없는 인용은 근거가 아니다
   if (src.surveyLabel !== undefined && normalizeForQuote(src.surveyLabel).includes(normalizeForQuote(ev.quote))) {
     return { ok: false, code: 'label_only_quote', message: `인용 "${ev.quote}" 은 ${ev.source} 의 질문 이름일 뿐 답이 아닙니다. "라벨: 답" 한 줄 전체를 옮기세요.` };
   }
   if (!quoteInSources(ev.quote, [src.text])) {
     return { ok: false, code: 'quote_not_in_source', message: `인용 "${ev.quote}" 이 ${ev.source}(${src.label})의 답에 없습니다. 답 부분을 그대로 옮기세요.` };
+  }
+  // 최소 길이는 답 부분에서 잰다. 답 전체가 기준보다 짧으면(예: 횟수 "1") 답 전체를 옮기면 통과 — 짧은 답도 근거에서 빼지 않는다(결정 2026-10-14)
+  const answerLen = src.surveyLabel === undefined ? normalizeForQuote(src.text).length : normalizeForQuote(src.text).length - normalizeForQuote(`${src.surveyLabel}:`).length;
+  const required = Math.min(ctx.minQuoteChars, answerLen);
+  if (answerCharsInQuote(ev.quote, src) < required) {
+    return { ok: false, code: 'quote_too_short', message: `인용 "${ev.quote}" 에 답이 너무 조금만 들어 있습니다. "라벨: 답" 한 줄 전체나 답의 문장을 더 길게 옮기세요.` };
   }
   return { ok: true, source: src };
 }

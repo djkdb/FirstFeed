@@ -79,7 +79,8 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 | 공개 레포 개인정보 검사 | `npm run check:privacy` (커밋 때는 훅이 `--staged` 로 자동 실행) |
 | 비공개 자료 목록 갱신 | `npm run fixtures:manifest` |
 | 대화 원본 내보내기 (제출용) | `npm run export:transcripts -- <세션ID>` 또는 `--latest` / `--all` → `exports/` |
-| 정체성 프로필 측정 (구독 사용량 듦) | `npm run eval:identity` (`-- --only=me`, `-- --followup`) → `tests/results/<날짜>-identity-<버전>.md` (실제·공개 / 실제·비공개 / AI 생성으로 나눔) |
+| 정체성 프로필 측정 (구독 사용량 듦) | `npm run eval:identity -- --repeat=2 --prompt identity_profile=v2 --label=profile-v2` (`--only=me`) → `tests/results/<날짜>-identity-<이름>.md` (실제·공개 / 실제·비공개 / AI 생성으로 나눔) |
+| 꼬리질문 측정 (구독 사용량 듦) | `npm run eval:followup -- --repeat=2 --prompt identity_followup=v2 --label=followup-v2` — 고정 세트 + 함정 시나리오(`tests/fixtures/generated/followup`) |
 | 노력 단계별 응답 시간 측정 | `npm run ai:effort -- --fixture=seoyeon --levels=default,low,medium,high --repeat=2` |
 
 ## 5. 작업 규칙

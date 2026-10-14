@@ -1,0 +1,18 @@
+{
+  "id": "vague-reask",
+  "set": "generated",
+  "note": "AI 생성 시나리오 (Claude Code 세션 2026-10-14). 앞 답이 막연해 더 구체적으로 다시 물어야 하는 상황. v2 는 앞 답의 말을 인용하며 다시 물어야 한다.",
+  "survey": {
+    "S1": { "choices": ["대학생"], "text": "경영학과" },
+    "S2": { "choices": ["IT·AI", "공부·자기계발"] },
+    "S3": { "choices": ["기록"] },
+    "S4": { "choices": ["공부한 것", "정보 정리"] },
+    "S5": { "choices": ["2~3"] },
+    "S6": { "choices": ["안 한다"] }
+  },
+  "turns": [
+    { "question": "AI 도구를 쓰면서 남에게 알려 주고 싶었던 경험이 있나요?", "answer": "이것저것 써 봤는데 다 좋았어요", "answerKind": "text" },
+    { "question": "공부한 것을 정리할 때 주로 어떤 방식으로 하나요?", "answer": "그냥 노트에 적어요", "answerKind": "text" }
+  ],
+  "checks": { "expectQuote": true }
+}

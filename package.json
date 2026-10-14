@@ -26,7 +26,8 @@
     "eval:followup": "node scripts/eval-followup.ts",
     "eval:alternatives": "node scripts/eval-alternatives.ts",
     "eval:brand": "node scripts/eval-brand.ts",
-    "eval:templates": "node scripts/eval-templates.ts"
+    "eval:templates": "node scripts/eval-templates.ts",
+    "eval:cards": "node scripts/eval-cards.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

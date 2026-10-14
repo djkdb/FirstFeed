@@ -6,7 +6,8 @@ import type { AiService } from '../ai/adapter.ts';
 import type { JobStore } from '../ai/jobs.ts';
 import { getSetting } from '../config.ts';
 import { answerTurn, askNext, FlowError, makeProfile } from './flow.ts';
-import { confirmProfile, createSession, getSessionState, latestSessionId } from './store.ts';
+import { activeProfile, confirmProfile, createSession, getSessionState, latestSessionId, listProfiles } from './store.ts';
+import { EditError, EditInput, rollbackTo, saveEdit } from './edit.ts';
 import { SURVEY, SurveyAnswers, validateSurvey } from './survey.ts';
 
 const BRAND_ID = 1; // 브랜드 여러 개(FR-AC-3)는 F 범위 — 지금은 로컬 브랜드 하나
@@ -64,6 +65,51 @@ export function identityRoutes(ai: AiService, jobs: JobStore) {
       const id = Number(c.req.param('id'));
       const jobId = jobs.start('identity_profile', (job) => makeProfile(ai, id, job));
       return c.json({ jobId });
+    })
+    // 판 목록(이력)과 활성 판
+    .get('/profiles', (c) => {
+      const active = activeProfile(db, BRAND_ID);
+      const versions = listProfiles(db, BRAND_ID).map((p) => ({
+        id: p.id,
+        version: p.version,
+        reason: p.reason,
+        basedOn: p.basedOn,
+        createdAt: p.createdAt,
+        isActive: active?.id === p.id,
+        accountLine: p.accountLine,
+        pillarNames: p.pillars.map((x) => x.name),
+      }));
+      return c.json({ active, versions });
+    })
+    // 직접 수정: 새 판, 바로 활성
+    .put(
+      '/profiles/:id',
+      validator('json', (value, c) => {
+        const body = EditInput.safeParse(value);
+        if (!body.success) {
+          const first = body.error.issues[0];
+          return c.json(bad(`고친 내용의 형식이 맞지 않습니다 (${first?.path.join('.') ?? ''}: ${first?.message ?? ''}). 글자 수와 빈 칸을 확인하세요.`), 400);
+        }
+        return body.data;
+      }),
+      (c) => {
+        try {
+          const r = saveEdit(db, Number(c.req.param('id')), c.req.valid('json'));
+          return c.json({ profileId: r.profileId, changes: r.changes, warnings: r.warnings });
+        } catch (err) {
+          if (err instanceof EditError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+          throw err;
+        }
+      },
+    )
+    // 되돌리기: 옛 판을 복사한 새 판, 바로 활성
+    .post('/profiles/:id/rollback', (c) => {
+      try {
+        return c.json({ profileId: rollbackTo(db, Number(c.req.param('id'))) });
+      } catch (err) {
+        if (err instanceof EditError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        throw err;
+      }
     })
     .post('/profiles/:id/confirm', (c) => {
       const ok = confirmProfile(db, Number(c.req.param('id')));

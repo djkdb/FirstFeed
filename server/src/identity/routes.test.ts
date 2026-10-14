@@ -92,6 +92,30 @@ describe('정체성 흐름 API', () => {
     const cur = (await (await t.app.request('/api/identity/current', { headers: H })).json()) as Body;
     expect(cur.state).toMatchObject({ status: 'profiled', activeProfileId: profileId, profile: { version: 1, pillars: [{ name: '써 본 것만' }, {}, {}] } });
     expect(cur.state.profile!.pillars[0]!.evidence[0]).toMatchObject({ source: 'A1', sourceLabel: '인터뷰 1번 답' });
+
+    // 직접 수정 → 새 판 바로 활성 → 이력 → 되돌리기 → 다시 새 판 바로 활성 (HTTP)
+    const before = cur.state.profile!;
+    const edit = {
+      accountLine: '학생을 위한 Notion·AI 도구 정리',
+      audience: before.audience,
+      pillars: before.pillars.map((x) => ({ id: x.id, name: x.name, description: x.description })),
+      voiceRules: before.voiceRules.map((v) => v.text),
+      avoid: before.avoid.map((v) => v.text),
+      presence: before.presence?.text ?? null,
+    };
+    const put = await t.app.request(`/api/identity/profiles/${before.id}`, { method: 'PUT', headers: H, body: JSON.stringify(edit) });
+    expect(await put.json()).toMatchObject({ changes: ['계정 소개'] });
+    type Hist = { active: { id: number; reason: string; accountLine: string; pillars: Array<{ id: string }> }; versions: Array<{ version: number; reason: string; isActive: boolean }> };
+    const h1 = (await (await t.app.request('/api/identity/profiles', { headers: H })).json()) as Hist;
+    expect(h1.versions.map((v) => [v.version, v.reason, v.isActive])).toEqual([
+      [2, 'edit', true],
+      [1, 'interview', false],
+    ]);
+    expect(h1.active.pillars.map((x) => x.id)).toEqual(before.pillars.map((x) => x.id));
+    await t.post(`/profiles/${before.id}/rollback`);
+    const h2 = (await (await t.app.request('/api/identity/profiles', { headers: H })).json()) as Hist;
+    expect(h2.active).toMatchObject({ reason: 'rollback', accountLine: before.accountLine });
+    expect(h2.versions).toHaveLength(3);
   });
 
   it('예시를 그대로 보낸 답은 example, 고친 답은 text, 모름은 unknown 으로 서버가 판정해 기록한다', async () => {

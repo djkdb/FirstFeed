@@ -1,0 +1,29 @@
+{
+  "note": "넘침 테스트 세트 (FR-TP-4) — AI(Claude Code 세션)가 만든 원고. 줄바꿈이 깨지기 쉬운 모양을 일부러 모았다: 띄어쓰기 없는 긴 한글 낱말, 긴 영문 URL·이름, 이모지, 숫자가 많은 줄, 한 줄짜리 아주 짧은 글, 한도 근처·한도 넘는 글. expect 는 원고만 보고 미리 적은 기대(통과 / 줄여서 통과 / 원고 줄이기)이고 판정은 렌더링 측정이 한다",
+  "cases": [
+    { "id": "c01-normal", "shape": "보통", "expect": "통과", "content": { "kind": "cover", "headline": "처음 쓰는 사람을 위한\n**설정 5가지**", "chip": "입문 가이드", "sub": "저장해 두고 하나씩 따라 해 보세요" } },
+    { "id": "c02-long-ko-word", "shape": "긴 한글 낱말", "expect": "원고 줄이기", "content": { "kind": "cover", "headline": "초거대언어모델기반자동화워크플로우설계", "chip": "AI" } },
+    { "id": "c03-long-en-name", "shape": "긴 영문 이름", "expect": "원고 줄이기", "content": { "kind": "cover", "headline": "ClaudeCodeSubscriptionAuthentication 정리" } },
+    { "id": "c04-url-sub", "shape": "긴 영문 URL", "expect": "통과", "content": { "kind": "cover", "headline": "공식 문서 한 장 요약", "sub": "https://github.com/firstfeed/very-long-repository-name-for-testing" } },
+    { "id": "c05-emoji", "shape": "이모지", "expect": "통과", "content": { "kind": "cover", "headline": "처음 시작 🚀 설정\n**5가지** 📌", "chip": "입문 ✨" } },
+    { "id": "c06-numbers", "shape": "숫자 많은 줄", "expect": "통과", "content": { "kind": "cover", "headline": "1,500명 · 87% · 3단계", "sub": "2026.10.15 · 24시간 · 10,000원 · v1.64.0 · 3분 20초" } },
+    { "id": "c07-short", "shape": "아주 짧은 글", "expect": "통과", "content": { "kind": "cover", "headline": "끝" } },
+    { "id": "c08-near-limit", "shape": "한도 근처", "expect": "줄여서 통과", "content": { "kind": "cover", "headline": "처음 쓰는 사람을 위한 설정을 하나씩 정리해 봤어요", "chip": "입문" } },
+    { "id": "c09-too-long", "shape": "한도 넘음", "expect": "원고 줄이기", "content": { "kind": "cover", "headline": "처음 인스타그램을 시작하는 사람이 꼭 알아야 하는 계정 설정과 첫 게시물 준비 순서 완전 정리" } },
+    { "id": "b01-normal", "shape": "보통", "expect": "통과", "content": { "kind": "body", "title": "권한부터 정하세요", "text": "처음엔 **읽기만** 허락하세요.\n\n쓰기는 확인한 뒤에 켜도 늦지 않아요. 한 번 켜 둔 권한은 설정에서 언제든 끌 수 있습니다.", "page": 2, "total": 7, "chip": "기초" } },
+    { "id": "b02-long-text", "shape": "한도 넘음", "expect": "원고 줄이기", "content": { "kind": "body", "title": "권한부터 정하세요", "text": "처음엔 읽기만 허락하세요. 쓰기는 확인한 뒤에 켜도 늦지 않아요. 한 번 켜 둔 권한은 설정에서 언제든 끌 수 있습니다.\n\n명령 실행 권한은 특히 조심하세요. 어떤 명령이 실행되는지 한 번씩 읽어 보고 허락하는 습관이 사고를 막아 줍니다.\n\n폴더 단위로 권한을 나누면 실수로 다른 프로젝트를 건드리는 일이 줄어요. 처음 한 주는 매번 묻게 두고, 익숙해지면 자주 쓰는 것만 열어 두세요.\n\n마지막으로, 설정 파일은 프로젝트마다 따로 둘 수 있어요. 팀과 함께 쓰는 프로젝트라면 공용 설정과 개인 설정을 나눠 두는 것이 좋습니다.", "page": 3, "total": 7, "chip": "기초" } },
+    { "id": "b03-long-ko-word", "shape": "긴 한글 낱말", "expect": "원고 줄이기", "content": { "kind": "body", "title": "용어부터", "text": "오늘은 초거대언어모델기반자동화워크플로우설계방법론을 쉽게 풀어 봅니다.", "page": 2, "total": 5 } },
+    { "id": "b04-url", "shape": "긴 영문 URL", "expect": "통과", "content": { "kind": "body", "title": "공식 문서", "text": "자세한 값은 https://docs.anthropic.com/en/docs/claude-code/settings#available-settings 에서 확인하세요.", "page": 4, "total": 7 } },
+    { "id": "b05-numbers", "shape": "숫자 많은 줄", "expect": "통과", "content": { "kind": "body", "title": "숫자로 보면", "text": "2026년 10월 15일 기준 1,500명 중 87%(1,305명)가 3단계 안에 끝냈고, 평균 24분 37초가 걸렸어요. v1.64.0 · 10,000원 · 3.5배.", "page": 5, "total": 7 } },
+    { "id": "b06-emoji", "shape": "이모지", "expect": "통과", "content": { "kind": "body", "title": "체크리스트 ✅", "text": "📌 설치하기\n🔑 로그인하기\n🚀 첫 명령 실행하기\n🎉 끝!", "page": 6, "total": 7 } },
+    { "id": "b07-short", "shape": "아주 짧은 글", "expect": "통과", "content": { "kind": "body", "title": "끝", "text": "네.", "page": 7, "total": 7 } },
+    { "id": "e01-normal", "shape": "보통", "expect": "통과", "content": { "kind": "closing", "headline": "저장해 두고\n하나씩 따라 하세요" } },
+    { "id": "e02-long", "shape": "한도 넘음", "expect": "원고 줄이기", "content": { "kind": "closing", "headline": "오늘 정리한 설정을 저장해 두고 하나씩 천천히 따라 하면서 궁금한 점은 댓글로 남겨 주세요 다음 편에서 답할게요" } },
+    { "id": "e03-short", "shape": "아주 짧은 글", "expect": "통과", "content": { "kind": "closing", "headline": "고마워요" } },
+    { "id": "r01-normal", "shape": "보통", "expect": "통과", "content": { "kind": "reel_cover", "headline": "설정\n**5가지**\n3분이면 끝", "chip": "입문" } },
+    { "id": "r02-long-ko-word", "shape": "긴 한글 낱말", "expect": "원고 줄이기", "content": { "kind": "reel_cover", "headline": "초거대언어모델\n**자동화**", "chip": "AI" } },
+    { "id": "r03-emoji", "shape": "이모지", "expect": "통과", "content": { "kind": "reel_cover", "headline": "🚀 시작\n**5가지**", "chip": "입문" } },
+    { "id": "r04-numbers", "shape": "숫자 많은 줄", "expect": "통과", "content": { "kind": "reel_cover", "headline": "1,500명\n**87%**\n3단계" } },
+    { "id": "r05-short", "shape": "아주 짧은 글", "expect": "통과", "content": { "kind": "reel_cover", "headline": "끝" } }
+  ]
+}

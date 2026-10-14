@@ -25,7 +25,8 @@
     "ai:effort": "node scripts/ai-effort-probe.ts",
     "eval:followup": "node scripts/eval-followup.ts",
     "eval:alternatives": "node scripts/eval-alternatives.ts",
-    "eval:brand": "node scripts/eval-brand.ts"
+    "eval:brand": "node scripts/eval-brand.ts",
+    "eval:templates": "node scripts/eval-templates.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

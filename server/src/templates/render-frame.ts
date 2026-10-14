@@ -43,14 +43,22 @@ function shortenHints(r: RenderResult, c: FrameContent, minScale: number): Array
   return out;
 }
 
-export async function renderFrame(db: Db | null, draft: Draft, look: BrandLook, content: FrameContent): Promise<FrameResult> {
+export async function renderFrame(
+  db: Db | null,
+  draft: Draft,
+  look: BrandLook,
+  content: FrameContent,
+  /** 측정·테스트 세트용: 마지막 단계에서 넘쳐도 PNG 를 만든다 (앱에서는 쓰지 않는다 — 반쯤 만든 결과) */
+  opts: { captureEvenIfBad?: boolean } = {},
+): Promise<FrameResult> {
   const { width, height, safe } = FRAME_SIZE[content.kind];
   const safeRect = safe ? getSetting(db, 'render.safeArea')[safe] : null;
   const steps = getSetting(db, 'render.scaleSteps');
   const tries: FrameResult['tries'] = [];
   let last: RenderResult | null = null;
-  for (const scale of steps) {
-    const r = await renderCard(db, { html: draft.html(look, content, scale), width, height, safe: safeRect });
+  for (const [i, scale] of steps.entries()) {
+    const lastStep = i === steps.length - 1;
+    const r = await renderCard(db, { html: draft.html(look, content, scale), width, height, safe: safeRect, captureEvenIfBad: lastStep && opts.captureEvenIfBad === true });
     tries.push({ scale, problems: r.problems.length });
     last = r;
     if (r.ok) return { ...r, scale, tries, shorten: [] };

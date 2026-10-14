@@ -87,7 +87,7 @@ export function brandRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir
     .get('/', (c) => {
       const active = activeProfile(db, BRAND_ID);
       return c.json({
-        activeProfile: active ? { id: active.id, version: active.version, accountLine: active.accountLine } : null,
+        activeProfile: active ? { id: active.id, version: active.version, accountLine: active.accountLine, presence: active.presence?.text ?? null } : null,
         words: latestKit<WordsCandidates>(db, BRAND_ID, 'words'),
         visual: latestKit<VisualCandidates>(db, BRAND_ID, 'visual'),
         selection: currentSelection(db, BRAND_ID),

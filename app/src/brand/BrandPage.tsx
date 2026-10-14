@@ -338,6 +338,12 @@ export function BrandPage() {
 
             <h3>그림 프롬프트</h3>
             <p className="muted small">그림 생성 도구에 붙여 넣어 쓰세요. 만든 그림은 아래 「프로필 사진」에서 올리면 그대로 적용돼요.</p>
+            {/* 결정 2026-10-14 · 다듬기: 프로필 사진의 사람은 본인이어야 해서 프롬프트는 사람 없는 대안만 만든다 */}
+            {activeProfile?.presence?.startsWith('괜찮다') ? (
+              <p className="note small">얼굴을 보여도 되는 계정이에요. 프로필 사진은 <strong>본인 사진</strong>을 쓰세요 — 아래 프로필 프롬프트는 본인 사진 대신 쓸 사람 없는 대안이에요.</p>
+            ) : (
+              <p className="muted small">프로필 사진 프롬프트에는 사람을 넣지 않아요. 사람이 나와야 한다면 본인 사진을 쓰세요.</p>
+            )}
             <ul className="prompts">
               {visual.candidates.imagePrompts.map((p) => (
                 <li key={p.filename}>

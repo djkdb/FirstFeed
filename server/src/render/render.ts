@@ -7,7 +7,8 @@
 import fs from 'node:fs';
 import { getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
-import { getBrowser, type BrowserInfo } from './browser.ts';
+import type { BrowserContext, Page } from 'playwright';
+import { getBrowser, RenderError, type BrowserInfo } from './browser.ts';
 import { FONT_ORIGIN, fontFileFor } from './fonts-css.ts';
 import { measureInPage, type Measure, type Rect } from './measure.page.ts';
 
@@ -56,7 +57,12 @@ export function problemsOf(m: Measure): RenderProblem[] {
   return out;
 }
 
-export async function renderCard(db: Db | null, input: RenderInput): Promise<RenderResult> {
+/** 카드 HTML 을 연 페이지에서 일을 한다 (렌더링·글자 수 측정이 같이 쓴다). 폰트가 다 불러와진 뒤에 fn 을 부른다 */
+export async function withCardPage<T>(
+  db: Db | null,
+  input: { html: string; width: number; height: number },
+  fn: (page: Page, context: BrowserContext, info: BrowserInfo) => Promise<T>,
+): Promise<T> {
   const { browser, info } = await getBrowser(db);
   const context = await browser.newContext({ viewport: { width: input.width, height: input.height }, deviceScaleFactor: 1 });
   try {
@@ -70,8 +76,30 @@ export async function renderCard(db: Db | null, input: RenderInput): Promise<Ren
       if (url.startsWith('data:')) return route.continue();
       return route.abort();
     });
-    await page.goto(`${FONT_ORIGIN}/card`, { waitUntil: 'load' });
-    await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    // 멈춘 채로 기다리지 않게 단계마다 시간 제한 — 어디서 멈췄는지가 오류 문구에 남는다
+    const step = async <T>(what: string, ms: number, p: Promise<T>): Promise<T> => {
+      let timer: NodeJS.Timeout | undefined;
+      try {
+        return await Promise.race([
+          p,
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new RenderError(`카드를 그리다 「${what}」에서 ${ms / 1000}초 넘게 멈췄습니다.`, '다시 시도하세요. 반복되면 렌더링 기록과 함께 알려 주세요.')), ms);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    await step('페이지 열기', 15_000, page.goto(`${FONT_ORIGIN}/card`, { waitUntil: 'load', timeout: 15_000 }));
+    await step('폰트 불러오기', 15_000, page.evaluate(() => document.fonts.ready.then(() => undefined)));
+    return await step('측정·캡처', 20_000, fn(page, context, info));
+  } finally {
+    await context.close();
+  }
+}
+
+export async function renderCard(db: Db | null, input: RenderInput): Promise<RenderResult> {
+  return withCardPage(db, input, async (page, context, info) => {
 
     // 캡처 직전 글꼴 확인: 화면의 모든 글자가 웹폰트(앱에 넣은 OFL 폰트)로 그려졌는가
     const cdp = await context.newCDPSession(page);
@@ -100,7 +128,5 @@ export async function renderCard(db: Db | null, input: RenderInput): Promise<Ren
     const capture = !fontBad && (problems.length === 0 || input.captureEvenIfBad === true);
     const png = capture ? await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: input.width, height: input.height } }) : null;
     return { ok: problems.length === 0, png, problems, measure, browser: info, fontsUsed };
-  } finally {
-    await context.close();
-  }
+  });
 }

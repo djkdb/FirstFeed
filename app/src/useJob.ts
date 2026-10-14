@@ -19,7 +19,22 @@ export function useJob(jobId: string | null, onFinish: (job: JobView) => void) {
       try {
         const res = await api.api.ai.jobs[':jobId'].$get({ param: { jobId } });
         const body = await res.json();
-        if (stop || !('phase' in body)) return;
+        if (stop) return;
+        if (!('phase' in body)) {
+          // 서버가 다시 시작되면 메모리의 작업이 사라진다(개발 중 서버 파일을 고치면 실제로 겪음).
+          // 조용히 멈추면 화면이 "만드는 중"에 영원히 머물러서, 실패로 끝내고 다시 하라고 알린다
+          finish.current({
+            jobId,
+            task: '',
+            phase: 'failed',
+            startedAt: '',
+            finishedAt: null,
+            result: null,
+            runs: [],
+            error: { message: '진행 중이던 작업을 찾지 못했습니다(서버가 다시 시작된 것 같습니다).', hint: '버튼을 눌러 다시 실행하세요.' },
+          });
+          return;
+        }
         setJob(body);
         if (body.phase === 'running') setTimeout(() => void tick(), 1000);
         else finish.current(body);

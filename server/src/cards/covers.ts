@@ -36,13 +36,14 @@ export function coverRules(c: CardContext, requested: number | null): Rule<Cover
   const sub = c.template.budget.cover?.sub;
   const [min, max] = c.bodyRange;
   const pillarIds = new Set(c.profile.pillars.map((p) => p.id));
-  // 표지의 숫자 중 구조에서 나온 것: 정한 카드 수, 정하지 않았으면 범위 안의 수
-  const structural = requested ? [requested] : Array.from({ length: max - min + 1 }, (_, k) => min + k);
   return [
     (d) =>
       d.titles.flatMap((t, i): Issue[] => {
         const out: Issue[] = [];
-        for (const u of findUngrounded(`${t.headline}\n${t.sub ?? ''}`, { ...c.grounding, structural }, c.commonTerms))
+        // 개수 표현("5가지")은 아래 개수 규칙이 카드 수와 맞추므로 근거 대조에서 뺀다. 그 밖의 숫자는 구조 숫자로 봐주지 않는다 —
+        // 범위(3~7)를 구조 숫자로 넣으면 지어낸 "3배" 가 통과한다(본문에서 같은 빈틈을 먼저 발견)
+        const plain = countClaims(`${t.headline}\n${t.sub ?? ''}`).reduce((txt, cl) => txt.replace(cl.text, ' '), `${t.headline}\n${t.sub ?? ''}`.replace(/\*\*/g, ''));
+        for (const u of findUngrounded(plain, c.grounding, c.commonTerms))
           out.push(issue(i, u.kind === 'number' ? 'number_not_in_source' : 'english_not_in_source', `소재·프로필·메모에 없는 ${u.kind === 'number' ? '숫자' : '영문 이름'} "${u.value}" 을(를) 썼습니다.`));
         if (head?.maxLines && estimatedLines(t.headline, head.charsPerLine) > head.maxLines)
           out.push(issue(i, 'too_long_for_template', `제목이 템플릿 기준(한 줄 약 ${head.charsPerLine}자 × ${head.maxLines}줄)보다 깁니다. 줄이세요.`));

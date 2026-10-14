@@ -82,8 +82,12 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
       const gen = await ai.call({ ...req, prompt }, job, rewrites === 0 ? 'generate' : 'rewrite');
       const issues: Issue[] = req.rules.flatMap((rule) => rule(gen.data));
 
-      // 코드 규칙을 통과했을 때만 자기 평가를 부른다 — 어차피 다시 쓸 결과에 opus 호출을 쓰지 않으려고
-      if (!issues.some((i) => i.level === 'error') && req.selfReview !== false) {
+      // 자기 평가는 결과가 쓰일 수 있을 때만 부른다 — 어차피 다시 쓸 결과에 opus 호출을 쓰지 않으려고.
+      // "쓰일 수 있다" = 코드 규칙 통과, 또는 걸린 후보만 빼면 충분(acceptByDropping). 뒤의 경우도 남은 후보는 평가해야
+      // 수용 기준(예: 바이오가 계정 정의와 축을 담는가)을 놓치지 않는다
+      const ruleErrors = issues.filter((i) => i.level === 'error');
+      const usable = ruleErrors.length === 0 || (req.acceptByDropping?.(ruleErrors, gen.data) ?? false);
+      if (usable && req.selfReview !== false) {
         const review = loadPrompt(
           ai.db,
           'self_review',

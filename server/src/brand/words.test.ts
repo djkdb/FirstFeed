@@ -98,7 +98,7 @@ describe('generateWords 흐름 (가짜 공급자)', () => {
     const { db, pid, ai, provider } = setup([{ structured: out }, { structured: { issues: [] } }]);
     const r = await generateWords(ai, 1);
     expect(r.rewrites).toBe(0);
-    expect(provider.calls).toHaveLength(1); // 걸린 채로 받아들였으니 자기 평가도 부르지 않는다
+    expect(provider.calls.map((x) => x.model)).toEqual(['opus', 'opus']); // 걸린 후보를 빼고 받아들일 결과도 자기 평가를 거친다
     expect(r.candidates.bios).toHaveLength(5);
     expect(r.dropped[0]).toMatchObject({ kind: 'bios', value: '링크는 bit.ly/x' });
     expect(latestKit<WordsCandidates>(db, 1, 'words')).toMatchObject({ profileId: pid });

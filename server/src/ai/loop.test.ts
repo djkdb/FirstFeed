@@ -112,4 +112,13 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
     expect(r).toMatchObject({ ok: true, rewrites: 0, dropped: [{ code: 'quote_not_in_source' }] });
     expect(provider.calls).toHaveLength(1);
   });
+
+  it('acceptByDropping 으로 받아들일 결과도 자기 평가를 거치고, 평가가 찾은 문제까지 합쳐 다시 판단한다', async () => {
+    const fact = { structured: { issues: [{ kind: 'fact', where: 'x', message: '원문과 다름' }] } };
+    // 첫 결과: 규칙 1건 → 빼면 충분 → 자기 평가 → fact 1건 더 → 합쳐서 2건이면 부족 → 재작성 → 두 번째는 깨끗
+    const { ai, provider } = setup([bad, fact, good, noIssues]);
+    const r = await generateChecked(ai, { ...req, acceptByDropping: (errors) => errors.length <= 1 });
+    expect(provider.calls.map((c) => c.model)).toEqual(['sonnet', 'opus', 'sonnet', 'opus']);
+    expect(r).toMatchObject({ ok: true, rewrites: 1, dropped: [] });
+  });
 });

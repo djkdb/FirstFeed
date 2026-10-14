@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { smokeRules, type SmokeOutput } from './smoke-extract.ts';
 
 const source = '가게 계정은 개업 1년 만에 팔로워 8,300명을 모았다. Naver 스마트스토어에서 판다.';
-const check = (d: SmokeOutput) => smokeRules(source).flatMap((r) => r(d));
+const check = (d: SmokeOutput) => smokeRules(source, []).flatMap((r) => r(d));
 
 describe('스모크 과제 규칙', () => {
   it('원문 인용과 원문 숫자·영문만 쓰면 통과', () => {

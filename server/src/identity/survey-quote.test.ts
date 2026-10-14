@@ -10,7 +10,7 @@ import { SURVEY, surveyAnswerText, type SurveyAnswers } from './survey.ts';
 
 const survey: SurveyAnswers = { S4: { choices: ['만든 것'] }, S2: { choices: ['IT·AI', '개발'], other: '바이브코딩' } };
 const sources = buildSources(survey, []);
-const ctx = { sources, overlapThreshold: 0.5, minQuoteChars: 4 };
+const ctx = { sources, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [] };
 const check = (quote: string, source: string) => {
   const r = checkEvidence({ quote, source }, ctx);
   return r.ok ? 'ok' : r.code;
@@ -47,7 +47,7 @@ describe('설문 근거 = "라벨: 답" 한 줄', () => {
           if (!old) continue;
           const src = now.find((s) => s.id === q.id)!;
           expect(src.text.endsWith(old)).toBe(true);
-          if (old.replace(/[\s\p{P}\p{S}]/gu, '').length >= 4) expect(checkEvidence({ quote: old, source: q.id }, { sources: now, overlapThreshold: 0.5, minQuoteChars: 4 }).ok).toBe(true);
+          if (old.replace(/[\s\p{P}\p{S}]/gu, '').length >= 4) expect(checkEvidence({ quote: old, source: q.id }, { sources: now, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [] }).ok).toBe(true);
           checked++;
         }
       }
@@ -58,7 +58,7 @@ describe('설문 근거 = "라벨: 답" 한 줄', () => {
   it('라벨 + 답 한두 글자는 통과하지 않는다 — 길이는 답 부분에서만 잰다 (devlog 2026-10-14-02)', () => {
     const long = buildSources({ S4: { choices: ['정보 정리', '만든 것', '과정/비하인드'] } }, []);
     const c = (quote: string) => {
-      const r = checkEvidence({ quote, source: 'S4' }, { sources: long, overlapThreshold: 0.5, minQuoteChars: 4 });
+      const r = checkEvidence({ quote, source: 'S4' }, { sources: long, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [] });
       return r.ok ? 'ok' : r.code;
     };
     expect(c('보여줄 수 있는 것: 정')).toBe('quote_too_short');
@@ -71,7 +71,7 @@ describe('설문 근거 = "라벨: 답" 한 줄', () => {
   it('답 전체가 기준보다 짧으면 답 전체를 옮길 때만 통과한다 (짧은 답도 근거에서 빼지 않는다)', () => {
     const short = buildSources({ S5: { choices: ['1'] }, S4: { choices: ['만든 것'] } }, []);
     const c = (quote: string, source: string) => {
-      const r = checkEvidence({ quote, source }, { sources: short, overlapThreshold: 0.5, minQuoteChars: 4 });
+      const r = checkEvidence({ quote, source }, { sources: short, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [] });
       return r.ok ? 'ok' : r.code;
     };
     expect(c('한 주에 올릴 수 있는 횟수: 1', 'S5')).toBe('ok');

@@ -59,3 +59,18 @@ describe('브랜딩 설정 (결정 2026-10-14 · 브랜딩 키트 설계)', () =
     expect(getSetting(null, 'brand.minContrast')).toBe(4.5);
   });
 });
+
+describe('영문 약어 허용 목록 (결정 2026-10-14 · 브랜딩 키트 다듬기)', () => {
+  it('기본 목록은 짧고, 항목마다 이유가 있다', () => {
+    const list = getSetting(null, 'grounding.commonEnglish');
+    expect(list.length).toBeLessThanOrEqual(10);
+    for (const e of list) expect(e.reason.trim().length).toBeGreaterThan(10);
+  });
+
+  it('이유가 빠진 항목은 저장하지 않는다', () => {
+    const db = openDb(':memory:');
+    expect(() => setSetting(db, 'grounding.commonEnglish', [{ term: 'SNS', reason: '' }])).toThrow(/이유/);
+    setSetting(db, 'grounding.commonEnglish', [{ term: 'SNS', reason: '소셜 미디어를 부르는 흔한 말 — 테스트' }]);
+    expect(getSetting(db, 'grounding.commonEnglish').map((e) => e.term)).toEqual(['SNS']);
+  });
+});

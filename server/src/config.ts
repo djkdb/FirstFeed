@@ -107,6 +107,14 @@ export const DEFAULTS = {
   'brand.bioLinkReserve': 20,
   /** 글자/배경 최소 명암비 (FR-BR-2, WCAG AA 본문) */
   'brand.minContrast': 4.5,
+  /**
+   * 근거 대조(숫자·영문 이름)에서 통과시킬 흔한 영문 약어. 공용 규칙이라 바이오·카드 문구 등 모든 생성에 적용된다.
+   * 항목마다 이유 필수, 실제로 걸린 것만 넣고 짧게 유지. "대문자 몇 자 이하" 같은 일반 규칙은 쓰지 않는다 — GPT 같은 이름까지 통과시켜서
+   * (결정 2026-10-14 · 브랜딩 키트 다듬기)
+   */
+  'grounding.commonEnglish': [
+    { term: 'DM', reason: '인스타 다이렉트 메시지를 부르는 흔한 말. 이름이 아니다 — 2026-10-14 바이오 "협업 제안은 DM" 이 english_not_in_source 로 걸림' },
+  ] as Array<{ term: string; reason: string }>,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
@@ -145,11 +153,15 @@ export function getSetting<K extends SettingKey>(db: DatabaseSync | null, key: K
 /** 사용자가 바꾼 설정을 저장한다. 기본값과 타입이 다르면 저장하지 않는다. */
 export function setSetting<K extends SettingKey>(db: DatabaseSync, key: K, value: Settings[K], userId = 1): void {
   const fallback = DEFAULTS[key];
-  const sameKind = isPlainObject(fallback) ? isPlainObject(value) : typeof value === typeof fallback;
+  const sameKind = isPlainObject(fallback) ? isPlainObject(value) : Array.isArray(fallback) ? Array.isArray(value) : typeof value === typeof fallback;
   if (!sameKind) {
     throw new Error(
-      `설정 "${key}" 의 값 형식이 맞지 않습니다 (기대: ${isPlainObject(fallback) ? '객체' : typeof fallback}). 값을 고쳐 다시 저장하세요.`,
+      `설정 "${key}" 의 값 형식이 맞지 않습니다 (기대: ${isPlainObject(fallback) ? '객체' : Array.isArray(fallback) ? '목록' : typeof fallback}). 값을 고쳐 다시 저장하세요.`,
     );
+  }
+  if (key === 'grounding.commonEnglish') {
+    const bad = (value as Settings['grounding.commonEnglish']).filter((e) => !e?.term?.trim() || !e?.reason?.trim());
+    if (bad.length) throw new Error(`영문 약어 허용 목록의 항목마다 약어와 이유 한 줄이 필요합니다 (${bad.length}개 빠짐). 이유를 적어 다시 저장하세요.`);
   }
   db.prepare(
     `INSERT INTO settings (user_id, key, value_json, updated_at) VALUES (?, ?, ?, datetime('now'))
@@ -161,4 +173,9 @@ export function setSetting<K extends SettingKey>(db: DatabaseSync, key: K, value
 export function modelForTask(db: DatabaseSync | null, task: string, userId = 1): ModelAlias {
   const models = getSetting(db, 'ai.taskModels', userId);
   return models[task] ?? models.default ?? 'sonnet';
+}
+
+/** 근거 대조에서 통과시킬 흔한 영문 약어 (설정 grounding.commonEnglish 의 약어만) */
+export function commonEnglishTerms(db: DatabaseSync | null, userId = 1): string[] {
+  return getSetting(db, 'grounding.commonEnglish', userId).map((e) => e.term);
 }

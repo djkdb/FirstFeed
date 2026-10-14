@@ -17,7 +17,7 @@ const sources = buildSources(
     { turnNo: 4, question: '무엇을 보여 주고 싶나요?', answer: '만든 앱을 알리고 싶어요', answerKind: 'example' },
   ],
 );
-const ctx: ProfileContext = { sources, overlapThreshold: 0.5, minQuoteChars: 4 };
+const ctx: ProfileContext = { sources, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [] };
 
 const pillar = (name: string, description: string, quote: string, source: string) => ({ name, description, evidence: [{ quote, source }] });
 const good: ProfileDraft = {

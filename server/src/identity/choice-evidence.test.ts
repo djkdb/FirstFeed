@@ -10,7 +10,7 @@ const sources = buildSources({ S4: { choices: ['정보 정리', '만든 것'] } 
   { turnNo: 4, question: '얻어 갈 것은?', answer: '본 그날 바로 다르게 해 볼 수 있는 것 하나', answerKind: 'text' },
   { turnNo: 5, question: '피할 것은?', answer: '확인 안 한 소문을 퍼 나르는 것', answerKind: 'text' },
 ]);
-const ctx: ProfileContext = { sources, overlapThreshold: 0.5, minQuoteChars: 4 };
+const ctx: ProfileContext = { sources, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [] };
 const pillar = (name: string, description: string, evidence: Array<[string, string]>) => ({
   name,
   description,

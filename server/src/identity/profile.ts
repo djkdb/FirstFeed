@@ -2,7 +2,7 @@
 // 인용은 "그 인용이 가리키는 출처의 답" 안에서만 대조한다 — 다른 답의 문장을 갖다 붙이거나, AI 가 쓴 질문·예시 답을 인용하면 실패.
 // 재작성 끝까지 실패하면 한 단계 더(결정): 근거 없는 축만 빼고도 3개 이상이면 저장하고 뺀 축은 「근거 부족」으로 보인다.
 import { z } from 'zod';
-import { getSetting } from '../config.ts';
+import { commonEnglishTerms, getSetting } from '../config.ts';
 import type { AiService, JobContext } from '../ai/adapter.ts';
 import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
@@ -48,6 +48,8 @@ export interface ProfileContext {
   extraUserTexts?: string[];
   overlapThreshold: number;
   minQuoteChars: number;
+  /** 근거 대조에서 통과시킬 흔한 영문 약어 (설정 grounding.commonEnglish) */
+  commonTerms: readonly string[];
 }
 
 type EvidenceCheck = { ok: true; source: EvidenceSource } | { ok: false; code: string; message: string };
@@ -170,7 +172,7 @@ export function profileRules(ctx: ProfileContext): Rule<ProfileDraft>[] {
         ]),
       ];
       return fields.flatMap(([where, text]) =>
-        findUngrounded(text, { source: userTexts }).map(
+        findUngrounded(text, { source: userTexts }, ctx.commonTerms).map(
           (c): Issue => ({
             level: 'error',
             code: c.kind === 'number' ? 'number_not_in_source' : 'english_not_in_source',
@@ -258,6 +260,7 @@ export async function runProfile(ai: AiService, sources: EvidenceSource[], job?:
     sources,
     overlapThreshold: getSetting(ai.db, 'identity.pillarOverlapThreshold'),
     minQuoteChars: getSetting(ai.db, 'identity.minQuoteChars'),
+    commonTerms: commonEnglishTerms(ai.db),
   };
   const minPillars = 3;
   const prompt = loadPrompt(ai.db, 'identity_profile', { sources: formatSourcesForPrompt(sources) });

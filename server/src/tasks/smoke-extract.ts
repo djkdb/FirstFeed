@@ -6,6 +6,7 @@ import { generateChecked, type CheckedResult } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
 import { findUngrounded, quoteInSources } from '../rules/grounding.ts';
 import type { Issue, Rule } from '../rules/types.ts';
+import { commonEnglishTerms } from '../config.ts';
 
 export const SmokeSchema = z.object({
   facts: z
@@ -20,7 +21,7 @@ export const SmokeSchema = z.object({
 });
 export type SmokeOutput = z.infer<typeof SmokeSchema>;
 
-export function smokeRules(source: string): Rule<SmokeOutput>[] {
+export function smokeRules(source: string, commonTerms: readonly string[]): Rule<SmokeOutput>[] {
   return [
     // 인용은 원문에 실제로 있어야 한다
     (d) =>
@@ -32,7 +33,7 @@ export function smokeRules(source: string): Rule<SmokeOutput>[] {
     // 사실 문장 속 숫자·영문 이름은 원문 안에서만
     (d) =>
       d.facts.flatMap((f, i): Issue[] =>
-        findUngrounded(f.fact, { source: [source] }).map((c) => ({
+        findUngrounded(f.fact, { source: [source] }, commonTerms).map((c) => ({
           level: 'error',
           code: c.kind === 'number' ? 'number_not_in_source' : 'english_not_in_source',
           where: `facts.${i}.fact`,
@@ -47,7 +48,7 @@ export async function runSmokeExtract(ai: AiService, source: string, job?: JobCo
   const prompt = loadPrompt(ai.db, 'smoke_extract', { source });
   return generateChecked(
     ai,
-    { task: 'smoke_extract', prompt: prompt.text, promptRef: prompt.ref, schema: SmokeSchema, rules: smokeRules(source), signal: job?.signal },
+    { task: 'smoke_extract', prompt: prompt.text, promptRef: prompt.ref, schema: SmokeSchema, rules: smokeRules(source, commonEnglishTerms(ai.db)), signal: job?.signal },
     job,
   );
 }

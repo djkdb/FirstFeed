@@ -4,7 +4,7 @@
 // - 끝까지 통과하지 못한 방향만 빼고, 통과한 방향만 보여 준다
 // - 고르면 새 판으로 바로 활성. 축은 모두 새 ID — 지금 판의 축과 이어 붙이지 않는다
 import { z } from 'zod';
-import { getSetting } from '../config.ts';
+import { commonEnglishTerms, getSetting } from '../config.ts';
 import type { AiService, JobContext } from '../ai/adapter.ts';
 import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
@@ -106,6 +106,7 @@ export async function runAlternatives(ai: AiService, baseId: number, job?: JobCo
     extraUserTexts: userTexts,
     overlapThreshold: getSetting(ai.db, 'identity.pillarOverlapThreshold'),
     minQuoteChars: getSetting(ai.db, 'identity.minQuoteChars'),
+    commonTerms: commonEnglishTerms(ai.db),
   };
   const current = formatCurrentProfile(base);
   const prompt = loadPrompt(ai.db, 'identity_alternatives', {

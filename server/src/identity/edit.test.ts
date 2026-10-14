@@ -108,7 +108,7 @@ describe('사용자가 직접 쓴 글 vs AI 가 만들거나 다듬은 글 (허�
     unknown: [],
   });
   const codes = (d: ProfileDraft, extra: string[]) =>
-    profileRules({ sources, overlapThreshold: 0.5, minQuoteChars: 4, extraUserTexts: extra })
+    profileRules({ sources, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: [], extraUserTexts: extra })
       .flatMap((r) => r(d))
       .map((i) => i.code);
 

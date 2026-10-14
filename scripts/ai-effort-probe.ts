@@ -3,7 +3,7 @@
 // opus 호출 시간이 27~149초로 흔들리고 180초 제한에 걸린 일(devlog 2026-10-13-04)의 원인을 가르려고 만들었다.
 import fs from 'node:fs';
 import path from 'node:path';
-import { env, type Effort } from '../server/src/config.ts';
+import { commonEnglishTerms, env, type Effort } from '../server/src/config.ts';
 import { openDb } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { loadPrompt } from '../server/src/ai/prompts.ts';
@@ -30,7 +30,7 @@ const sources = buildSources(
   fx.turns.map((t, i) => ({ turnNo: i + 1, question: t.question, answer: t.answer, answerKind: t.answerKind })),
 );
 const prompt = loadPrompt(null, 'identity_profile', { sources: formatSourcesForPrompt(sources) });
-const ctx = { sources, overlapThreshold: 0.5, minQuoteChars: 4 };
+const ctx = { sources, overlapThreshold: 0.5, minQuoteChars: 4, commonTerms: commonEnglishTerms(null) };
 
 const rows: string[] = [];
 for (const level of levels) {

@@ -40,8 +40,13 @@ export interface UngroundedClaim {
   value: string;
 }
 
-/** 허용 출처 어디에도 없는 숫자·영문 이름을 찾는다 */
-export function findUngrounded(text: string, sources: GroundingSources): UngroundedClaim[] {
+/**
+ * 허용 출처 어디에도 없는 숫자·영문 이름을 찾는다.
+ * commonTerms: 흔한 영문 약어(설정 grounding.commonEnglish). 일부러 필수 인자로 둬서 새 생성이 빠뜨리지 못하게 한다.
+ * 약어는 낱말 전체가 같을 때만 통과(대소문자 무시) — "DM" 이 있다고 "DMV" 가 통과하지 않게
+ */
+export function findUngrounded(text: string, sources: GroundingSources, commonTerms: readonly string[]): UngroundedClaim[] {
+  const common = new Set(commonTerms.map((t) => t.toLowerCase()));
   const texts = [...sources.source, ...(sources.brand ?? []), ...(sources.userInput ?? [])];
   const allowedNumbers = new Set([...texts.flatMap(numbersIn), ...(sources.structural ?? []).map(String)]);
   const haystack = texts.join('\n').toLowerCase();
@@ -54,7 +59,7 @@ export function findUngrounded(text: string, sources: GroundingSources): Ungroun
     }
   }
   for (const t of englishTermsIn(text)) {
-    if (!haystack.includes(t.toLowerCase()) && !seen.has(`e:${t}`)) {
+    if (!common.has(t.toLowerCase()) && !haystack.includes(t.toLowerCase()) && !seen.has(`e:${t}`)) {
       seen.add(`e:${t}`);
       out.push({ kind: 'english', value: t });
     }

@@ -2,7 +2,7 @@
 // 수용 기준: "글자 수 초과 없음. 바이오가 계정 정의와 축을 담는다" — 글자 수는 코드, 바이오의 내용은 자기 평가.
 // 결정: CLAUDE.md 2026-10-14 · 브랜딩 키트 설계 (엄한 글자 수, URL 금지 + 링크 자리, @아이디)
 import { z } from 'zod';
-import { getSetting } from '../config.ts';
+import { commonEnglishTerms, getSetting } from '../config.ts';
 import type { AiService, JobContext } from '../ai/adapter.ts';
 import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
@@ -47,7 +47,7 @@ export function wordsLimits(db: Parameters<typeof getSetting>[0]): WordsLimits {
 const issue = (where: string, code: string, message: string): Issue => ({ level: 'error', code, where, message, from: 'rule' });
 
 /** 허용 출처: 프로필 글 + 사용자의 답·직접 쓴 글 */
-export function wordsRules(limits: WordsLimits, allowedTexts: string[]): Rule<WordsOutput>[] {
+export function wordsRules(limits: WordsLimits, allowedTexts: string[], commonTerms: readonly string[]): Rule<WordsOutput>[] {
   const allowedMentions = new Set(allowedTexts.flatMap(mentionsIn));
   const dupes = (list: TextCandidate[], key: ListKey): Issue[] => {
     const seen = new Map<string, number>();
@@ -69,7 +69,7 @@ export function wordsRules(limits: WordsLimits, allowedTexts: string[]): Rule<Wo
         const out: Issue[] = [];
         if (len > limits.nameMax) out.push(issue(`display_names.${i}`, 'too_long', `표시 이름 "${c.value}" 이 ${len}자로 ${limits.nameMax}자를 넘습니다.`));
         // 표시 이름의 영문은 지어낸 이름(브랜드 느낌의 단어)일 수 있어 숫자만 대조한다
-        for (const u of findUngrounded(c.value, { source: allowedTexts })) {
+        for (const u of findUngrounded(c.value, { source: allowedTexts }, commonTerms)) {
           if (u.kind === 'number') out.push(issue(`display_names.${i}`, 'number_not_in_source', `표시 이름의 숫자 "${u.value}" 가 프로필·답에 없습니다.`));
         }
         return out;
@@ -89,7 +89,7 @@ export function wordsRules(limits: WordsLimits, allowedTexts: string[]): Rule<Wo
         }
         // @아이디·주소는 위에서 따로 알렸으므로 영문 대조에서는 뺀다 (같은 문제를 두 번 알리지 않게)
         const rest = c.value.replace(/@[a-z0-9._]+/gi, ' ').replace(new RegExp(`(?:${URL_IN_TEXT.source})\\S*`, 'gi'), ' ');
-        for (const u of findUngrounded(rest, { source: allowedTexts })) {
+        for (const u of findUngrounded(rest, { source: allowedTexts }, commonTerms)) {
           out.push(issue(where, u.kind === 'number' ? 'number_not_in_source' : 'english_not_in_source', `바이오의 ${u.kind === 'number' ? '숫자' : '영문 이름'} "${u.value}" 가 프로필·답에 없습니다.`));
         }
         return out;
@@ -165,7 +165,7 @@ export async function generateWords(ai: AiService, brandId: number, job?: JobCon
       prompt: prompt.text,
       promptRef: prompt.ref,
       schema: WordsSchema,
-      rules: wordsRules(limits, allowed),
+      rules: wordsRules(limits, allowed, commonEnglishTerms(ai.db)),
       reviewCriteria: criteria,
       acceptByDropping: enoughAfterDropping,
       signal: job?.signal,

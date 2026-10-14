@@ -23,7 +23,7 @@ const base: WordsOutput = {
     'ZUN 이 써 본 AI 도구 정리',
   ].map(c),
 };
-const codes = (d: WordsOutput) => wordsRules(limits, allowed).flatMap((r) => r(d)).map((i) => `${i.where}:${i.code}`);
+const codes = (d: WordsOutput) => wordsRules(limits, allowed, []).flatMap((r) => r(d)).map((i) => `${i.where}:${i.code}`);
 
 describe('글 후보 규칙 (FR-BR-1)', () => {
   it('규칙을 지킨 후보는 통과', () => {
@@ -57,7 +57,7 @@ describe('글 후보 규칙 (FR-BR-1)', () => {
 
   it('걸린 후보만 빼고 목록마다 5개 — 빼도 5개가 남으면 다시 쓰지 않는다', () => {
     const d = { ...base, bios: [c('정리는 bit.ly/x'), ...base.bios.slice(1)] };
-    const errors = wordsRules(limits, allowed).flatMap((r) => r(d));
+    const errors = wordsRules(limits, allowed, []).flatMap((r) => r(d));
     expect(enoughAfterDropping(errors, d)).toBe(true);
     const { picked, dropped } = pickCandidates(d, errors);
     expect([picked.handles.length, picked.displayNames.length, picked.bios.length]).toEqual([5, 5, 5]);
@@ -67,7 +67,7 @@ describe('글 후보 규칙 (FR-BR-1)', () => {
 
   it('빼고 나서 5개가 안 되면 다시 쓴다', () => {
     const d = { ...base, bios: [c('a.com'), c('b.com'), ...base.bios.slice(2)] };
-    expect(enoughAfterDropping(wordsRules(limits, allowed).flatMap((r) => r(d)), d)).toBe(false);
+    expect(enoughAfterDropping(wordsRules(limits, allowed, []).flatMap((r) => r(d)), d)).toBe(false);
   });
 });
 

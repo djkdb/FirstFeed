@@ -44,15 +44,19 @@ export function SurveyForm({ onSubmit, busy }: { onSubmit: (s: SurveyAnswers) =>
   }, []);
 
   const get = (id: string) => answers[id] ?? { choices: [] };
-  const set = (id: string, patch: Partial<SurveyAnswers[string]>) => setAnswers((a) => ({ ...a, [id]: { ...get(id), ...patch } }));
+  // 상태 계산은 항상 "지금 값"(updater 의 a)에서 한다 — 렌더링 때의 answers 로 계산하면, 다음 렌더링 전에 들어온
+  // 입력이 앞의 선택을 덮어쓴다 (스크립트로 빠르게 입력하다 고른 항목이 사라지는 것으로 실제로 확인, devlog 2026-10-14-01)
+  const update = (id: string, change: (cur: SurveyAnswers[string]) => SurveyAnswers[string]) =>
+    setAnswers((a) => ({ ...a, [id]: change(a[id] ?? { choices: [] }) }));
+  const set = (id: string, patch: Partial<SurveyAnswers[string]>) => update(id, (cur) => ({ ...cur, ...patch }));
 
-  const toggle = (q: Question, option: string) => {
-    const cur = get(q.id).choices;
-    if (q.maxChoices === 1) return set(q.id, { choices: cur[0] === option ? [] : [option] });
-    if (cur.includes(option)) return set(q.id, { choices: cur.filter((c) => c !== option) });
-    const picked = cur.length + (get(q.id).other?.trim() ? 1 : 0);
-    if (picked < q.maxChoices) set(q.id, { choices: [...cur, option] });
-  };
+  const toggle = (q: Question, option: string) =>
+    update(q.id, (cur) => {
+      if (q.maxChoices === 1) return { ...cur, choices: cur.choices[0] === option ? [] : [option] };
+      if (cur.choices.includes(option)) return { ...cur, choices: cur.choices.filter((c) => c !== option) };
+      const picked = cur.choices.length + (cur.other?.trim() ? 1 : 0);
+      return picked < q.maxChoices ? { ...cur, choices: [...cur.choices, option] } : cur;
+    });
 
   const missing = questions.filter((q) => q.required && get(q.id).choices.length === 0 && !get(q.id).other?.trim() && !get(q.id).text?.trim());
 

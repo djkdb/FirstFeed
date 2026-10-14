@@ -244,7 +244,7 @@ async function reflect(id: string) {
     voiceRules: [banmal, ...before.voiceRules.filter((v) => !/존댓말|해요|합니다/.test(v.text))],
     pillars: [...before.pillars.slice(0, -1), changedPillar],
   };
-  const lines = [`# FR-ID-6 실제 반영 · ${date} · ${id}`, '', `- 바꾼 것: 말투 규칙 → 「${banmal.text}」 (존댓말 규칙은 뺌), 축 「${last.name}」 → 「${changedPillar.name}: ${changedPillar.description}」`, `- 프롬프트: brand_words@${versions.brand_words}, 각 1회`, ''];
+  const lines = [`# FR-ID-6 실제 반영 · ${date} · ${id}`, '', `- 바꾼 것: 말투 규칙 → 「${banmal.text}」 (존댓말 규칙이 있으면 뺌 — 없으면 더하기만 한 것), 축 「${last.name}」 → 「${changedPillar.name}: ${changedPillar.description}」`, `- 프롬프트: brand_words@${versions.brand_words}, 각 1회`, ''];
   for (const [title, content] of [
     ['바꾸기 전', before],
     ['바꾼 뒤', after],

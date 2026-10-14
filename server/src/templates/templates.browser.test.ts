@@ -78,3 +78,34 @@ describe('넘치면 글자 크기를 단계적으로 줄이고, 그래도 넘치
     expect(r.shorten[0]?.message).toMatch(/headline.*82% 까지 줄여도 넘칩니다.*약 \d+자 줄이세요/);
   }, 30_000);
 });
+
+describe('렌더링 직전 글 다듬기 — 실제로 그려서 줄바꿈 위치 확인 (측정에서 나온 C·doyun c06)', () => {
+  it('「·」 는 앞뒤 글자와 같은 줄, 「3분 20초」 는 한 줄', async () => {
+    if (!ready) return;
+    const { withCardPage } = await import('../render/render.ts');
+    const html = DRAFTS[2]!.html(BRANDS.doyun!, { kind: 'cover', headline: '1,500명 · 87% · 3단계', sub: '2026.10.15 · 24시간 · 10,000원 · v1.64.0 · 3분 20초' }, 1);
+    const lines = await withCardPage(null, { html, width: 1080, height: 1350 }, (page) =>
+      page.evaluate(() => {
+        // 칸마다 글자별 줄(세로 위치)을 모아 줄 단위 글로
+        return [...document.querySelectorAll('[data-slot="headline"],[data-slot="sub"]')].map((el) => {
+          const out: Array<{ top: number; text: string }> = [];
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          for (let n = walker.nextNode(); n; n = walker.nextNode())
+            for (let i = 0; i < n.textContent!.length; i++) {
+              const r = document.createRange();
+              r.setStart(n, i);
+              r.setEnd(n, i + 1);
+              const rect = r.getBoundingClientRect();
+              if (rect.width === 0) continue;
+              const line = out.find((l) => Math.abs(l.top - rect.top) < rect.height / 2) ?? (out.push({ top: rect.top, text: '' }), out.at(-1)!);
+              line.text += n.textContent![i];
+            }
+          return out.map((l) => l.text.replace(/\u00A0/g, ' ').trim());
+        });
+      }),
+    );
+    for (const slot of lines) for (const l of slot) expect(l.startsWith('·') || l.endsWith('·')).toBe(false);
+    expect(lines.flat().some((l) => l.includes('3분 20초'))).toBe(true);
+  }, 30_000);
+});
+

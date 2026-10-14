@@ -32,3 +32,52 @@ textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; 
 .facts { padding-left: 20px; }
 .facts li { margin: 8px 0; }
 .facts blockquote { margin: 4px 0 0; padding-left: 10px; border-left: 3px solid #ddd; color: var(--muted); font-size: 14px; }
+
+/* 탭 */
+.tabs { display: flex; gap: 4px; margin: 0 0 16px; }
+.tabs a { padding: 6px 14px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; }
+.tabs a.on { background: var(--text); color: #fff; }
+
+/* 공통 */
+button.primary { background: var(--text); color: #fff; border-color: var(--text); }
+.actions { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+.small { font-size: 13px; }
+.qid { display: inline-block; font-size: 11px; font-weight: 600; color: var(--muted); background: #f0f0ee; border-radius: 4px; padding: 1px 5px; margin-right: 4px; vertical-align: 1px; }
+.tag { margin-left: 8px; font-size: 11px; color: #8a5a00; background: #fff4dc; border-radius: 4px; padding: 1px 6px; }
+input { font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid #ddd; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 6px; }
+
+/* 설문 */
+.survey .q { border: 0; padding: 0; margin: 0 0 18px; }
+.survey legend { font-weight: 600; margin-bottom: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border-radius: 999px; padding: 5px 12px; font-size: 14px; }
+.chip.on { background: var(--text); color: #fff; border-color: var(--text); }
+
+/* 인터뷰 */
+.turns { list-style: none; padding: 0; margin: 12px 0; }
+.turn { padding: 10px 0; border-bottom: 1px solid #eee; }
+.q-text { font-weight: 600; }
+.q-text.big { font-size: 17px; margin-bottom: 4px; }
+.a-text { margin-top: 4px; padding-left: 10px; border-left: 3px solid #ddd; }
+.current { margin-top: 16px; padding: 14px; background: #fafaf8; border-radius: 10px; }
+.examples { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin: 10px 0; }
+.example { text-align: left; font-size: 14px; background: #fff; border-style: dashed; }
+.note { background: #fff8e6; border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+.note.error { background: #fdecea; }
+.job { margin-top: 12px; padding: 10px 14px; background: #f3f6ff; border-radius: 8px; }
+.job p { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0; }
+.runs { margin: 6px 0 0; padding-left: 18px; }
+
+/* 프로필 */
+.profile { margin-top: 8px; }
+.profile-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.account-line { font-size: 22px; margin: 2px 0 6px; }
+.badge.ok { background: #e7f5ec; color: var(--ok); border-radius: 999px; padding: 4px 12px; font-size: 13px; white-space: nowrap; }
+.pillars { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.pillar { border: 1px solid #eee; border-radius: 10px; padding: 12px; }
+.pillar p { margin: 4px 0 8px; font-size: 14px; }
+.pillar blockquote { margin: 6px 0 0; padding-left: 8px; border-left: 3px solid #ddd; font-size: 13px; color: #444; }
+.source { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); }
+.dropped { font-size: 14px; color: #8a5a00; }
+.profile-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 14px; }
+h4 { margin: 18px 0 8px; font-size: 14px; }

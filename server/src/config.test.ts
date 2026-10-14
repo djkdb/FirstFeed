@@ -51,3 +51,11 @@ describe('DB 초기 상태', () => {
     expect(getSetting(db, 'prompts.activeVersions')).toEqual({ self_review: 'v2', identity_profile: 'v1', identity_followup: 'v2' });
   });
 });
+
+describe('브랜딩 설정 (결정 2026-10-14 · 브랜딩 키트 설계)', () => {
+  it('인스타 글자 제한·링크 자리·명암비 기본값이 설정에 있다', () => {
+    expect([getSetting(null, 'brand.handleMax'), getSetting(null, 'brand.displayNameMax'), getSetting(null, 'brand.bioMax')]).toEqual([30, 30, 150]);
+    expect(getSetting(null, 'brand.bioLinkReserve')).toBe(20);
+    expect(getSetting(null, 'brand.minContrast')).toBe(4.5);
+  });
+});

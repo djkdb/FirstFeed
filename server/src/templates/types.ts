@@ -48,7 +48,7 @@ export const FRAME_SIZE: Record<FrameKind, { width: number; height: number; safe
 };
 
 export interface Draft {
-  id: 'A' | 'B' | 'C';
+  id: 'A' | 'B' | 'C' | 'D' | 'E';
   name: string;
   description: string;
   /** scale: 넘칠 때 글자 크기를 줄이는 비율 (1 = 원래 크기) */

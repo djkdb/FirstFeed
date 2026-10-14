@@ -15,6 +15,7 @@ interface Frame {
   browser: string;
   reference: boolean;
 }
+type DraftId = 'A' | 'B' | 'C' | 'D' | 'E';
 const KIND_LABEL: Record<string, string> = { cover: '표지', body: '본문', closing: '마무리', reel_cover: '릴스 표지' };
 
 async function fetchState(): Promise<State> {
@@ -58,7 +59,7 @@ export function TemplatePage() {
 
   const refresh = useCallback(() => fetchState().then(setState), []);
 
-  const preview = useCallback(async (draftId: 'A' | 'B' | 'C') => {
+  const preview = useCallback(async (draftId: DraftId) => {
     setFrames((f) => ({ ...f, [draftId]: 'loading' }));
     try {
       const r = await api.api.templates.preview.$post({ json: { draftId } });
@@ -74,11 +75,11 @@ export function TemplatePage() {
     void fetchState().then(async (s) => {
       setState(s);
       // 시안 셋을 차례로 그린다 (서버 브라우저 하나를 돌려 쓰므로 한꺼번에 보내지 않는다)
-      if (s.missing.length === 0) for (const d of s.drafts) await preview(d.id as 'A' | 'B' | 'C');
+      if (s.missing.length === 0) for (const d of s.drafts) await preview(d.id as DraftId);
     });
   }, [preview]);
 
-  const fix = async (draftId: 'A' | 'B' | 'C') => {
+  const fix = async (draftId: DraftId) => {
     setBusy(true);
     setNotice(null);
     try {
@@ -122,7 +123,7 @@ export function TemplatePage() {
               <h2>
                 시안 {d.id} · {d.name}
               </h2>
-              <button type="button" className="primary" disabled={busy || state.missing.length > 0} onClick={() => void fix(d.id as 'A' | 'B' | 'C')}>
+              <button type="button" className="primary" disabled={busy || state.missing.length > 0} onClick={() => void fix(d.id as DraftId)}>
                 {state.fixed?.draftId === d.id ? '이 틀로 다시 고정' : '이 틀로 고정'}
               </button>
             </div>

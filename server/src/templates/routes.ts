@@ -14,7 +14,7 @@ import { fixedTemplate, fixTemplate, getTemplateVersion, listTemplateVersions } 
 import type { BrandLook, Draft } from './types.ts';
 
 const BRAND_ID = 1;
-const DraftBody = z.object({ draftId: z.enum(['A', 'B', 'C']) });
+const DraftBody = z.object({ draftId: z.enum(['A', 'B', 'C', 'D', 'E']) });
 
 async function previewFrames(db: Db, draft: Draft, look: BrandLook, dataDir: string) {
   const resolved = resolveLook(look, dataDir);

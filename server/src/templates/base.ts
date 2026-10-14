@@ -15,9 +15,9 @@ export function weight(id: string, want: number): number {
  * 바탕 위에 글자로 쓸 강조색: 바탕과 큰 글자 기준(3:1) 이상이면서 글자색과 구별되는 색(둘 사이 1.4:1 이상).
  * 글자색과의 조건이 없으면 주색이 글자색과 거의 같은 팔레트(doyun 「퇴근 후 남색」 #1F2A44 vs #1F2433)에서 강조가 안 보인다 — 실제로 PNG 를 열어 보고 발견
  */
-export function accentOn(bg: string, look: BrandLook): string | null {
+export function accentOn(bg: string, look: BrandLook, fg: string = look.palette.text): string | null {
   const p = look.palette;
-  for (const c of [p.primary, p.accent, p.secondary]) if (contrastRatio(c, bg) >= 3 && contrastRatio(c, p.text) >= 1.4) return c;
+  for (const c of [p.primary, p.accent, p.secondary]) if (contrastRatio(c, bg) >= 3 && contrastRatio(c, fg) >= 1.4) return c;
   return null;
 }
 
@@ -25,11 +25,11 @@ export function accentOn(bg: string, look: BrandLook): string | null {
  * 강조(**…**) 모양: 쓸 강조색이 있으면 글자색, 없으면 글자는 그대로 두고 아래쪽에 형광펜 띠(보조색 또는 강조색).
  * 팔레트 밖의 색을 지어내지 않는다
  */
-export function markCss(bg: string, look: BrandLook): string {
-  const acc = accentOn(bg, look);
+export function markCss(bg: string, look: BrandLook, fg: string = look.palette.text): string {
+  const acc = accentOn(bg, look, fg);
   if (acc) return `.mk{color:${acc}}`;
   const p = look.palette;
-  const band = [p.secondary, p.accent].find((c) => contrastRatio(p.text, c) >= 4.5) ?? p.secondary;
+  const band = [p.secondary, p.accent].find((c) => contrastRatio(fg, c) >= 4.5) ?? p.secondary;
   return `.mk{background:linear-gradient(transparent 58%, ${band} 58%, ${band} 92%, transparent 92%)}`;
 }
 

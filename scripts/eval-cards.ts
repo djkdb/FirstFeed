@@ -57,14 +57,24 @@ interface Row {
   pngDir: string | null;
 }
 
-/** 이 회차 ai_runs 에서 재작성을 부른 문제(생성 결과가 rule_error 인 회차의 error 들 + 자기 평가의 fact·broken) */
+/**
+ * 이 회차 ai_runs 에서 **재작성을 부른** 문제만: 생성 회차가 rule_error 이고 같은 과제의 다음 생성이 rewrite 인 것.
+ * 처음엔 rule_error 회차를 모두 셌는데, 표지 후보는 걸린 후보만 빼고 받아들여도(acceptByDropping) rule_error 로 남아서
+ * "뺀 후보"의 사유가 재작성 사유에 섞였다(2026-10-15 측정 — 결과 파일에 정정)
+ */
 function rewriteReasons(db: Db): Record<string, number> {
   const out: Record<string, number> = {};
-  const rows = db.prepare("SELECT task, status, issues_json FROM ai_runs WHERE issues_json IS NOT NULL").all() as Array<{ task: string; status: string; issues_json: string }>;
-  for (const r of rows) {
-    if (r.task === 'self_review' || r.status !== 'rule_error') continue;
-    for (const i of JSON.parse(r.issues_json) as Array<{ code: string; level: string }>) if (i.level === 'error') out[reasonOf(i.code)] = (out[reasonOf(i.code)] ?? 0) + 1;
-  }
+  const rows = db.prepare("SELECT task, kind, status, issues_json FROM ai_runs WHERE task IN ('cover_titles', 'card_body') AND kind IN ('generate', 'rewrite') ORDER BY id").all() as Array<{
+    task: string;
+    kind: string;
+    status: string;
+    issues_json: string | null;
+  }>;
+  rows.forEach((r, i) => {
+    const next = rows.slice(i + 1).find((x) => x.task === r.task);
+    if (r.status !== 'rule_error' || next?.kind !== 'rewrite' || !r.issues_json) return;
+    for (const x of JSON.parse(r.issues_json) as Array<{ code: string; level: string }>) if (x.level === 'error') out[reasonOf(x.code)] = (out[reasonOf(x.code)] ?? 0) + 1;
+  });
   return out;
 }
 
@@ -150,7 +160,13 @@ for (const [, , setLabel] of SETS) {
   lines.push(`| 재작성 (표지 / 본문) 합 | ${sum(rs, (r) => r.covers?.rewrites ?? 0)} / ${sum(rs, (r) => r.body?.rewrites ?? 0)} |`);
   lines.push(`| AI 호출 합 (표지+본문) 평균 | ${(sum(rs, (r) => (r.covers?.calls ?? 0) + (r.body?.calls ?? 0)) / rs.length).toFixed(1)} |`);
   lines.push(`| 한 세트 시간 평균 | ${(sum(rs, (r) => r.seconds) / rs.length).toFixed(0)}초 |`);
-  for (const c of CATS) lines.push(`| 재작성 사유 — ${c} | ${sum(rs, (r) => r.reasons[c] ?? 0)} |`);
+  for (const c of CATS) lines.push(`| 재작성 사유 — ${c} (문제 건수) | ${sum(rs, (r) => r.reasons[c] ?? 0)} |`);
+  const dropped: Record<string, number> = {};
+  for (const r of rs) for (const d of r.covers?.dropped ?? []) for (const why of d.reasons.slice(0, 1)) {
+    const code = /^\[([a-z_]+)\]/.exec(why)?.[1] ?? '';
+    dropped[reasonOf(code)] = (dropped[reasonOf(code)] ?? 0) + 1;
+  }
+  lines.push(`| 뺀 표지 후보의 사유 (재작성 아님) | ${Object.entries(dropped).map(([k, v]) => `${k} ${v}`).join(' · ') || '없음'} |`);
   lines.push(`| 최종 카드의 원문 밖 숫자·영문 (FR-MK-2, 0이어야) | ${sum(saved, (r) => r.ungrounded.length)} |`);
   lines.push(`| 표지 개수 표현 = 본문 카드 수 (개수 표현 있는 세트) | ${saved.filter((r) => r.countOk === true).length}/${saved.filter((r) => r.countOk !== null).length} |`);
   lines.push(`| 잠자기가 낀 회차 | ${rs.filter((r) => r.sleptSec > 0).length}/${rs.length} |`);

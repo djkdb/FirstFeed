@@ -12,6 +12,7 @@ import type { AiService } from './ai/adapter.ts';
 import { JobStore } from './ai/jobs.ts';
 import { runSmokeExtract } from './tasks/smoke-extract.ts';
 import { identityRoutes } from './identity/routes.ts';
+import { brandRoutes } from './brand/routes.ts';
 
 export interface AppDeps {
   db: Db;
@@ -59,7 +60,8 @@ export function createApp(deps: AppDeps) {
       return c.json(state);
     })
     .post('/api/ai/jobs/:jobId/cancel', (c) => c.json({ cancelled: jobs.cancel(c.req.param('jobId')) }))
-    .route('/api/identity', identityRoutes(deps.ai, jobs));
+    .route('/api/identity', identityRoutes(deps.ai, jobs))
+    .route('/api/brand', brandRoutes(deps.ai, jobs));
   return app;
 }
 

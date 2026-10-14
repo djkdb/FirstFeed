@@ -115,6 +115,16 @@ export const DEFAULTS = {
   'grounding.commonEnglish': [
     { term: 'DM', reason: '인스타 다이렉트 메시지를 부르는 흔한 말. 이름이 아니다 — 2026-10-14 바이오 "협업 제안은 DM" 이 english_not_in_source 로 걸림' },
   ] as Array<{ term: string; reason: string }>,
+  /**
+   * 카드 렌더링 브라우저 (결정 2026-10-15 · FR-TP). auto = Playwright Chromium(기준 브라우저) → 설치된 Chrome → 없으면 설치 명령 안내.
+   * 앱은 브라우저를 내려받지 않는다
+   */
+  'render.browser': 'auto' as 'auto' | 'chromium' | 'chrome',
+  /**
+   * 대체 글꼴로 찍혀도 실패로 보지 않는 글꼴 — 이모지 전용. 앱에 넣은 OFL 폰트에는 이모지 글리프가 없어서 이모지는 늘 OS 이모지 글꼴로 찍힌다
+   * (그래서 이모지 모양은 OS 마다 다르다 — 글자 폰트와 달리 막을 방법이 없다)
+   */
+  'render.emojiFonts': ['Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji'] as string[],
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**

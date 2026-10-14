@@ -82,6 +82,9 @@ export const DEFAULTS = {
     self_review: 240_000,
     brand_words: 300_000,
     brand_visual: 300_000,
+    cover_titles: 300_000,
+    // 본문은 카드 N장 + 그림 프롬프트를 한 번에 써서 출력이 길다
+    card_body: 480_000,
   } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
   'ai.webTimeoutMs': 300_000,
@@ -125,6 +128,14 @@ export const DEFAULTS = {
    * (그래서 이모지 모양은 OS 마다 다르다 — 글자 폰트와 달리 막을 방법이 없다)
    */
   'render.emojiFonts': ['Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji'] as string[],
+  /** 본문 카드 수 범위 — 표지에 개수 표현이 없고 사용자가 정하지 않았을 때 AI 가 이 안에서 정한다 (FR-MK-1 "소재 양에 따라 자동, 지정 가능") */
+  'cards.bodyMin': 3,
+  'cards.bodyMax': 7,
+  /** 표지 제목 후보: 보여 줄 수(PRD: 6개)와 넉넉히 받을 수 — 규칙·렌더링에 걸린 것을 빼고 보여 준다 */
+  'cards.coverShow': 6,
+  'cards.coverAsk': 8,
+  /** 본문 카드 근거 인용의 최소 글자 수(공백·문장부호 제외) — 너무 짧은 조각은 근거가 약해서 */
+  'cards.minQuoteChars': 8,
   /** 넘칠 때 글자 크기를 줄여 보는 단계 (FR-TP-4). 마지막 단계에서도 넘치면 원고를 줄이라고 되돌린다 */
   'render.scaleSteps': [1, 0.94, 0.88, 0.82] as number[],
   /**

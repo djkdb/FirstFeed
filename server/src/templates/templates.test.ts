@@ -57,3 +57,24 @@ describe('시안 × 브랜드 × 틀 — 예시 원고는 깨지지 않는다', 
         }
       }, 30_000);
 });
+
+describe('넘치면 글자 크기를 단계적으로 줄이고, 그래도 넘치면 원고를 줄이라고 되돌린다 (FR-TP-4)', () => {
+  it('조금 긴 제목은 줄인 크기로 통과', async () => {
+    if (!ready) return;
+    const { renderFrame } = await import('./render-frame.ts');
+    const r = await renderFrame(null, DRAFTS[0]!, BRANDS.me!, { kind: 'cover', headline: '처음 쓰는 사람을 위한 설정을 하나씩 정리해 봤어요' });
+    expect(r.ok).toBe(true);
+    expect(r.scale).toBe(0.88); // 1·0.94 에서 3줄, 0.88 에서 2줄 (기준 브라우저 실측)
+    expect(r.tries.at(-1)).toEqual({ scale: r.scale, problems: 0 });
+  }, 30_000);
+
+  it('많이 긴 제목은 PNG 없이 "약 N자 줄이세요"', async () => {
+    if (!ready) return;
+    const { renderFrame } = await import('./render-frame.ts');
+    const r = await renderFrame(null, DRAFTS[0]!, BRANDS.me!, { kind: 'cover', headline: '처음 인스타그램을 시작하는 사람이 꼭 알아야 하는 계정 설정과 첫 게시물 준비 순서 완전 정리' });
+    expect(r.ok).toBe(false);
+    expect(r.png).toBeNull();
+    expect(r.tries.map((t) => t.scale)).toEqual([1, 0.94, 0.88, 0.82]);
+    expect(r.shorten[0]?.message).toMatch(/headline.*82% 까지 줄여도 넘칩니다.*약 \d+자 줄이세요/);
+  }, 30_000);
+});

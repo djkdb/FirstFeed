@@ -125,6 +125,17 @@ export const DEFAULTS = {
    * (그래서 이모지 모양은 OS 마다 다르다 — 글자 폰트와 달리 막을 방법이 없다)
    */
   'render.emojiFonts': ['Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji'] as string[],
+  /** 넘칠 때 글자 크기를 줄여 보는 단계 (FR-TP-4). 마지막 단계에서도 넘치면 원고를 줄이라고 되돌린다 */
+  'render.scaleSteps': [1, 0.94, 0.88, 0.82] as number[],
+  /**
+   * 인스타 프로필 격자에서 잘리는 자리를 뺀 안전 영역 — **외부 자료 등급, 확인 대기**(글자 수 결정과 같은 방식, 결정 2026-10-15).
+   * 격자 칸이 3:4 라 4:5 카드(1080×1350)는 좌우가, 9:16 릴스 표지(1080×1920)는 위아래가 잘린다는 외부 자료와
+   * 레퍼런스(card.html.j2)의 주석("9:16 의 위아래 12.5% 를 잘라 3:4")에 맞춘 값. 1350×3/4=1012.5 → 좌우 34px, 1080×4/3=1440 → 위아래 240px
+   */
+  'render.safeArea': {
+    feed: { x: 34, y: 0, w: 1012, h: 1350 },
+    reel: { x: 0, y: 240, w: 1080, h: 1440 },
+  } as Record<'feed' | 'reel', { x: number; y: number; w: number; h: number }>,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**

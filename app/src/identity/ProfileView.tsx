@@ -14,7 +14,7 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
           </p>
         </div>
         {active ? (
-          <span className="badge ok">확정됨</span>
+          <span className="badge ok">적용 중</span>
         ) : (
           <button type="button" className="primary" disabled={busy} onClick={onConfirm}>
             이 프로필로 확정
@@ -22,11 +22,19 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
         )}
       </div>
 
+      {profile.presence && (
+        <p>
+          <span className="muted">보여 주는 방식 · </span>
+          {profile.presence.text}
+        </p>
+      )}
       <h4>콘텐츠 축</h4>
       <div className="pillars">
         {profile.pillars.map((p) => (
           <div key={p.name} className="pillar">
             <strong>{p.name}</strong>
+            {p.origin === 'edit' && <span className="tag">직접 추가</span>}
+            {p.edited && p.edited.length > 0 && <span className="tag">직접 고침</span>}
             <p>{p.description}</p>
             {p.evidence.map((e, i) => (
               <blockquote key={i}>

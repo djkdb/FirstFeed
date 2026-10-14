@@ -81,3 +81,11 @@ input { font: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid #ddd
 .dropped { font-size: 14px; color: #8a5a00; }
 .profile-lists { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 14px; }
 h4 { margin: 18px 0 8px; font-size: 14px; }
+
+/* 프로필 수정·이력 (기능 확인용 최소 — 꾸미기는 기능이 다 붙은 뒤) */
+.editor label { display: block; margin: 8px 0; font-size: 14px; }
+.editor .row, .pillar-edit { display: flex; gap: 6px; align-items: center; margin: 4px 0; }
+.pillar-edit input:first-child { max-width: 160px; }
+.history { margin-top: 16px; font-size: 14px; }
+.history li { margin: 8px 0; }
+.history button { margin-left: 8px; font-size: 12px; padding: 2px 8px; }

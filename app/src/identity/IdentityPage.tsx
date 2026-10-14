@@ -4,6 +4,8 @@ import { api } from '../api.ts';
 import { useJob, type JobView } from '../useJob.ts';
 import { Interview } from './Interview.tsx';
 import { ProfileView } from './ProfileView.tsx';
+import { ProfileEditor, hasEditDraft } from './ProfileEditor.tsx';
+import { ProfileHistory } from './ProfileHistory.tsx';
 import { clearSurveyDraft, SurveyForm } from './SurveyForm.tsx';
 import type { Current, SurveyAnswers } from './types.ts';
 
@@ -22,6 +24,9 @@ export function IdentityPage() {
   const [jobKind, setJobKind] = useState<JobKind | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
 
   useEffect(() => {
     fetchCurrent()
@@ -92,10 +97,15 @@ export function IdentityPage() {
     }
   };
 
+  const refresh = async () => {
+    setCurrent(await fetchCurrent());
+    setHistoryKey((k) => k + 1);
+  };
+
   const confirm = async (profileId: number) => {
     setBusy(true);
     await api.api.identity.profiles[':id'].confirm.$post({ param: { id: String(profileId) } });
-    setCurrent(await fetchCurrent());
+    await refresh();
     setBusy(false);
   };
 
@@ -159,6 +169,7 @@ export function IdentityPage() {
       {running && !job && <p className="muted">작업을 시작하는 중…</p>}
 
       {error && <p className="status error">{error}</p>}
+      {notice && <p className="note">{notice}</p>}
 
       {state && state.status !== 'profiled' && !running && (
         <div className="actions">
@@ -175,8 +186,26 @@ export function IdentityPage() {
         </div>
       )}
 
-      {state?.profile && state.status === 'profiled' && (
-        <ProfileView profile={state.profile} active={state.activeProfileId === state.profile.id} busy={busy} onConfirm={() => void confirm(state.profile!.id)} />
+      {state?.profile && state.status === 'profiled' && !editing && (
+        <>
+          <ProfileView profile={state.profile} active={state.activeProfileId === state.profile.id} busy={busy} onConfirm={() => void confirm(state.profile!.id)} />
+          <div className="actions">
+            <button type="button" onClick={() => setEditing(true)} disabled={running}>
+              {hasEditDraft(state.profile.id) ? '고치던 것 이어서 고치기' : '고치기'}
+            </button>
+          </div>
+          <ProfileHistory refreshKey={historyKey} onChanged={() => void refresh()} />
+        </>
+      )}
+      {state?.profile && state.status === 'profiled' && editing && (
+        <ProfileEditor
+          profile={state.profile}
+          onDone={(saved, notes) => {
+            setEditing(false);
+            setNotice(notes?.join(' / ') ?? null);
+            if (saved) void refresh();
+          }}
+        />
       )}
     </section>
   );

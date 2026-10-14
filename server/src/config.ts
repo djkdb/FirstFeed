@@ -47,7 +47,9 @@ export const DEFAULTS = {
     // opus — 정체성 프로필·브랜딩·카피 생성·자기 평가
     identity_profile: 'opus',
     identity_alternatives: 'opus',
-    brand_kit: 'opus',
+    // 브랜딩 키트는 글·시각 두 호출 (결정 2026-10-14 · 브랜딩 키트 설계)
+    brand_words: 'opus',
+    brand_visual: 'opus',
     cover_titles: 'opus',
     card_body: 'opus',
     reel_script: 'opus',
@@ -78,6 +80,8 @@ export const DEFAULTS = {
     // 다른 방향은 프로필 두 개를 한 번에 써서 출력이 두 배
     identity_alternatives: 480_000,
     self_review: 240_000,
+    brand_words: 300_000,
+    brand_visual: 300_000,
   } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
   'ai.webTimeoutMs': 300_000,

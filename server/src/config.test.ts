@@ -18,13 +18,13 @@ describe('설정 읽기 (기본값은 파일, 사용자 값은 DB)', () => {
     const db = openDb(':memory:');
     setSetting(db, 'ai.taskModels', { identity_profile: 'sonnet' });
     expect(modelForTask(db, 'identity_profile')).toBe('sonnet');
-    expect(modelForTask(db, 'brand_kit')).toBe('opus');
+    expect(modelForTask(db, 'brand_words')).toBe('opus');
     expect(modelForTask(db, 'smoke_extract')).toBe('sonnet');
   });
 
   it('과제별 기본 배정: 인터뷰·추출·스모크는 sonnet, 프로필·브랜딩·카피·자기 평가는 opus', () => {
     for (const t of ['identity_followup', 'task_extract', 'smoke_extract']) expect(modelForTask(null, t)).toBe('sonnet');
-    for (const t of ['identity_profile', 'brand_kit', 'card_body', 'cover_titles', 'self_review']) {
+    for (const t of ['identity_profile', 'brand_words', 'brand_visual', 'card_body', 'cover_titles', 'self_review']) {
       expect(modelForTask(null, t)).toBe('opus');
     }
     expect(modelForTask(null, '아직_없는_과제')).toBe('sonnet');

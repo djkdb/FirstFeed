@@ -96,6 +96,7 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
 
   it('과제별 자기 평가 기준은 self_review v2 에만 들어가고, v1 은 기준 없이도 그대로 돈다', async () => {
     const v1 = setup([good, noIssues]);
+    setSetting(v1.db, 'prompts.activeVersions', { self_review: 'v1' });
     await generateChecked(v1.ai, { ...req, reviewCriteria: '축이 겹치면 broken' });
     expect(v1.provider.calls[1]!.prompt).not.toContain('축이 겹치면 broken');
 

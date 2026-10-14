@@ -43,4 +43,11 @@ describe('DB 초기 상태', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({ n: 1 });
     expect(db.prepare('SELECT user_id, name FROM brands').all()).toEqual([{ user_id: 1, name: '내 브랜드' }]);
   });
+
+  it('활성 프롬프트 버전: 자기 평가는 v2, 나머지는 v1 (사용자가 과제 하나만 바꿔도 나머지는 유지)', () => {
+    const db = openDb(':memory:');
+    expect(getSetting(db, 'prompts.activeVersions')).toEqual({ self_review: 'v2' });
+    setSetting(db, 'prompts.activeVersions', { identity_profile: 'v2' });
+    expect(getSetting(db, 'prompts.activeVersions')).toEqual({ self_review: 'v2', identity_profile: 'v2' });
+  });
 });

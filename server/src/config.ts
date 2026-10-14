@@ -90,8 +90,11 @@ export const DEFAULTS = {
   'identity.pillarOverlapThreshold': 0.5,
   /** 인용 최소 글자 수(공백·문장부호 제외). 너무 짧은 조각은 근거가 약해서 (CLAUDE.md 근거 규칙의 알려진 한계) */
   'identity.minQuoteChars': 4,
-  /** 과제별 프롬프트 활성 버전. 없으면 v1 */
-  'prompts.activeVersions': {} as Record<string, string>,
+  /**
+   * 과제별 프롬프트 활성 버전. 없으면 v1.
+   * self_review v2: 프로필의 축 겹침을 broken 으로 잡는다 (전후 측정 tests/results/2026-10-14-identity-v1-review-*.md, 결정 2026-10-14)
+   */
+  'prompts.activeVersions': { self_review: 'v2' } as Record<string, string>,
 };
 
 export type Settings = typeof DEFAULTS;

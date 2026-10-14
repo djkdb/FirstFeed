@@ -6,7 +6,11 @@ import type { Issue } from '../rules/types.ts';
 import { runFollowup } from './followup.ts';
 import { runProfile, type ProfileOutcome } from './profile.ts';
 import { buildSources, classifyAnswer } from './sources.ts';
-import { addTurn, getSessionState, listTurns, saveAnswer, saveProfile, sessionBrand, setStatus } from './store.ts';
+import { addTurn, getSessionState, listTurns, saveAnswer, saveProfileVersion, sessionBrand, setStatus } from './store.ts';
+import { newPillarId, text, type Presence, type ProfileContent } from './model.ts';
+import { surveyAnswerText, type SurveyAnswers } from './survey.ts';
+import type { ProfileDraft, VerifiedPillar } from './profile.ts';
+import type { DroppedPillar } from './model.ts';
 
 export class FlowError extends Error {
   readonly hint: string;
@@ -74,7 +78,14 @@ export async function makeProfile(ai: AiService, sessionId: number, job?: JobCon
   const o = r.outcome;
   const meta = { calls: r.calls, rewrites: r.rewrites };
   if (o.kind === 'saved') {
-    const profileId = saveProfile(ai.db, brandId, sessionId, o.draft, o.dropped, r.jobId);
+    // 인터뷰로 처음 만든 초안은 「확정」을 눌러야 활성이 된다 (수정·다른 방향·되돌리기는 바로 활성)
+    const profileId = saveProfileVersion(ai.db, brandId, contentFromDraft(o.draft, o.dropped, state.survey, 'interview'), {
+      reason: 'interview',
+      sessionId,
+      basedOn: null,
+      jobId: r.jobId,
+      activate: false,
+    });
     setStatus(ai.db, sessionId, 'profiled');
     return { ...meta, outcome: 'saved', profileId, salvaged: o.salvaged };
   }
@@ -96,4 +107,32 @@ export async function makeProfile(ai: AiService, sessionId: number, job?: JobCon
     missing: o.errors.map((e) => e.message),
   });
   return { ...meta, outcome: 'failed', profileId: null, salvaged: false };
+}
+
+/** 설문 S6 → 「보여 주는 방식」. AI 가 만든 것이 아니라 사용자가 고른 답을 그대로 옮긴다 */
+export function presenceFromSurvey(survey: SurveyAnswers): Presence | null {
+  const t = surveyAnswerText(survey.S6);
+  return t ? { text: t, source: 'S6', origin: 'interview' } : null;
+}
+
+/** 규칙을 통과한 AI 초안 → 저장 형식. 축마다 새 ID, 항목 출처는 origin(interview 또는 alternative) */
+export function contentFromDraft(
+  draft: Omit<ProfileDraft, 'pillars'> & { pillars: VerifiedPillar[] },
+  dropped: DroppedPillar[],
+  survey: SurveyAnswers,
+  origin: 'interview' | 'alternative',
+  presence: Presence | null = presenceFromSurvey(survey),
+): ProfileContent {
+  return {
+    accountLine: draft.account_line,
+    accountLineOrigin: origin,
+    audience: draft.audience,
+    audienceOrigin: origin,
+    pillars: draft.pillars.map((p) => ({ id: newPillarId(), name: p.name, description: p.description, evidence: p.evidence, origin, expiresAt: null })),
+    dropped,
+    voiceRules: draft.voice_rules.map((t) => text(t, origin)),
+    avoid: draft.avoid.map((t) => text(t, origin)),
+    unknown: draft.unknown,
+    presence,
+  };
 }

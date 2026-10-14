@@ -147,7 +147,7 @@ async function runOne(fx: Fixture, run: number): Promise<Row> {
         for (let j = i + 1; j < p.pillars.length; j++)
           sims.push(similarity(`${p.pillars[i]!.name} ${p.pillars[i]!.description}`, `${p.pillars[j]!.name} ${p.pillars[j]!.description}`));
       row.maxPillarSim = sims.length ? Math.max(...sims) : null;
-      const texts = [p.accountLine, p.audience, ...p.pillars.map((x) => x.description), ...p.voiceRules];
+      const texts = [p.accountLine, p.audience, ...p.pillars.map((x) => x.description), ...p.voiceRules.map((v) => v.text)];
       row.reviewerVoice = texts.filter((t) => REVIEWER_VOICE.test(t)).length;
       for (const x of p.pillars)
         for (const e of x.evidence)
@@ -160,7 +160,7 @@ async function runOne(fx: Fixture, run: number): Promise<Row> {
       for (const x of p.pillars)
         row.detail.push(`- **${x.name}**: ${x.description}`, ...x.evidence.map((e) => `  - “${e.quote}” (${e.sourceLabel}${e.weight === 'supporting' ? ' · 보조' : ''})`));
       for (const d of p.dropped) row.detail.push(`- ~~${d.name}~~ 근거 부족: ${d.reason}`);
-      row.detail.push(`- 말투: ${p.voiceRules.join(' / ')}`, `- 피할 것: ${p.avoid.join(' / ')}`, `- 모르는 것: ${p.unknown.join(' / ') || '—'}`);
+      row.detail.push(`- 말투: ${p.voiceRules.map((v) => v.text).join(' / ')}`, `- 피할 것: ${p.avoid.map((v) => v.text).join(' / ')}`, `- 모르는 것: ${p.unknown.join(' / ') || '—'}`);
     } else if (st?.note) {
       row.detail.push(`(저장 안 됨) ${st.note.message}`, ...st.note.missing.map((m) => `- ${m}`));
     }

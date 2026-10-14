@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { openDb } from './index.ts';
@@ -9,7 +10,8 @@ describe('마이그레이션', () => {
   it('새 DB 에 모든 마이그레이션을 적용하고 체크섬을 기록한다', () => {
     const db = openDb(':memory:');
     const rows = db.prepare('SELECT version, checksum FROM schema_version ORDER BY version').all() as Array<{ version: number; checksum: string }>;
-    expect(rows.map((r) => r.version)).toEqual([1, 2, 3]);
+    const files = fs.readdirSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations')).filter((f) => /^\d{3}_.+\.sql$/.test(f));
+    expect(rows.map((r) => r.version)).toEqual(files.map((f) => Number(f.slice(0, 3))).sort((a, b) => a - b));
     expect(rows.every((r) => /^[0-9a-f]{16}$/.test(r.checksum))).toBe(true);
     // 003 이 더한 칸이 있다
     const cols = db.prepare('PRAGMA table_info(identity_sessions)').all() as Array<{ name: string }>;

@@ -57,11 +57,11 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
       <div className="profile-lists">
         <div>
           <h4>말투 규칙</h4>
-          <ul>{profile.voiceRules.map((v) => <li key={v}>{v}</li>)}</ul>
+          <ul>{profile.voiceRules.map((v) => <li key={v.text}>{v.text}</li>)}</ul>
         </div>
         <div>
           <h4>피할 것</h4>
-          <ul>{profile.avoid.map((v) => <li key={v}>{v}</li>)}</ul>
+          <ul>{profile.avoid.map((v) => <li key={v.text}>{v.text}</li>)}</ul>
         </div>
         {profile.unknown.length > 0 && (
           <div>

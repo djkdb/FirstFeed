@@ -10,6 +10,7 @@ import { findUngrounded, normalizeForQuote, quoteInSources } from '../rules/grou
 import { similarity } from '../rules/similarity.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { formatSourcesForPrompt, type EvidenceSource } from './sources.ts';
+import type { DroppedPillar, StoredEvidence } from './model.ts';
 
 const Evidence = z.object({ quote: z.string().min(1).max(300), source: z.string().regex(/^[SA]\d{1,2}$/) });
 const Pillar = z.object({
@@ -28,27 +29,23 @@ export const ProfileSchema = z.object({
 });
 export type ProfileDraft = z.infer<typeof ProfileSchema>;
 
-/** 저장되는 축: 코드가 확인한 인용만, 출처 이름과 함께 */
-export interface VerifiedEvidence {
-  quote: string;
-  source: string;
-  sourceLabel: string;
-  /** primary(설문·직접 입력) 또는 supporting(선택지를 고른 답 — 화면에 「보조 근거」) */
-  weight: 'primary' | 'supporting';
-}
+/** 확인된 인용 (저장 형식은 model.ts 의 StoredEvidence) */
+export type VerifiedEvidence = StoredEvidence;
+/** 규칙을 통과한 축 — 아직 ID·출처를 붙이기 전 */
 export interface VerifiedPillar {
   name: string;
   description: string;
   evidence: VerifiedEvidence[];
 }
-export interface DroppedPillar {
-  name: string;
-  description: string;
-  reason: string;
-}
+export type { DroppedPillar };
 
 export interface ProfileContext {
   sources: EvidenceSource[];
+  /**
+   * 숫자·영문 대조에 더할 "사용자가 직접 쓴 글" — 지금 판에서 사용자가 고친 칸 (model.ts userAuthoredTexts).
+   * 다른 방향을 만들 때 쓴다. AI 가 만든 프로필 글은 넣지 않는다
+   */
+  extraUserTexts?: string[];
   overlapThreshold: number;
   minQuoteChars: number;
 }
@@ -110,7 +107,7 @@ function weakOnlyKind(p: ProfileDraft['pillars'][number], ctx: ProfileContext): 
 }
 
 export function profileRules(ctx: ProfileContext): Rule<ProfileDraft>[] {
-  const userTexts = ctx.sources.filter((s) => s.countsAsUserInput).map((s) => s.text);
+  const userTexts = [...ctx.sources.filter((s) => s.countsAsUserInput).map((s) => s.text), ...(ctx.extraUserTexts ?? [])];
   return [
     // 인용마다 출처 대조
     (d) =>

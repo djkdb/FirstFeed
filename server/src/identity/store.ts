@@ -2,7 +2,7 @@
 import type { Db } from '../db/index.ts';
 import type { AnswerKind, TurnLike } from './sources.ts';
 import type { SurveyAnswers } from './survey.ts';
-import type { DroppedPillar, ProfileDraft, VerifiedPillar } from './profile.ts';
+import type { ProfileContent, VersionReason } from './model.ts';
 import type { Followup } from './followup.ts';
 
 export type SessionStatus = 'interview' | 'ready' | 'profiled';
@@ -19,16 +19,14 @@ export interface Turn extends TurnLike {
   target: string | null;
 }
 
-export interface SavedProfile {
+export interface SavedProfile extends ProfileContent {
   id: number;
   version: number;
-  accountLine: string;
-  audience: string;
-  pillars: VerifiedPillar[];
-  dropped: DroppedPillar[];
-  voiceRules: string[];
-  avoid: string[];
-  unknown: string[];
+  /** 이 판이 왜 생겼는가 */
+  reason: VersionReason;
+  /** 이 판이 나온 판 (수정·다른 방향·되돌리기) */
+  basedOn: number | null;
+  sessionId: number | null;
   createdAt: string;
   confirmedAt: string | null;
 }
@@ -108,38 +106,47 @@ export function setStatus(db: Db, sessionId: number, status: SessionStatus, note
   );
 }
 
-export function saveProfile(
+/**
+ * 판 하나를 저장한다. 판 번호 계산과 저장 사이에 다른 저장이 끼지 않게 한 번에(트랜잭션).
+ * activate 면 저장과 함께 브랜드의 활성 판으로 바꾼다 — 사용자가 명시적으로 고른 판(수정·다른 방향·되돌리기)은 바로 활성 (결정 2026-10-14)
+ */
+export function saveProfileVersion(
   db: Db,
   brandId: number,
-  sessionId: number,
-  draft: Omit<ProfileDraft, 'pillars'> & { pillars: VerifiedPillar[] },
-  dropped: DroppedPillar[],
-  jobId: string,
+  content: ProfileContent,
+  opts: { reason: VersionReason; sessionId: number | null; basedOn: number | null; jobId: string | null; activate: boolean },
 ): number {
-  // 저장은 한 번에: 판 번호 계산과 저장 사이에 다른 저장이 끼지 않게
   db.exec('BEGIN');
   try {
     const row = db.prepare('SELECT COALESCE(MAX(version), 0) AS v FROM brand_profiles WHERE brand_id = ?').get(brandId) as Row;
     const r = db
       .prepare(
-        `INSERT INTO brand_profiles (brand_id, session_id, version, account_line, audience, pillars_json, dropped_json, voice_rules_json, avoid_json, unknown_json, origin, job_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'interview', ?)`,
+        `INSERT INTO brand_profiles (brand_id, session_id, version, account_line, account_line_origin, audience, audience_origin, pillars_json, dropped_json,
+           voice_rules_json, avoid_json, unknown_json, presence_json, reason, based_on, job_id, confirmed_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ${opts.activate ? "datetime('now')" : 'NULL'})`,
       )
       .run(
         brandId,
-        sessionId,
+        opts.sessionId,
         Number(row.v) + 1,
-        draft.account_line,
-        draft.audience,
-        JSON.stringify(draft.pillars),
-        JSON.stringify(dropped),
-        JSON.stringify(draft.voice_rules),
-        JSON.stringify(draft.avoid),
-        JSON.stringify(draft.unknown),
-        jobId,
+        content.accountLine,
+        content.accountLineOrigin,
+        content.audience,
+        content.audienceOrigin,
+        JSON.stringify(content.pillars),
+        JSON.stringify(content.dropped),
+        JSON.stringify(content.voiceRules),
+        JSON.stringify(content.avoid),
+        JSON.stringify(content.unknown),
+        content.presence ? JSON.stringify(content.presence) : null,
+        opts.reason,
+        opts.basedOn,
+        opts.jobId,
       );
+    const id = Number(r.lastInsertRowid);
+    if (opts.activate) db.prepare('UPDATE brands SET active_profile_id = ? WHERE id = ?').run(id, brandId);
     db.exec('COMMIT');
-    return Number(r.lastInsertRowid);
+    return id;
   } catch (err) {
     db.exec('ROLLBACK');
     throw err;
@@ -150,16 +157,38 @@ function toProfile(r: Row): SavedProfile {
   return {
     id: Number(r.id),
     version: Number(r.version),
+    reason: r.reason as VersionReason,
+    basedOn: r.based_on == null ? null : Number(r.based_on),
+    sessionId: r.session_id == null ? null : Number(r.session_id),
     accountLine: String(r.account_line),
+    accountLineOrigin: r.account_line_origin as ProfileContent['accountLineOrigin'],
     audience: String(r.audience),
+    audienceOrigin: r.audience_origin as ProfileContent['audienceOrigin'],
     pillars: json(r.pillars_json),
     dropped: json(r.dropped_json),
     voiceRules: json(r.voice_rules_json),
     avoid: json(r.avoid_json),
     unknown: json(r.unknown_json),
+    presence: r.presence_json ? json(r.presence_json) : null,
     createdAt: String(r.created_at),
     confirmedAt: (r.confirmed_at as string | null) ?? null,
   };
+}
+
+export function getProfile(db: Db, profileId: number): (SavedProfile & { brandId: number }) | null {
+  const r = db.prepare('SELECT * FROM brand_profiles WHERE id = ?').get(profileId) as Row | undefined;
+  return r ? { ...toProfile(r), brandId: Number(r.brand_id) } : null;
+}
+
+export function activeProfile(db: Db, brandId: number): SavedProfile | null {
+  const b = db.prepare('SELECT active_profile_id FROM brands WHERE id = ?').get(brandId) as Row | undefined;
+  if (!b || b.active_profile_id == null) return null;
+  return getProfile(db, Number(b.active_profile_id));
+}
+
+/** 브랜드의 판 목록 (새 판이 위). 이력 화면용 */
+export function listProfiles(db: Db, brandId: number): SavedProfile[] {
+  return (db.prepare('SELECT * FROM brand_profiles WHERE brand_id = ? ORDER BY version DESC').all(brandId) as Row[]).map(toProfile);
 }
 
 export function confirmProfile(db: Db, profileId: number): boolean {
@@ -167,7 +196,7 @@ export function confirmProfile(db: Db, profileId: number): boolean {
   if (!row) return false;
   db.exec('BEGIN');
   try {
-    db.prepare("UPDATE brand_profiles SET confirmed_at = datetime('now') WHERE id = ?").run(profileId);
+    db.prepare("UPDATE brand_profiles SET confirmed_at = COALESCE(confirmed_at, datetime('now')) WHERE id = ?").run(profileId);
     db.prepare('UPDATE brands SET active_profile_id = ? WHERE id = ?').run(profileId, Number(row.brand_id));
     db.exec('COMMIT');
     return true;

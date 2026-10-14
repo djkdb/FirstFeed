@@ -100,25 +100,28 @@ export function visualRules(minContrast: number): Rule<VisualOutput>[] {
         if (same >= 0) out.push(issue(`font_pairs.${i}`, 'duplicate_candidate', `font_pairs.${same} 와 같은 짝입니다.`));
         return out;
       }),
-    (d) =>
-      d.image_prompts.flatMap((p, i): Issue[] => {
-        const out: Issue[] = [];
-        const where = `image_prompts.${i}`;
-        if (/[ㄱ-ㆎ가-힣]/.test(p.prompt)) out.push(issue(where, 'prompt_not_english', '그림 프롬프트에 한글이 있습니다. 영어로 쓰세요.'));
-        if (!/\bno text\b/i.test(p.prompt)) out.push(issue(where, 'prompt_missing_no_text', '그림 프롬프트에 "no text" 가 없습니다(FR-BR-4 수용 기준).'));
-        for (const [re, label] of PROMPT_NEEDS[p.target]) if (!re.test(p.prompt)) out.push(issue(where, 'prompt_missing_size', `그림 프롬프트에 ${label} 이 없습니다(FR-BR-4 수용 기준).`));
-        if (!/^[a-z0-9-]+\.png$/.test(p.filename)) out.push(issue(where, 'bad_filename', `파일 이름 "${p.filename}" 은 영문 소문자·숫자·하이픈과 .png 로 쓰세요.`));
-        if (p.target === 'profile') {
-          const affirmed = withoutNegations(p.prompt);
-          const person = REAL_PERSON.exec(affirmed) ?? BODY_PART.exec(affirmed);
-          if (person)
-            out.push(issue(where, 'prompt_realistic_person', `프로필 사진 프롬프트에 실사 인물 표현 "${person[0]}" 이 있습니다. 프로필 사진의 사람은 본인이어야 해서 사람 없는 그림(사물·캐릭터·상징)으로 쓰세요.`));
-          const looks = AGE_LOOKS.exec(affirmed);
-          if (looks) out.push(issue(where, 'prompt_age_appearance', `프로필 사진 프롬프트에 나이·외모 묘사 "${looks[0]}" 가 있습니다. 원문에 없는 사람 묘사는 빼세요.`));
-        }
-        return out;
-      }),
+    (d) => d.image_prompts.flatMap((p, i): Issue[] => imagePromptIssues(`image_prompts.${i}`, p, PROMPT_NEEDS[p.target], p.target === 'profile')),
   ];
+}
+
+/**
+ * 그림 프롬프트 한 개의 코드 규칙 — 브랜딩(프로필·하이라이트)과 카드 그림(FR-MK-8)이 같이 쓴다.
+ * noPeople: 실사 인물·신체·나이·외모 금지(프로필 사진 규칙, 결정 2026-10-14·15). 카드 그림은 사람 규칙 결정 대기 동안 이 규칙을 그대로(A안)
+ */
+export function imagePromptIssues(where: string, p: { prompt: string; filename: string }, needs: Array<[RegExp, string]>, noPeople: boolean): Issue[] {
+  const out: Issue[] = [];
+  if (/[ㄱ-ㆎ가-힣]/.test(p.prompt)) out.push(issue(where, 'prompt_not_english', '그림 프롬프트에 한글이 있습니다. 영어로 쓰세요.'));
+  if (!/\bno text\b/i.test(p.prompt)) out.push(issue(where, 'prompt_missing_no_text', '그림 프롬프트에 "no text" 가 없습니다(수용 기준: 글자 없음).'));
+  for (const [re, label] of needs) if (!re.test(p.prompt)) out.push(issue(where, 'prompt_missing_size', `그림 프롬프트에 ${label} 이 없습니다(수용 기준: 크기·비율).`));
+  if (!/^[a-z0-9-]+\.png$/.test(p.filename)) out.push(issue(where, 'bad_filename', `파일 이름 "${p.filename}" 은 영문 소문자·숫자·하이픈과 .png 로 쓰세요.`));
+  if (noPeople) {
+    const affirmed = withoutNegations(p.prompt);
+    const person = REAL_PERSON.exec(affirmed) ?? BODY_PART.exec(affirmed);
+    if (person) out.push(issue(where, 'prompt_realistic_person', `그림 프롬프트에 실사 인물·신체 표현 "${person[0]}" 이 있습니다. 사람 없는 그림(사물·캐릭터·상징)으로 쓰세요.`));
+    const looks = AGE_LOOKS.exec(affirmed);
+    if (looks) out.push(issue(where, 'prompt_age_appearance', `그림 프롬프트에 나이·외모 묘사 "${looks[0]}" 가 있습니다. 원문에 없는 사람 묘사는 빼세요.`));
+  }
+  return out;
 }
 
 type ListKey = 'palettes' | 'font_pairs' | 'image_prompts';

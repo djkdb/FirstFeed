@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<style>
+/* ==========================================================
+   zun_it_ 카드 — **디자인이 하나입니다.**
+
+   원본은 피그마 Make 파일이고 값은 `docs/zun2-템플릿.md` 에 옮겨 적어
+   뒀습니다. 그 문서가 기준입니다 — 링크는 만료되거나 바뀝니다.
+
+   예전에는 테마가 14개였고 새 요소를 만들 때마다 전부에서 안 깨지는지
+   확인해야 했습니다. 확인이 빠진 자리에서 실제로 깨졌습니다 (함정 11·12).
+   계정 템플릿이 확정된 뒤로는 그 비용을 살 이유가 없어서 하나만 남깁니다.
+
+   구조 — 세 종류 다 같은 뼈대입니다:
+     [헤더 배지 + 쪽수]  /  [내용 flex:1 세로 가운데]  /  [워드마크 Z U N]
+   시리즈 구분은 딱 두 곳 — 워드마크에서 켜지는 글자와 배지 색.
+   색을 카드 전체에 퍼뜨리면 프로필 그리드에서 계정이 셋으로 쪼개집니다.
+   ========================================================== */
+
+{{ font_css }}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+html,body{width:{{ W }}px;height:{{ H }}px}
+body{
+  /* 한글 폰트 체인은 **한 곳에서만** 정합니다. 릴스 글자 카드도 이걸
+     복사해 씁니다 — 짧게 적으면 번들 폰트가 없는 환경에서 한글과 숫자가
+     서로 다른 폰트로 찍힙니다 (함정 24). */
+  font-family:"{{ bundled_family }}","Pretendard","Pretendard Variable",
+              "Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",
+              "NanumGothicExtraBold","NanumGothic","Malgun Gothic",sans-serif;
+  /* 한글이 단어 중간에서 쪼개지지 않게. 지우면 "다시" 가 "다 / 시" 가 됩니다 */
+  word-break:keep-all;
+  -webkit-font-smoothing:antialiased;
+  background:#0A0C10;
+}
+
+/* 모노 체인 뒤에 한글 폰트를 붙입니다 — 배지에 "개발기" 같은 한글이 옵니다.
+   모노만 적으면 그 글자가 대체 폰트로 튀어 배지 안에서 높이가 어긋납니다. */
+/* 모노 체인 — **끝에 한글 체인을 붙입니다.**
+
+   앞의 모노 폰트(JetBrains Mono·Menlo·Consolas)에는 한글 글리프가 없고
+   D2Coding 은 대개 안 깔려 있습니다. 그래서 예전엔 한글이 체인을 끝까지
+   빠져나가 fontconfig 가 아무거나 골랐고, **기계마다 다른 글꼴**이 나왔습니다
+   (리눅스는 나눔고딕, 맥은 Apple SD Gothic Neo). 함정 3-1 과 같은 종류입니다.
+
+   영문·숫자는 여전히 앞쪽 모노가 잡고, 한글만 이 뒤로 떨어집니다. */
+.mono{
+  font-family:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,"D2Coding",
+              "{{ bundled_family }}",{{ fallback_stack }};
+}
+
+.card{
+  position:relative; width:{{ W }}px; height:{{ H }}px; overflow:hidden;
+  background:#0A0C10; color:#FFFFFF;
+  display:flex; flex-direction:column;
+}
+/* **배경은 #0A0C10 한 색입니다.** 옅은 글로우를 얹어봤는데 원본에 없는
+   것이라 색이 미묘하게 달라 보였습니다. 원본을 그대로 재현하는 게 우선입니다. */
+
+/* ---------- 사진 ---------- */
+.photo{position:absolute; inset:0; z-index:0; background:url("{{ photo_url }}") center/cover;}
+/* 표지 아래쪽 900px 그라디언트 — **원본 값 그대로**입니다.
+   (사진이 아주 밝고 복잡하면 글자가 읽기 어려울 수 있습니다. 그때는 사진을
+    바꾸는 쪽이 맞습니다 — 여기 숫자를 흔들면 원본과 달라집니다) */
+.photofade{
+  position:absolute; left:0; right:0; bottom:0; height:900px; z-index:1;
+  background:linear-gradient(to top,
+    rgba(4,6,12,.86) 0%, rgba(4,6,12,.58) 28%, rgba(4,6,12,.02) 62%);
+}
+/* 마지막 장은 사진을 배경으로만 씁니다 — 가운데 정렬이라 글자가 어디에나 놓입니다 */
+/* 마무리 카드는 **사진 전체**를 덮습니다 — 제목이 정중앙이라 아래쪽
+   그라디언트로는 글자를 못 받칩니다 (함정 13: 글자 뒤로 사진이 비침).
+   다만 **ZUN 캐릭터 컷을 깔면 그 값이 캐릭터를 지웁니다** — 얼굴이
+   갈색 덩어리가 됩니다(대역 이미지로 재서 확인). 그래서 설정으로 뺐습니다:
+   글자가 읽히는 선에서 사람이 정합니다 (`card.cta_photo_dim`). */
+.cta .photofade{inset:0; height:auto; background:rgba(6,8,14,{{ cta_photo_dim }});}
+
+/* ---------- 워드마크 Z U N ----------
+   세 글자를 늘 같은 자리에 두고 지금 시리즈만 켭니다. 배지를 따로 붙이는 것보다
+   카드가 조용하고, 세 시리즈의 레이아웃이 완전히 같아집니다. */
+.zunmark{
+  display:flex; font-weight:700; letter-spacing:.3em; padding-left:.3em;
+  color:rgba(255,255,255,.28); line-height:1;
+}
+.zunmark span.on{color:{{ accent }};}
+/* 본문 — 오른쪽 아래. 내용 아래에 놓이므로 flex 흐름 그대로 둡니다 */
+.body .zunmark{font-size:26px; justify-content:flex-end; flex:none;}
+/* 표지 — 위 가운데. 사진 위에 얹히므로 그림자를 줍니다 */
+/* 자간 `.4em` — **되돌린 값입니다.** CTA 에서 낱글자 셋으로 읽힌다는 지적에
+   `.22em` 까지 좁혀봤는데 너무 붙었습니다. 워드마크가 벌어져 있는 게 이 계정의
+   모양이라 자간은 원래대로 두고 **색으로만** 잡습니다 — `.hasphoto .zunmark` 를
+   .88 로 올려 꺼진 Z·U 와 켜진 N 의 차이를 줄였습니다. 눈이 두 덩어리로 묶는 것은
+   간격보다 **색**이 만드는 쪽이 컸습니다 (간격 차이는 재보니 10%뿐이었습니다). */
+.thumb .zunmark{
+  position:absolute; z-index:3; top:66px; left:0; right:0;
+  justify-content:center; font-size:38px; letter-spacing:.4em; padding-left:.4em;
+  text-shadow:0 2px 16px rgba(0,0,0,.85);
+}
+.cta .zunmark{
+  position:absolute; z-index:3; bottom:96px; left:0; right:0;
+  justify-content:center; font-size:38px; letter-spacing:.4em; padding-left:.4em;
+}
+/* 사진이 깔리면 워드마크를 진하게. 28% 는 **검은 카드 기준**으로 고른 값이라,
+   밝은 사진 위에서는 그림자를 줘도 안 보입니다 — 흐린 그림자는 28% 짜리
+   글자를 못 살립니다 (실측: 밝은 홀로그램 위에서 ZU 가 사라지고 N 만 읽힘).
+   아래쪽 그라디언트(원본 값)는 안 건드립니다 — 여기는 그 막이 안 닿는 자리입니다. */
+/* .88 인 이유: 꺼진 Z·U 와 켜진 N(시리즈 색) 의 차이가 크면 눈이 "ZU" + "N"
+   두 덩어리로 묶습니다. 자간만 좁혀도 덜하지만 색 차이를 같이 줄여야 한 낱말로
+   읽힙니다. 사진 없는 카드는 `.28` 그대로 — 거긴 배경이 한 색이라 문제가 없고,
+   그 값은 "조용한 워드마크" 라는 원래 의도입니다. */
+.hasphoto .zunmark{color:rgba(255,255,255,.88);}
+.cta.hasphoto .zunmark{text-shadow:0 2px 16px rgba(0,0,0,.85);}
+
+/* ---------- 배지 ----------
+   알약 **두 개가 나란히**. 하나로 이어 붙이면 시리즈와 주제가 한 덩어리로
+   읽혀서 시리즈가 안 도드라집니다. */
+.badge{
+  display:inline-flex; align-items:center; white-space:nowrap;
+  border:0; border-radius:999px;
+  padding:14px 26px; font-size:26px; font-weight:700;
+  /* **밝은 알약 하나로 통일합니다.** 예전에는 사진이 없으면 테두리 알약,
+     있으면 유리 알약이라 넘길 때마다 배지 모양이 바뀌었습니다.
+     사진 유무는 배지가 알 바가 아닙니다 — 한 계정의 배지는 한 모양입니다.
+
+     유리(`backdrop-filter`)로 통일할 수는 없습니다. 밝기를 올리는 유리는
+     **어두운 사진 위에서 검정을 못 들어올립니다** — 재보니 알파를 .22 에서
+     .72 까지 올려도 대비가 1.2:1 에서 1.6:1 밖에 안 됐습니다 (읽으려면
+     4.5:1). 그래서 배경에 기대지 않는 불투명한 알약으로 갑니다. */
+  line-height:1; color:#0A0C10;
+  /* 평평한 흰 알약이 아니라 **위가 밝은 그라디언트 + 바깥 번짐**입니다.
+     평평하게 두면 사진 위에 종이 스티커를 붙인 것처럼 떠 보입니다 —
+     위쪽 하이라이트와 옅은 헤일로가 있어야 화면에 얹힌 유리로 읽힙니다.
+     불투명도는 그대로 유지합니다 (배경에 기대면 어두운 사진에서 무너짐). */
+  /* **밝은 유리.** 45beb4d 에서 열여덟 안을 렌더링해 고른 그 값입니다 —
+     blur + saturate + 밝기를 올리는 유리에 글자를 어둡게 뒤집는 조합.
+     테두리 링·헤일로·아랫변 반사를 얹어봤다가 뺐습니다: 얹을수록 지저분해지고,
+     원본이 깨끗한 이유가 **하이라이트 한 겹뿐**이라는 데 있었습니다.
+
+     원본과 다른 곳은 흰 알파 하나(.22 → .50)입니다. 원본은 `.hasphoto` 에만
+     걸려 있어서 사진이 없는 카드는 테두리 알약이었는데, 그게 "배지 모양이
+     계속 바뀐다" 의 원인이었습니다. 이제 한 규칙이라 **사진이 없는 검은
+     카드에서도 읽혀야** 하고, 그 바닥이 a ≥ 0.47 입니다 (검정 위 255a). */
+  background:rgba(255,255,255,.50);
+  backdrop-filter:blur(26px) saturate(160%) brightness(1.25);
+  -webkit-backdrop-filter:blur(26px) saturate(160%) brightness(1.25);
+  color:#0A0C10;
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.85), 0 6px 18px rgba(0,0,0,.22);
+  letter-spacing:.01em;
+}
+.badge.tight{letter-spacing:.08em;}   /* 영문·숫자만 있는 배지 */
+/* 사진이 없는 카드(본문·사진 없는 표지)의 시리즈 알약 — 테두리와 글자가 시리즈 색.
+   `.hasphoto` 규칙보다 **위**에 둡니다 (아래 두면 명시도가 같아 사진 카드를 덮습니다). */
+/* 시리즈 알약만 색으로 갈립니다 — 재질은 같고 색만 다릅니다.
+   글자색은 파이썬이 시리즈 밝기를 보고 정합니다 (L* 78/65/53 이라 흰색으로
+   못 박으면 제일 밝은 Z 에서 묻힙니다) */
+.badge.series{
+  /* 시리즈 색 위에 **같은 흰 사양(sheen)** 을 얹습니다. 밝은 Z 는 거의
+     흰빛으로, 진한 N 은 파랑을 유지한 채 위만 밝아집니다 — 세 알약이
+     한 재질로 보이면서 색 구분은 살아 있습니다 */
+  /* 시리즈 알약은 **같은 유리를 시리즈 색으로 물들입니다** (원본 그대로).
+     한쪽만 꽉 채우면 파란 알약만 스티커처럼 도드라집니다.
+     알파를 내리면 채도가 무너져 Z↔U 구분이 절반이 되므로 칩보다 진하게. */
+  background:{{ accent_glass }};
+  backdrop-filter:blur(26px) saturate(160%);
+  -webkit-backdrop-filter:blur(26px) saturate(160%);
+  box-shadow:inset 0 1.5px 0 rgba(255,255,255,.30), 0 6px 18px rgba(0,0,0,.26);
+  color:{{ badge_ink }};
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.55),
+    0 0 24px rgba(255,255,255,.22),
+    0 6px 18px rgba(0,0,0,.24);
+}
+/* ---------- 헤더 (배지 + 쪽수) ---------- */
+.hdr{
+  display:flex; align-items:center; justify-content:space-between;
+  flex:none; position:relative; z-index:2;
+}
+.hdr .pg{font-size:26px; font-weight:700; color:#5F6B80;}
+
+/* ---------- 공통 안쪽 ---------- */
+/* `min-height:0` 은 여기도 필요합니다 — 이 칸이 먼저 카드 밖으로 자라면
+   안쪽(.mid)이 아무리 얌전해도 소용이 없습니다. 두 겹 다 눌러줘야 합니다. */
+.inner{
+  position:relative; z-index:2; flex:1; min-height:0;
+  display:flex; flex-direction:column; padding:80px;
+}
+/* 내용 덩어리 — 세로 가운데. 여기가 늘어나고 헤더·워드마크는 고정입니다.
+   **`min-height:0` 이 반드시 있어야 합니다.** flex 아이템의 기본
+   `min-height:auto` 는 "내용보다 작아지지 마라" 는 뜻이라, 글이 길면 이 칸이
+   카드 밖으로 자라버립니다. 그러면 안쪽 사진 띠가 줄어들 이유가 없어져서
+   (칸이 부족하지 않으니까) 마지막 블록이 카드 밖으로 밀려 잘립니다. */
+.mid{flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center;}
+
+/* ==========================================================
+   표지
+   ========================================================== */
+.thumb .inner{justify-content:flex-end; padding:0 76px 96px;}
+.thumb .badges{margin-bottom:34px;}
+.thumb h1{
+  font-size:{{ headline_size }}px; font-weight:800;
+  line-height:1.18; letter-spacing:-.03em; color:#FFFFFF;
+  text-shadow:0 4px 30px rgba(0,0,0,.5);
+}
+.thumb h1 .ln{display:block;}
+.thumb h1 .ln.hl span{color:{{ accent }};}
+/* 표지 제목 아래 한 줄 — 댓글로 받아 가는 세트의 안내.
+   제목보다 확실히 작아야 합니다. 비슷하면 두 줄이 경쟁해서 제목이 안 읽힙니다. */
+.coversub{
+  margin-top:26px; font-size:34px; font-weight:600; line-height:1.45;
+  /* 표지에 사진이 깔리면 이 자리가 제일 잡스러운 자리입니다 (제목은 크고
+     굵어서 버티지만 이 줄은 안 버팁니다). 그래서 그림자를 두 겹으로 깝니다 */
+  color:rgba(255,255,255,.9);
+  text-shadow:0 2px 10px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.8);
+}
+
+/* 표지 목차 — 사진이 없을 때만. 사진 위 중간 높이는 그라디언트가 안 닿는
+   자리라 글자가 묻히고, 사진 표지는 사진 자체가 훅이라 목차가 경쟁합니다. */
+.toc{position:absolute; z-index:2; top:190px; left:76px; right:76px;}
+.toclabel{
+  font-size:24px; font-weight:700; letter-spacing:.18em;
+  color:{{ accent }}; margin-bottom:22px;
+}
+.toc ol{list-style:none;}
+.toc li{display:flex; gap:20px; align-items:baseline; margin-bottom:14px;}
+.toc .n{font-size:24px; font-weight:700; color:{{ accent }}; flex:none;}
+.toc .t{font-size:32px; color:#A9B2C4;}
+.toc .more .t{color:#5F6B80;}
+
+.swipe{
+  position:absolute; z-index:3; right:76px; bottom:44px;
+  font-size:26px; color:rgba(255,255,255,.55);
+}
+
+/* ==========================================================
+   본문 — 공통
+   ========================================================== */
+.body h2{
+  font-size:{{ title_size }}px; font-weight:800; line-height:1.24;
+  letter-spacing:-.02em; color:#FFFFFF; margin-bottom:40px;
+}
+.body p{
+  font-size:{{ text_size }}px; line-height:1.7; color:#A9B2C4;
+}
+.body p b,.body p strong{color:{{ accent }}; font-weight:700;}
+/* 단락 구분 — 본문·포인트의 \n 이 여기로 옵니다 (render._text_to_html).
+   **이 규칙이 없으면 빈 인라인 span 이라 아무 효과가 없고, 문장이 그대로
+   붙습니다** ("되돌릴 수 있어요./rewind 를 치면"). 디자인을 다시 쓸 때
+   클래스가 통째로 빠져 있었고 에러 없이 조용히 깨져 있었습니다 (함정 1·40).
+   `<br>` 대신 span 을 쓰는 이유: 단락 사이 여백을 줄 간격과 따로 정하려고.
+   em 으로 두면 카드마다 글자 크기가 달라도 비율이 유지됩니다. */
+.br{display:block; height:.62em;}
+/* 형광펜 대신 강조색 글자. 어두운 종이에 형광펜을 칠하면 글자가 묻힙니다 */
+.mk{background:none; color:{{ accent }}; font-weight:700;}
+
+/* ---------- 사진이 있는 본문 = 원본의 [미디어 + 본문 3:2] 카드 ----------
+   평범한 본문과 **구조가 다릅니다.** 위 3/5 는 사진이 꽉 차고 헤더가 그 위에
+   겹치며, 아래 2/5 만 글 영역입니다. 예전엔 글 영역 안에 사진 띠를 음수
+   마진으로 밀어 넣었는데, 그러면 비율이 글 길이에 따라 흔들려서 원본과
+   다른 카드가 됩니다. */
+.mediatop{flex:3; position:relative; overflow:hidden; min-height:0;}
+.mediatop .mphoto{position:absolute; inset:0; background:url("{{ photo_url }}") center/cover;}
+/* 아래 200px 페이드로 글 영역에 자연스럽게 이어집니다 (원본 값) */
+.mediatop .mfade{
+  position:absolute; left:0; right:0; bottom:0; height:200px;
+  background:linear-gradient(to top,#0A0C10 0%,transparent 100%);
+}
+.mediatop .hdr{position:absolute; top:0; left:0; right:0; padding:80px 80px 0;}
+/* 사진 위에서는 쪽수 회색(#5F6B80)이 거의 안 보입니다 — 원본도 여기만 흰 계열 */
+.mediatop .hdr .pg{color:rgba(255,255,255,.55);}
+.body.hasmedia .inner{
+  flex:2; padding:56px 80px 72px; justify-content:space-between;
+}
+.body.hasmedia h2{font-size:{{ (title_size * 0.94) | round | int }}px; line-height:1.22; margin-bottom:28px;}
+.body.hasmedia p{font-size:{{ (text_size * 0.95) | round | int }}px; line-height:1.68;}
+
+/* 본문 큰 번호 — 기본은 끕니다 (원본에 없음). show.bignum 으로 켭니다 */
+.bignum{font-size:34px; font-weight:700; color:{{ accent }}; margin-bottom:18px;}
+
+/* 한 줄 요약 — 원본에 없지만 켤 수 있게 둡니다 */
+.point{
+  display:flex; gap:16px; align-items:flex-start; margin-top:36px;
+  background:#12141A; border-left:5px solid {{ accent }};
+  border-radius:20px; padding:28px 32px;
+}
+.point .ic{color:{{ accent }}; font-size:28px; line-height:1.5;}
+.point .tx{font-size:32px; line-height:1.5; color:#F2F4F8;}
+
+/* ---------- 배치 01 · 번호 리스트 (steps) ---------- */
+.steps{list-style:none; display:flex; flex-direction:column; gap:34px;}
+.steps li{display:flex; gap:28px; align-items:flex-start;}
+.steps .sn{
+  font-size:34px; font-weight:700; color:{{ accent }};
+  flex:none; line-height:1.6; min-width:44px;
+}
+.steps .st{font-size:{{ text_size }}px; line-height:1.6; color:#D6DBE6;}
+.steps .st b{color:#FFFFFF; font-weight:700;}
+
+/* ---------- 배치 02 · 전후 비교 (beforeafter) ---------- */
+.ba{display:flex; flex-direction:column; gap:22px;}
+.baitem{background:#12141A; border-radius:20px; padding:40px;}
+.baitem.after{border-left:5px solid {{ accent }};}
+.balabel{
+  font-size:26px; font-weight:700; letter-spacing:.14em;
+  color:#5F6B80; margin-bottom:16px;
+}
+.baitem.after .balabel{color:{{ accent }};}
+.batext{font-size:{{ text_size }}px; line-height:1.55; color:#8A93A6;}
+.baitem.after .batext{color:#F2F4F8;}
+/* 전후 사이 화살표는 안 그립니다 — 판 두 개와 왼쪽 선만으로 읽힙니다 */
+.baarrow{display:none;}
+
+/* ---------- 배치 03 · 나란히 비교 (compare) ----------
+   전후와 달리 셋 이상이 올 수 있어서 판을 세로로 쌓습니다. */
+.cmp{display:flex; flex-direction:column; gap:22px;}
+.cmpitem{
+  background:#12141A; border:1px solid #1E2532; border-left:5px solid {{ accent }};
+  border-radius:20px; padding:36px 40px;
+}
+.cmplabel{
+  font-size:30px; font-weight:700; color:{{ accent }}; margin-bottom:14px;
+}
+.cmptext{font-size:{{ text_size }}px; line-height:1.55; color:#A9B2C4;}
+
+/* ---------- 배치 04 · 타임라인 ---------- */
+.tl{display:flex; flex-direction:column;}
+.tlrow{display:flex; gap:34px;}
+.tlmark{display:flex; flex-direction:column; align-items:center; width:22px; flex:none;}
+.tldot{
+  width:22px; height:22px; border-radius:50%;
+  background:{{ accent }}; margin-top:8px; flex:none;
+}
+.tlline{flex:1; width:3px; background:#1A2130;}
+.tlbody{padding-bottom:48px;}
+.tlrow:last-child .tlbody{padding-bottom:0;}
+.tlwhen{
+  font-size:28px; font-weight:700; letter-spacing:.12em;
+  color:{{ accent }}; margin-bottom:12px;
+}
+.tltext{font-size:32px; line-height:1.55; color:#8A93A6;}
+/* 시점 아래 제목이 따로 없으므로 첫 줄을 굵게 받습니다 */
+.tltext b{color:#F2F4F8; font-weight:800;}
+
+/* ---------- 배치 05 · 풀 인용 (pullquote) ---------- */
+.pq{display:flex; flex-direction:column; gap:40px;}
+.pqmark{font-size:130px; line-height:.6; color:{{ accent }};}
+.pqtext{
+  font-size:78px; font-weight:800; line-height:1.34;
+  letter-spacing:-.02em; color:#FFFFFF;
+}
+.pqrule{width:110px; height:4px; background:{{ accent }};}
+.pqfrom{font-size:36px; line-height:1.6; color:#8A93A6;}
+
+/* ---------- 배치 15 · 질문+화면+설명 (proof) ----------
+   레퍼런스에서 이 구조 하나만 가져왔습니다. 제목이 질문, 사진 띠가 답,
+   여기가 설명입니다. 두 층으로 나누는 이유: 넘기면서 **굵은 줄만 읽어도**
+   세트가 이어지게 하려는 것입니다. 회색 줄은 멈춘 사람이 읽는 근거입니다.
+   크기는 `_base_sizes` 를 거치도록 lead/sub 두 개만 둡니다 (함정 50). */
+.pf{display:flex; flex-direction:column; gap:26px;}
+.pflead{
+  font-size:{{ proof_lead_size }}px; font-weight:800; line-height:1.38;
+  letter-spacing:-.02em; color:#FFFFFF; word-break:keep-all;
+}
+.pfsub{
+  font-size:{{ proof_sub_size }}px; font-weight:500; line-height:1.62;
+  color:#8A93A6; word-break:keep-all;
+}
+
+/* ---------- 배치 06 · 코드/터미널 (terminal) ---------- */
+.term{background:#0D1117; border:1px solid #1E2532; border-radius:20px; overflow:hidden;}
+.termbar{
+  padding:20px 32px; border-bottom:1px solid #1E2532;
+  font-size:24px; font-weight:700; color:{{ accent }};
+}
+.termbody{padding:32px 40px; display:flex; flex-direction:column; gap:10px;}
+.termline{font-size:30px; line-height:1.8; color:#C9D1E0;}
+.termline .tp{color:{{ accent }}; margin-right:16px;}
+.termout{font-size:28px; line-height:1.7; color:#4CAF88; padding-left:34px;}
+
+/* ---------- 배치 07 · 요점 나열 (news) ---------- */
+.nlist{list-style:none; display:flex; flex-direction:column; gap:30px;}
+.nlist li{display:flex; gap:24px; align-items:flex-start;}
+.nb{
+  width:12px; height:12px; background:{{ accent }};
+  flex:none; margin-top:{{ (text_size * 0.62) | round | int }}px;
+}
+.nt{font-size:{{ text_size }}px; line-height:1.6; color:#D6DBE6;}
+.nt b{color:#FFFFFF; font-weight:700;}
+
+/* ---------- 배치 08 · 판정 (verdict) ---------- */
+.vd{display:flex; flex-direction:column; gap:20px;}
+.vdrow{
+  display:flex; gap:26px; align-items:flex-start;
+  background:#12141A; border:1px solid #1E2532; border-radius:20px; padding:32px 36px;
+}
+.vdrow.on{border-color:{{ accent }};}
+.vdtag{
+  font-size:26px; font-weight:700; letter-spacing:.1em;
+  color:#5F6B80; flex:none; line-height:1.6;
+}
+.vdrow.on .vdtag{color:{{ accent }};}
+.vdtext{font-size:34px; line-height:1.6; color:#A9B2C4;}
+.vdrow.on .vdtext{color:#F2F4F8;}
+
+/* ---------- 배치 09 · 대화 (quote) ----------
+   말풍선 안에서는 강조를 끕니다 — 이미 강조된 자리라 이중이고,
+   강조색이 풍선 배경과 같은 계열이라 글자가 묻힙니다. */
+.talk{display:flex; flex-direction:column; gap:26px;}
+.turn{display:flex; flex-direction:column; gap:10px; align-items:flex-start; max-width:78%;}
+.turn.me{align-self:flex-end; align-items:flex-end;}
+.who{font-size:24px; color:#5F6B80; letter-spacing:.06em;}
+.bub{
+  background:#12141A; border:1px solid #1E2532; border-radius:24px;
+  padding:26px 32px; font-size:34px; line-height:1.5; color:#D6DBE6;
+}
+.turn.me .bub{background:{{ accent }}; border-color:{{ accent }}; color:#0A0C10;}
+.bub .mk{background:none; color:inherit; font-weight:700;}
+
+/* ---------- 배치 11 · 2열 격자 (grid) ---------- */
+.grid{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+.gitem{
+  background:#12141A; border:1px solid #1E2532; border-radius:24px;
+  padding:40px; min-height:220px;
+  display:flex; flex-direction:column; gap:16px;
+}
+.gitem .gdot{width:12px; height:12px; background:{{ accent }}; flex:none;}
+.gitem .gname{font-size:34px; font-weight:700; color:#F2F4F8;}
+.gitem .gdesc{font-size:30px; line-height:1.5; color:#8A93A6;}
+
+/* ---------- 배치 12 · 핵심 숫자 (stat) ---------- */
+/* 크기를 **박아두지 않습니다** — 넘침 축소 루프가 닿아야 합니다.
+   3줄짜리 숫자 카드에서 130px 숫자 셋 + 80px 간격 둘이 높이의 절반인데,
+   그게 안 줄어드니 축소를 6회 돌고도 82px 이 남았습니다 (`_shrink` 참고). */
+.stats{display:flex; flex-direction:column; gap:{{ stat_gap }}px;}
+.strow{display:flex; align-items:flex-end; gap:32px;}
+.stnum{display:flex; align-items:baseline; gap:8px; line-height:1; flex:none;}
+.stnum .n{
+  font-size:{{ stat_num_size }}px; font-weight:700; color:{{ accent }};
+  line-height:1; letter-spacing:-.04em;
+}
+.stnum .u{font-size:{{ stat_unit_size }}px; font-weight:800; color:rgba(255,255,255,.4); letter-spacing:-.02em;}
+.stdesc{font-size:{{ stat_desc_size }}px; line-height:1.5; color:#5F6B80; padding-bottom:10px; flex:1;}
+
+/* ---------- 배치 13 · 체크리스트 (checklist) ---------- */
+.chk{display:flex; flex-direction:column;}
+.chkrow{
+  display:flex; align-items:center; gap:36px; padding:32px 0;
+  border-bottom:1px solid #1A2030;
+}
+.chkrow:last-child{border-bottom:none;}
+.chkbox{
+  width:40px; height:40px; border-radius:50%; flex:none;
+  border:2px solid #2A3345;
+  display:flex; align-items:center; justify-content:center;
+}
+.chkrow.on .chkbox{border:none; background:{{ accent }};}
+.chkbox svg{width:20px; height:20px; display:none;}
+.chkrow.on .chkbox svg{display:block;}
+.chktext{font-size:{{ text_size }}px; line-height:1.4; color:#E8ECF4; font-weight:600;}
+.chkrow.on .chktext{
+  color:#5F6B80; font-weight:400;
+  text-decoration:line-through; text-decoration-color:#2A3345;
+}
+
+/* ---------- 배치 14 · Q&A ---------- */
+.qna{display:flex; flex-direction:column; gap:48px;}
+.qnaitem{display:flex; flex-direction:column; gap:18px;}
+.qrow,.arow{display:flex; gap:20px; align-items:flex-start;}
+.arow{padding-left:4px;}
+.qmark{font-size:30px; font-weight:700; color:{{ series_palette.get('Z') or accent }}; line-height:1.55; flex:none;}
+.amark{font-size:30px; font-weight:700; color:{{ accent }}; line-height:1.7; flex:none;}
+.qtext{font-size:{{ text_size }}px; font-weight:700; line-height:1.55; color:#FFFFFF;}
+.atext{font-size:{{ text_size }}px; line-height:1.7; color:#A9B2C4;}
+
+/* ---------- 배치 16 · 조건·예외 (terms) ----------
+   정보 카드에서 제일 자주 빠지던 자리입니다 (`check_info_value` 가 경고하던
+   그것). 조건 이름은 작고 흐리게, **값이 눈에 먼저** 들어와야 합니다. */
+.tm{display:flex; flex-direction:column;}
+.tmrow{
+  display:flex; gap:32px; align-items:baseline; padding:30px 0;
+  border-bottom:1px solid #1A2030;
+}
+.tmrow:last-child{border-bottom:none;}
+.tmkey{
+  font-size:28px; color:#5F6B80; flex:none; min-width:200px; line-height:1.5;
+  word-break:keep-all;
+}
+.tmval{font-size:{{ text_size }}px; line-height:1.45; color:#F2F4F8; font-weight:600;}
+
+/* ---------- 배치 17 · 되는 것·안 되는 것 (dodont) ----------
+   `verdict` 와 다릅니다 — 저건 추천(쓸 것/지켜볼 것)이고 이건 **사실**
+   (가능한가). 정보 계정에서 조건·예외의 핵심이라 색으로 갈라줍니다. */
+.dx{display:flex; flex-direction:column; gap:18px;}
+.dxrow{
+  display:flex; gap:26px; align-items:flex-start;
+  background:#12141A; border:1px solid #1E2532; border-radius:18px;
+  padding:26px 30px;
+}
+.dxrow.on{border-color:{{ accent }};}
+.dxmark{
+  width:44px; height:44px; border-radius:12px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  /* **안 되는 것도 정보입니다.** 처음엔 X 를 #5F6B80 으로 흐리게 뒀더니
+     체크와 나란히 놓았을 때 곁다리로 보였습니다 — "안 됨" 은 조건·예외의
+     핵심이라 읽혀야 합니다. 배경을 조금 올리고 글자를 밝게 (재본 값). */
+  background:#222A38; color:#B9C2D2;
+}
+.dxrow.on .dxmark{background:{{ accent }}; color:#0A0C10;}
+.dxmark svg{width:24px; height:24px;}
+.dxtext{font-size:{{ text_size }}px; line-height:1.45; color:#BFC7D5; padding-top:4px;}
+.dxrow.on .dxtext{color:#F2F4F8;}
+
+/* ---------- 배치 18 · 경로 (path) ----------
+   `steps` 는 여러 단계를 순서로 밟는 것이고, 이건 **한 자리를 짚어주는**
+   것입니다 (설정 → MCP → 켜기). 마지막 조각이 목적지라 밝게. */
+.pth{display:flex; flex-direction:column; gap:34px;}
+.pthlabel{font-size:26px; color:#5F6B80; margin-bottom:14px; letter-spacing:.02em;}
+.pthrow{display:flex; flex-wrap:wrap; align-items:center; gap:12px;}
+.pstep{
+  font-size:34px; line-height:1.3; color:#A9B2C4; font-weight:600;
+  background:#12141A; border:1px solid #1E2532; border-radius:14px;
+  padding:16px 24px; word-break:keep-all;
+}
+.pstep.last{background:{{ accent }}; border-color:{{ accent }}; color:#0A0C10;}
+.parrow{font-size:34px; color:#3A4459; line-height:1;}
+
+/* ---------- 배치 19 · 용어 풀이 (gloss) ----------
+   N 시리즈가 "전문용어를 그 자리에서 괄호로 푼다" 는데, 낱말이 여럿이면
+   문장 안에 넣는 것보다 카드 하나로 푸는 쪽이 읽힙니다. */
+.gl{display:flex; flex-direction:column; gap:28px;}
+.glword{
+  font-size:32px; font-weight:700; color:{{ accent }};
+  letter-spacing:.01em; margin-bottom:8px;
+}
+.glmean{font-size:{{ text_size }}px; line-height:1.45; color:#C6CDDA;}
+
+/* ---------- 배치 10 · 사진 카드 (photocard) ----------
+   사진이 훅인 카드. 글은 아래쪽 스크림 위에 얹습니다. */
+.pcard{position:absolute; inset:0; z-index:0; background:url("{{ photo_url }}") center/cover;}
+.pcardfade{
+  position:absolute; inset:0; z-index:1;
+  background:linear-gradient(to top, rgba(4,6,12,.94) 0%, rgba(4,6,12,.62) 34%, rgba(4,6,12,.10) 70%);
+}
+.body.photo-full .mid{justify-content:flex-end;}
+
+/* ==========================================================
+   마지막 장 (CTA)
+   ========================================================== */
+.cta .inner{align-items:center; justify-content:center; text-align:center; padding:0 80px;}
+.cta h2{
+  font-size:{{ cta_size }}px; font-weight:800; line-height:1.2;
+  letter-spacing:-.03em; color:#FFFFFF; margin-bottom:34px;
+}
+.ctadesc{font-size:38px; line-height:1.65; color:#B4BCCC; margin-bottom:54px;}
+.acts{display:flex; gap:72px; align-items:center;}
+.acts svg{width:56px; height:56px;}
+/* 요약 목록 — 원본에 없지만 켤 수 있게 둡니다 (show.summary) */
+.ctasum{list-style:none; text-align:left; margin-bottom:44px;}
+.ctasum li{display:flex; gap:20px; align-items:baseline; margin-bottom:16px;}
+.ctasum .n{font-size:26px; font-weight:700; color:{{ accent }}; flex:none;}
+.ctasum .t{font-size:34px; color:#D6DBE6;}
+/* 프로필 블록 — 원본은 아이콘 셋을 쓰지만 켤 수 있게 둡니다 (show.profile) */
+.profile{display:flex; gap:24px; align-items:center; margin-bottom:28px;}
+.avatar{
+  width:140px; height:140px; border-radius:50%; overflow:hidden; flex:none;
+  background:#12141A; display:flex; align-items:center; justify-content:center;
+  font-size:52px; font-weight:800; color:{{ accent }};
+}
+.avatar img{width:100%; height:100%; object-fit:cover;}
+.handle{text-align:left;}
+.handle .name{font-size:40px; font-weight:800; color:#FFFFFF;}
+.handle .sub{font-size:30px; color:#8A93A6; margin-top:8px;}
+.followbtn{
+  border:2px solid {{ accent }}; color:{{ accent }}; border-radius:999px;
+  padding:16px 40px; font-size:32px; font-weight:700;
+}
+.ctahint{font-size:30px; line-height:1.6; color:#5F6B80;}
+
+/* ==========================================================
+   출처 표기 — 뉴스 소재에만.
+   원본 디자인에는 하단 바가 없습니다. 그런데 남의 기사를 요약한 카드에
+   출처가 없으면 저작권 문제가 되므로, **출처가 있을 때만** 한 줄 답니다.
+   ========================================================== */
+.src{
+  position:absolute; z-index:3; left:80px; right:80px; bottom:34px;
+  font-size:24px; color:#5F6B80;
+}
+.cta .src,.thumb .src{display:none;}
+
+/* ==========================================================
+   릴스 표지 (9:16) — **제목이 정가운데**
+   ==========================================================
+   카드뉴스 표지는 제목이 아래 3분의 1이고, 릴스 표지는 **가운데**입니다
+   (사람이 정함 — 릴스는 카드뉴스와 다르게). 프로필 격자는 9:16 의 위아래
+   12.5% 를 잘라 3:4 로 보여주는데, 정가운데는 어느 쪽에서 잘라도 남는
+   유일한 자리입니다. 배지·글꼴·강조색·워드마크는 카드 표지 그대로입니다 —
+   다른 템플릿을 만들면 표지를 고칠 때 한쪽만 바뀝니다. */
+{% if reel_cover %}
+/* 레퍼런스(사람이 준 정보 릴스 계정 격자)를 재서 옮긴 결:
+   위는 인물 · 가운데 **배지 + 아주 굵은 세 줄** · 다른 글자 없음.
+   세 줄은 대상 / 핵심(강조색) / 숫자 — 줄마다 3~6자라 폭을 꽉 채울 만큼 커집니다 */
+.thumb .inner{justify-content:center; align-items:center; text-align:center;
+              padding:0 {{ reel_pad }}px;}
+/* 격자에서 카드뉴스 표지와 **같은 크기**로 보이게 바닥을 키웁니다 — 카드뉴스는
+   격자가 좌우를 잘라(4:5 → 3:4) 글자가 커 보이고 릴스는 위아래를 잘라 그대로라서,
+   안 맞추면 릴스 쪽 글자가 {{ ((reel_zoom - 1) * 100)|round(1) }}% 작게 보입니다.
+   제목은 여기서 바닥만 정하고 **폭에 맞춰 더 키웁니다** (`render._REEL_FIT`) */
+/* 캡슐 모양은 그대로, **크기만 1.5배** — 제목을 폭에 맞춰 키우니 원래 크기로는
+   격자 칸(391px)에서 글자가 10px 남짓이라 안 읽혔습니다 */
+.thumb .badges{zoom:{{ (reel_zoom * 1.5)|round(4) }}; margin-bottom:22px;}
+.thumb h1{
+  font-size:calc({{ headline_size }}px * {{ reel_zoom }});
+  {% if reel_font %}font-family:{{ reel_font }};{% endif %}
+  font-weight:900; letter-spacing:-.06em; line-height:1.03;
+  /* 그림 위에 바로 앉으므로 그림자를 두 겹 — 가까운 것이 글자 가장자리를 잡습니다 */
+  text-shadow:0 2px 6px rgba(0,0,0,.55), 0 8px 34px rgba(0,0,0,.6);
+}
+/* `**강조**` 는 원래 굵기를 700 으로 내립니다 (본문용) — 900 제목에서 그 낱말만 얇아집니다 */
+.thumb h1 .mk{font-weight:inherit;}
+/* 배지는 **카드뉴스 표지의 유리 알약 그대로** (시리즈 + 주제 칩) — 사람이 정함:
+   「캡슐은 기존의 내 느낌」. 레퍼런스에서 가져온 것은 가운데 · 굵은 세 줄 · 가운데
+   줄 강조까지이고, 알약 모양은 이 계정의 것입니다 */
+/* 아래 그라디언트 대신 **제목 뒤 띠** — 제목이 가운데라 아래만 어둡게 하면
+   글자 뒤가 밝은 그림 그대로입니다 (마무리 카드가 사진 전체를 덮는 것과 같은
+   이유). 전체를 덮지 않고 가운데만 — 그림이 표지의 절반입니다 */
+.thumb .photofade{top:0; bottom:0; height:auto;
+  background:linear-gradient(to bottom,
+    rgba(4,6,12,.12) 0%, rgba(4,6,12,.12) 22%, rgba(4,6,12,.62) 38%,
+    rgba(4,6,12,.70) 52%, rgba(4,6,12,.62) 66%, rgba(4,6,12,.18) 80%, rgba(4,6,12,.18) 100%);}
+/* 레퍼런스에 없는 것은 뺍니다 — 워드마크·소제목·목차·스와이프 안내.
+   한 칸(391px)에 글자 덩어리가 둘이면 어느 쪽도 안 읽힙니다 */
+.thumb .zunmark,.thumb .coversub,.toc,.swipe{display:none!important;}
+{% endif %}
+</style>
+</head>
+<body>
+{# `hasphoto` 는 "이 카드에 사진이 있나" 가 아니라 **배지 아래가 사진인가** 입니다.
+   본문 카드는 띠(`.mediatop`)가 카드 위쪽을 채우고 배지는 그 위에 얹히므로,
+   띠가 있으면 표지와 똑같이 사진 위입니다. 예전에는 본문을 통째로 빼서
+   같은 세트 안에서 배지가 **꽉 찬 유리**(사진 카드)와 **테두리만**(띠 카드)로
+   갈렸고, 띠 카드에서는 밝은 사진 위에 흰 글자가 얹혀 잘 안 보였습니다. #}
+<div class="card {{ card_class }}{% if photo_url and (card_type != 'body' or has_shot or photocard) %} hasphoto{% endif %}{% if photocard %} photo-full{% endif %}{% if has_shot %} hasmedia{% endif %}">
+
+{% if has_shot %}
+{# 원본의 [미디어 3 : 본문 2] 카드. 헤더가 사진 위에 겹칩니다. #}
+<div class="mediatop">
+  <div class="mphoto"></div><div class="mfade"></div>
+  <div class="hdr">
+    <div class="badges">
+      {% if series and show.series %}<div class="badge series mono tight">{{ series.name|upper }}</div>{% endif %}
+      {% if category and show.chips %}<div class="badge mono{{ ' tight' if category|latin else '' }}">{{ category }}</div>{% endif %}
+    </div>
+    <div class="pg mono">{{ '%02d'|format(page) }} / {{ '%02d'|format(total) }}</div>
+  </div>
+</div>
+{% endif %}
+
+  {# ---------- 사진 레이어 ----------
+     **카드 종류를 같이 봅니다.** 예전에는 "사진이 있고 배치가 text 면" 으로만
+     판단해서 표지와 CTA 까지 사진 카드로 잡혔습니다 — 표지는 사진이 두 겹
+     깔려 새까매졌고 CTA 는 글자 뒤로 사진이 비쳤습니다 (함정 13). #}
+  {% if card_type == 'thumbnail' and photo_url %}
+    <div class="photo"></div>{% if photo_fade %}<div class="photofade"></div>{% endif %}
+  {% elif card_type == 'cta' and photo_url %}
+    <div class="photo"></div>{% if photo_fade %}<div class="photofade"></div>{% endif %}
+  {% elif photocard %}
+    <div class="pcard"></div><div class="pcardfade"></div>
+  {% endif %}
+
+  {# 워드마크는 표지·CTA 에서 절대 위치라 .inner 밖에 둡니다.
+     글자는 `brand.wordmark` (`render.wordmark_of`) — 지금 시리즈 글자만 켜고, 시리즈가 없으면 다 켭니다 #}
+  {% if show.wordmark and card_type != 'body' %}
+  <div class="zunmark mono">
+    {% set lit = (series.key|upper) if series else '' %}{% set any_lit = lit and lit in wordmark|upper %}{% for ch in wordmark %}<span{% if (not any_lit) or ch|upper == lit %} class="on"{% endif %}>{{ ch }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if card_type == 'thumbnail' and contents and not photo_url and show.toc %}
+  <div class="toc">
+    <div class="toclabel mono">CONTENTS</div>
+    <ol>
+      {% for t in contents %}<li><span class="n mono">{{ '%02d'|format(loop.index) }}</span><span class="t">{{ t }}</span></li>{% endfor %}
+      {% if contents_more %}<li class="more"><span class="n mono">+{{ contents_more }}</span><span class="t">더 있음</span></li>{% endif %}
+    </ol>
+  </div>
+  {% endif %}
+
+  <div class="inner">
+  {% if card_type == 'thumbnail' %}
+    {# 배지·제목·소제목을 **한 덩어리로** 감쌉니다. 배치는 그대로입니다 —
+       세로로 쌓이는 것도 여백도 자식이 갖고 있어서, 감싸도 픽셀이 안 바뀝니다
+       (재서 확인했습니다: 열 장 전부 차이 0).
+
+       감싸는 이유는 **이 블록만 투명 배경으로 뽑아 릴스 훅 자막에 그대로
+       쓰기** 위해서입니다 (`Renderer.render_set(head_png=)`). 자리를 가리킬
+       이름이 없으면 릴스 쪽에서 같은 것을 또 그리게 되고, 그러면 표지를
+       고쳤을 때 영상만 옛 모양으로 남습니다. #}
+    <div class="coverhead">
+    {% if show.chips or show.series %}
+    <div class="badges">
+      {% if series and show.series %}<div class="badge series mono tight">{{ series.name|upper }}</div>{% endif %}
+      {% if chip2 and show.chips %}<div class="badge mono{{ ' tight' if chip2|latin else '' }}">{{ chip2 }}</div>{% endif %}
+    </div>
+    {% endif %}
+    <h1>
+      {% for line in headline %}
+      <span class="ln{% if loop.index == hl_line %} hl{% endif %}"><span>{{ line|safe }}</span></span>
+      {% endfor %}
+    </h1>
+    {% if cover_sub %}<div class="coversub">{{ cover_sub }}</div>{% endif %}
+    </div>
+
+  {% elif card_type == 'body' %}
+    {% if not has_shot %}
+    {# 헤더 — [시리즈 배지][주제 배지] ⋯ [쪽수]. 원본 구조 그대로입니다.
+       사진이 있는 카드는 이 헤더가 사진 위로 올라갑니다 (아래 mediatop). #}
+    <div class="hdr">
+      <div class="badges">
+        {% if series and show.series %}<div class="badge series mono tight">{{ series.name|upper }}</div>{% endif %}
+        {% if category and show.chips %}<div class="badge mono{{ ' tight' if category|latin else '' }}">{{ category }}</div>{% endif %}
+      </div>
+      <div class="pg mono">{{ '%02d'|format(page) }} / {{ '%02d'|format(total) }}</div>
+    </div>
+    {% endif %}
+
+    <div class="mid">
+      {% if show.bignum %}<div class="bignum mono">{{ '%02d'|format(step) }}</div>{% endif %}
+      <h2>{{ title }}</h2>
+
+      {% if body_layout == 'compare' %}
+      <div class="cmp">
+        {% for b in blocks %}
+        <div class="cmpitem">
+          <div class="cmplabel">{{ b.label|safe }}</div>
+          <div class="cmptext">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'beforeafter' %}
+      <div class="ba">
+        {% for b in blocks %}
+        <div class="baitem {% if loop.first %}before{% else %}after{% endif %}">
+          <div class="balabel mono">{{ b.label|safe }}</div>
+          <div class="batext">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'quote' %}
+      <div class="talk">
+        {% for b in blocks %}
+        <div class="turn{% if b.me %} me{% endif %}">
+          <div class="who mono">{{ b.label|safe }}</div>
+          <div class="bub">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'steps' %}
+      <ol class="steps">
+        {% for b in blocks %}
+        <li>
+          <span class="sn mono">{{ '%02d'|format(loop.index) }}</span>
+          <span class="st">{% if b.label %}<b>{{ b.label|safe }}</b><br>{% endif %}{{ b.text|safe }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+
+      {% elif body_layout == 'terminal' %}
+      <div class="term">
+        <div class="termbar mono">terminal</div>
+        <div class="termbody">
+          {% for b in blocks %}
+          <div class="termline mono"><span class="tp">$</span>{{ b.label|safe }}</div>
+          {% if b.text %}<div class="termout mono">{{ b.text|safe }}</div>{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      {% elif body_layout == 'timeline' %}
+      <div class="tl">
+        {% for b in blocks %}
+        <div class="tlrow">
+          <div class="tlmark"><span class="tldot"></span>{% if not loop.last %}<span class="tlline"></span>{% endif %}</div>
+          <div class="tlbody">
+            <div class="tlwhen mono">{{ b.label|safe }}</div>
+            <div class="tltext">{{ b.text|safe }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'pullquote' %}
+      <div class="pq">
+        {# 곧은 따옴표(")는 모노에서 작대기 두 개로 찍힙니다 #}
+        <div class="pqmark mono">&ldquo;</div>
+        <div class="pqtext">{{ blocks[0].text|safe }}</div>
+        <div class="pqrule"></div>
+        {% if blocks|length > 1 %}<div class="pqfrom">{{ blocks[1].text|safe }}</div>{% endif %}
+      </div>
+
+      {% elif body_layout == 'proof' %}
+      {# 질문형 제목이 위에 있고, 사진 띠가 답을 보여주고, 여기가 설명입니다.
+         첫 줄을 굵게(결론), 나머지를 흐리게(근거) — 넘기면서 굵은 줄만
+         읽어도 세트가 이어지게 하려는 것입니다. #}
+      <div class="pf">
+        <div class="pflead">{{ blocks[0].text|safe }}</div>
+        {% if blocks|length > 1 %}<div class="pfsub">{{ blocks[1].text|safe }}</div>{% endif %}
+      </div>
+
+      {% elif body_layout == 'news' %}
+      <ul class="nlist">
+        {% for b in blocks %}
+        <li><span class="nb"></span><span class="nt">{% if b.label %}<b>{{ b.label|safe }}</b> {% endif %}{{ b.text|safe }}</span></li>
+        {% endfor %}
+      </ul>
+
+      {% elif body_layout == 'verdict' %}
+      {# 첫 줄의 라벨을 강조로 잡습니다 — 한국어/영어 어느 쪽이 와도 되게
+         단어를 사전에 박아두지 않고 순서로 정합니다. #}
+      {% set lead = blocks[0].label %}
+      <div class="vd">
+        {% for b in blocks %}
+        <div class="vdrow{% if b.label == lead %} on{% endif %}">
+          <span class="vdtag mono">{{ b.label|safe }}</span>
+          <span class="vdtext">{{ b.text|safe }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'grid' %}
+      <div class="grid">
+        {% for b in blocks %}
+        <div class="gitem">
+          <div class="gdot"></div>
+          <div class="gname mono">{{ b.label|safe }}</div>
+          <div class="gdesc">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'stat' %}
+      <div class="stats">
+        {% for b in blocks %}
+        <div class="strow">
+          <div class="stnum"><span class="n mono">{{ b.num }}</span>{% if b.unit %}<span class="u">{{ b.unit }}</span>{% endif %}</div>
+          <div class="stdesc">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'checklist' %}
+      <div class="chk">
+        {% for b in blocks %}
+        <div class="chkrow{% if b.done %} on{% endif %}">
+          <div class="chkbox">
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="#0A0C10" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="chktext">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'qna' %}
+      <div class="qna">
+        {% for b in blocks %}
+        <div class="qnaitem">
+          <div class="qrow"><span class="qmark mono">Q.</span><span class="qtext">{{ b.label|safe }}</span></div>
+          <div class="arow"><span class="amark mono">A.</span><span class="atext">{{ b.text|safe }}</span></div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'terms' %}
+      {# 조건·예외 — `_FLOWS["N"]` 의 세 번째 자리. 왼쪽에 조건 이름, 오른쪽에
+         값. 값이 눈에 먼저 들어와야 해서 오른쪽을 밝게 둡니다 #}
+      <div class="tm">
+        {% for b in blocks %}
+        <div class="tmrow">
+          <span class="tmkey">{{ b.label|safe }}</span>
+          <span class="tmval">{{ b.text|safe }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'dodont' %}
+      {# 되는 것 / 안 되는 것. 어느 쪽인지는 라벨의 낱말이 정합니다
+         (`render._yes_no`) — 순서로 정하면 안 되는 것을 먼저 쓴 카드에서
+         O/X 가 뒤집힙니다 #}
+      <div class="dx">
+        {% for b in blocks %}
+        <div class="dxrow{% if b.yes %} on{% endif %}">
+          <span class="dxmark">
+            {% if b.yes %}
+            <svg viewBox="0 0 20 20" fill="none"><path d="M4 10L8 14L16 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            {% else %}
+            <svg viewBox="0 0 20 20" fill="none"><path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+            {% endif %}
+          </span>
+          <span class="dxtext">{{ b.text|safe }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'path' %}
+      {# 어디를 눌러야 하나. 화살표로 나뉜 조각을 알약으로 그립니다 —
+         `설정 → MCP → 켜기`. 마지막 조각이 목적지라 밝게 #}
+      <div class="pth">
+        {% for b in blocks %}
+        <div class="pthitem">
+          {% if b.label %}<div class="pthlabel">{{ b.label|safe }}</div>{% endif %}
+          <div class="pthrow">
+            {% for step in b.steps %}
+            <span class="pstep{% if loop.last %} last{% endif %}">{{ step|safe }}</span>
+            {%- if not loop.last %}<span class="parrow">›</span>{% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% elif body_layout == 'gloss' %}
+      {# 낱말 :: 뜻. N 시리즈가 "전문용어를 그 자리에서 괄호로 푼다" 는데,
+         낱말이 여럿이면 문장 안에 넣는 것보다 카드 하나로 푸는 게 읽힙니다 #}
+      <div class="gl">
+        {% for b in blocks %}
+        <div class="glrow">
+          <div class="glword mono">{{ b.label|safe }}</div>
+          <div class="glmean">{{ b.text|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <p>{{ text_html|safe }}</p>
+      {% endif %}
+
+      {% if point_html and show.point %}
+      <div class="point"><span class="ic">★</span><span class="tx">{{ point_html|safe }}</span></div>
+      {% endif %}
+    </div>
+
+    {% if show.wordmark %}
+    <div class="zunmark mono">
+      {% set lit = (series.key|upper) if series else '' %}{% set any_lit = lit and lit in wordmark|upper %}{% for ch in wordmark %}<span{% if (not any_lit) or ch|upper == lit %} class="on"{% endif %}>{{ ch }}</span>{% endfor %}
+    </div>
+    {% endif %}
+
+  {% elif card_type == 'cta' %}
+    <h2>{{ cta_html|safe }}</h2>
+    {% if handle_sub %}<div class="ctadesc">{{ handle_sub }}</div>{% endif %}
+
+    {% if summary and show.summary %}
+    <ol class="ctasum">
+      {% for s in summary %}<li><span class="n mono">{{ '%02d'|format(loop.index) }}</span><span class="t">{{ s }}</span></li>{% endfor %}
+      {% if summary_more %}<li class="more"><span class="n mono">+{{ summary_more }}</span><span class="t">카드에서 이어집니다</span></li>{% endif %}
+    </ol>
+    {% endif %}
+
+    {% if show.profile and show_profile %}
+    <div class="profile">
+      <div class="avatar">{% if profile_url %}<img src="{{ profile_url }}">{% else %}{{ initials }}{% endif %}</div>
+      <div class="handle">
+        <div class="name">{{ handle_name }}</div>
+        {% if handle_sub %}<div class="sub">{{ handle_sub }}</div>{% endif %}
+      </div>
+    </div>
+    {% if follow_label %}<div class="followbtn">{{ follow_label }}</div>{% endif %}
+    {% endif %}
+
+    {# 좋아요 · 댓글 · 공유. 인스타 게시물 하단과 같은 순서·모양입니다.
+       예전에는 셋째가 **저장(북마크)** 이었는데, 인스타에서 그 자리는
+       공유(종이비행기)이고 저장은 오른쪽 끝에 따로 떨어져 있습니다. #}
+    {% if show.acts %}
+    <div class="acts">
+      {# 좋아요 #}
+      <svg viewBox="0 0 56 56" fill="none"><path d="M28 47S7 34.2 7 19.6C7 13.2 12.2 8 18.6 8c3.7 0 7 1.8 9.4 4.6C30.4 9.8 33.7 8 37.4 8 43.8 8 49 13.2 49 19.6 49 34.2 28 47 28 47Z" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {# 댓글 #}
+      <svg viewBox="0 0 56 56" fill="none"><path d="M48 27C48 37.5 39 46 28 46c-2.8 0-5.5-.6-7.9-1.6L8 48l3.6-11.4C9.6 33.8 8 30.5 8 27 8 16.5 17 8 28 8s20 8.5 20 19Z" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {# 공유 — 종이비행기. 안쪽 접힘선이 있어야 비행기로 읽힙니다 #}
+      <svg viewBox="0 0 56 56" fill="none"><path d="M50 6 5 22.4l19.3 8.3L50 6ZM24.3 30.7 32.6 50 50 6" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    {% endif %}
+    {% if not show_profile and show.profile %}
+    <div class="ctahint">config.yaml 의 brand 항목을 채우면<br>여기에 프로필이 들어갑니다</div>
+    {% endif %}
+  {% endif %}
+  </div>
+
+  {% if source_label or photo_credit %}<div class="src mono">{% if source_label %}출처 : {{ source_label }}{% endif %}{% if source_label and photo_credit %} · {% endif %}{% if photo_credit %}{{ photo_credit_kind }} : {{ photo_credit }}{% endif %}</div>{% endif %}
+  {% if card_type == 'thumbnail' and show.swipe %}<div class="swipe">밀어서 확인하기 →</div>{% endif %}
+</div>
+</body>
+</html>

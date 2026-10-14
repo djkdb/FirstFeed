@@ -8,8 +8,12 @@ export type AnswerKind = 'text' | 'example' | 'choice' | 'unknown';
 export interface EvidenceSource {
   id: string; // S2, A3 …
   label: string; // 화면에 보일 출처 이름
-  /** 인용을 대조할 원문 — 사용자 답 부분만 (질문 글은 AI 가 쓴 것이라 넣지 않는다) */
+  /**
+   * 인용을 대조할 원문. 설문은 "라벨: 답" 한 문장(CLAUDE.md 근거 규칙), 인터뷰는 답 부분만(질문 글은 AI 가 쓴 것이라 넣지 않는다)
+   */
   text: string;
+  /** 설문 라벨 — 라벨만 인용한 것은 근거가 아니므로 가려내려고 */
+  surveyLabel?: string;
   kind: 'survey' | AnswerKind;
   /** "사용자가 직접 입력한 문장" 근거로 셀 수 있는가. 예시를 그대로 보낸 답은 AI 문장이라 아니다 */
   countsAsUserInput: boolean;
@@ -38,8 +42,12 @@ export function classifyAnswer(answer: string, examples: string[], options: stri
 export function buildSources(survey: SurveyAnswers, turns: TurnLike[]): EvidenceSource[] {
   const out: EvidenceSource[] = [];
   for (const q of SURVEY) {
-    const text = surveyAnswerText(survey[q.id]);
-    if (text) out.push({ id: q.id, label: `설문 ${q.id} ${q.label}`, text, kind: 'survey', countsAsUserInput: true });
+    const answer = surveyAnswerText(survey[q.id]);
+    // 대조 원문은 프롬프트에 보이는 줄과 같은 "라벨: 답" 문장이어야 한다. 예전에는 답 글자만 넣어서, 보이는 줄 그대로 인용하면
+    // quote_not_in_source, 짧은 답만 인용하면 quote_too_short 가 되는 어긋남이 있었다 (devlog 2026-10-14-01)
+    if (answer) {
+      out.push({ id: q.id, label: `설문 ${q.id} ${q.label}`, text: `${q.label}: ${answer}`, surveyLabel: q.label, kind: 'survey', countsAsUserInput: true });
+    }
   }
   for (const t of turns) {
     if (t.answer === null || t.answerKind === null || t.answerKind === 'unknown') continue;
@@ -60,7 +68,7 @@ export function buildSources(survey: SurveyAnswers, turns: TurnLike[]): Evidence
 export function formatSourcesForPrompt(sources: EvidenceSource[]): string {
   return sources
     .map((s) => {
-      if (s.kind === 'survey') return `[${s.id}] ${s.label.replace(/^설문 S\d+ /, '')}: ${s.text}`;
+      if (s.kind === 'survey') return `[${s.id}] ${s.text}`;
       const mark = s.kind === 'example' ? ' (※ 예시 답을 그대로 고른 것 — 근거로 인용하지 말 것)' : s.kind === 'choice' ? ' (선택지를 고른 답)' : '';
       return `[${s.id}] 질문: ${s.question}\n     답${mark}: ${s.text}`;
     })

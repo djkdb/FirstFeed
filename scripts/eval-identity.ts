@@ -112,7 +112,7 @@ async function runOne(fx: Fixture): Promise<Row> {
       ...runs.filter((x) => x.task === 'self_review').flatMap(parse),
     ];
     row.ruleCodes = [...new Set(issues.filter((i) => i.level === 'error').map((i) => i.code))];
-    row.invalidQuotes = issues.filter((i) => ['quote_not_in_source', 'quote_too_short', 'unknown_source'].includes(i.code)).length;
+    row.invalidQuotes = issues.filter((i) => ['quote_not_in_source', 'quote_too_short', 'label_only_quote', 'unknown_source'].includes(i.code)).length;
     row.reviewIssues = issues.filter((i) => i.code.startsWith('review_')).length;
     const reviewNotes = issues.filter((i) => i.code.startsWith('review_'));
     if (reviewNotes.length) row.detail.push('', '자기 평가 지적:', ...reviewNotes.map((i) => `- [${i.code}] ${i.where ?? ''} ${i.message}`), '');

@@ -60,6 +60,10 @@ export function checkEvidence(ev: { quote: string; source: string }, ctx: Profil
   if (normalizeForQuote(ev.quote).length < ctx.minQuoteChars) {
     return { ok: false, code: 'quote_too_short', message: `인용 "${ev.quote}" 이 너무 짧아 근거가 되지 않습니다. 답의 문장을 더 길게 옮기세요.` };
   }
+  // 설문 줄은 이제 "라벨: 답" 이라 라벨만 옮겨도 원문 안에 있다 — 답이 한 글자도 없는 인용은 근거가 아니다
+  if (src.surveyLabel !== undefined && normalizeForQuote(src.surveyLabel).includes(normalizeForQuote(ev.quote))) {
+    return { ok: false, code: 'label_only_quote', message: `인용 "${ev.quote}" 은 ${ev.source} 의 질문 이름일 뿐 답이 아닙니다. "라벨: 답" 한 줄 전체를 옮기세요.` };
+  }
   if (!quoteInSources(ev.quote, [src.text])) {
     return { ok: false, code: 'quote_not_in_source', message: `인용 "${ev.quote}" 이 ${ev.source}(${src.label})의 답에 없습니다. 답 부분을 그대로 옮기세요.` };
   }
@@ -159,7 +163,7 @@ export type ProfileOutcome =
   /** 구제할 수 없는 실패 (축 겹침·지어낸 숫자 등이 남음) */
   | { kind: 'failed'; errors: Issue[] };
 
-const EVIDENCE_CODES = new Set(['unknown_source', 'quote_too_short', 'quote_not_in_source', 'example_only_evidence']);
+const EVIDENCE_CODES = new Set(['unknown_source', 'quote_too_short', 'label_only_quote', 'quote_not_in_source', 'example_only_evidence']);
 
 function pillarIndexOf(where: string | undefined): number | null {
   const m = /^pillars\.(\d+)/.exec(where ?? '');

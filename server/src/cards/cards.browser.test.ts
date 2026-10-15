@@ -84,7 +84,7 @@ describe('본문 카드 (FR-MK-1·2·8)', () => {
     expect(provider.calls[1]!.prompt).toContain('[count_mismatch]');
   }, 60_000);
 
-  it('근거 인용이 원문에 없거나, 원문 밖 숫자·실사 인물 그림이면 다시 쓴다', async () => {
+  it('근거 인용이 원문에 없거나, 원문 밖 숫자·사람 그림이면 다시 쓴다 (me 는 캐릭터 계정이라 사람 대신 캐릭터)', async () => {
     const bad = structuredClone(BODY);
     bad.cards[0]!.evidence = '태그를 쓰면 정리가 빨라진다.';
     bad.cards[1]!.text = '검색이 3배 빨라졌어요.'; // 3 은 쪽 번호와 같지만 쪽 번호는 구조 숫자가 아니다 — 걸려야 한다
@@ -94,7 +94,7 @@ describe('본문 카드 (FR-MK-1·2·8)', () => {
     const p = provider.calls[1]!.prompt;
     expect(p).toContain('[quote_not_in_source]');
     expect(p).toContain('[number_not_in_source]');
-    expect(p).toContain('[prompt_realistic_person]');
+    expect(p).toContain('[prompt_person_not_character]'); // me 의 「보여 주는 방식」: 캐릭터(ZUN) — 결정 2026-10-15
   }, 60_000);
 
   it('2회 재작성 뒤에도 넘치면 버리지 않고 어느 카드가 넘쳤는지 돌려준다 → 사용자가 줄이면 저장 (그 전엔 저장 안 함)', async () => {

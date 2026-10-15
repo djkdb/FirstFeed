@@ -8,7 +8,7 @@ import { env, getSetting } from '../config.ts';
 import type { AiService, JobContext } from '../ai/adapter.ts';
 import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
-import { imagePromptIssues } from '../brand/visual.ts';
+import { cardPeopleRule, imagePromptIssues } from '../brand/visual.ts';
 import { findUngrounded, normalizeForQuote, quoteInSources } from '../rules/grounding.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { renderFrame, type FrameResult } from '../templates/render-frame.ts';
@@ -117,7 +117,7 @@ export function aiRules(c: CardContext, minQuote: number): Rule<BodyOutput>[] {
         ground(`cards.${i}`, `${x.title}\n${x.text}`);
         if (!quoteInSources(x.evidence, c.grounding.source)) out.push(issue(`cards.${i}.evidence`, 'quote_not_in_source', `근거 인용이 소재 원문에 없습니다: "${x.evidence.slice(0, 40)}"`));
         else if (normalizeForQuote(x.evidence).length < minQuote) out.push(issue(`cards.${i}.evidence`, 'quote_too_short', `근거 인용이 너무 짧습니다(${minQuote}자 이상).`));
-        if (x.image) out.push(...imagePromptIssues(`cards.${i}.image`, x.image, CARD_IMAGE_NEEDS, true));
+        if (x.image) out.push(...imagePromptIssues(`cards.${i}.image`, x.image, CARD_IMAGE_NEEDS, cardPeopleRule(c.profile.presence)));
         out.push(...glossIssues(`cards.${i}`, x, c.grounding.source));
       });
       ground('closing', `${d.closing.headline}\n${d.closing.sub ?? ''}`);

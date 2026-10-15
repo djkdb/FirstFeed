@@ -241,7 +241,7 @@ export function MakePage() {
           <button type="button" className="primary" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
             표지 제목 후보 만들기
           </button>
-          <span className="muted small">AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1~2분(측정 전 추정)</span>
+          <span className="muted small">AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1분 안쪽</span>
         </div>
         {error && <p className="status error">{error}</p>}
       </section>
@@ -252,7 +252,7 @@ export function MakePage() {
         <section className="card">
           <h2>표지 고르기</h2>
           <p className="muted small">
-            AI 호출 {covers.calls}번 · 재작성 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개. 표지를 누르면 본문을 만들어요(AI 호출 2번 · 보통 2~4분, 측정 전 추정).
+            AI 호출 {covers.calls}번 · 재작성 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개. 표지를 누르면 본문을 만들어요(AI 호출 2번, 재작성하면 2번씩 더 · 보통 1~2분, 재작성이 겹치면 5분 넘게 걸리기도 해요).
           </p>
           <div className="frames">
             {covers.candidates.map((c) => (

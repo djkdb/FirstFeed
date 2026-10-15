@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { AiService } from '../ai/adapter.ts';
+import { getSetting, setSetting } from '../config.ts';
 import { FakeProvider, type FakeStep } from '../ai/testing/fake-provider.ts';
 import { closeBrowser } from '../render/browser.ts';
 import { finishWithEdits, generateBody, type BodyOutput } from './body.ts';
@@ -95,6 +96,24 @@ describe('본문 카드 (FR-MK-1·2·8)', () => {
     expect(p).toContain('[quote_not_in_source]');
     expect(p).toContain('[number_not_in_source]');
     expect(p).toContain('[prompt_person_not_character]'); // me 의 「보여 주는 방식」: 캐릭터(ZUN) — 결정 2026-10-15
+  }, 60_000);
+
+  it('card_body v2: 소재 밖 풀이 문장 표시를 세트와 함께 저장하고, 소재에 없는 용어를 풀이하면 다시 쓴다 (결정 2026-10-15)', async () => {
+    const withGloss = structuredClone(BODY);
+    withGloss.cards = withGloss.cards.map((c) => ({ ...c, glosses: [] }));
+    withGloss.cards[0]!.text = '태그만 붙이면 노트가 **자동으로** 묶여요. 태그는 노트에 다는 이름표예요.';
+    withGloss.cards[0]!.glosses = [{ sentence: '태그는 노트에 다는 이름표예요.', term: '태그' }];
+    const badTerm = structuredClone(withGloss);
+    badTerm.cards[4]!.text = '내보내기는 마크다운 파일로만 돼요. PDF는 모양이 고정된 문서예요.';
+    badTerm.cards[4]!.glosses = [{ sentence: 'PDF는 모양이 고정된 문서예요.', term: 'PDF' }]; // 소재에 없는 용어
+    const { ai, db, dataDir, sourceId, provider } = await setup([{ structured: badTerm }, { structured: withGloss }, noIssues]);
+    setSetting(db, 'prompts.activeVersions', { ...getSetting(db, 'prompts.activeVersions'), card_body: 'v2', card_body_review: 'v3' });
+    const r = await generateBody(ai, 1, { sourceId, cover, requested: null, coverJobId: null }, undefined, dataDir);
+    expect(r).toMatchObject({ status: 'saved', rewrites: 1 });
+    expect(provider.calls[1]!.prompt).toContain('[gloss_term_not_in_source]');
+    const set = getSet(db, (r as { setId: number }).setId)!;
+    expect(set.cards[1]!.glosses).toEqual([{ sentence: '태그는 노트에 다는 이름표예요.', term: '태그' }]);
+    expect(set.cards[2]!.glosses).toEqual([]);
   }, 60_000);
 
   it('2회 재작성 뒤에도 넘치면 버리지 않고 어느 카드가 넘쳤는지 돌려준다 → 사용자가 줄이면 저장 (그 전엔 저장 안 함)', async () => {

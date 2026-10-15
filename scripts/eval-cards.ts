@@ -49,6 +49,9 @@ interface Row {
   body: BodyResult | null;
   error?: string;
   seconds: number;
+  /** 표지 단계·본문 단계 시간 — 화면의 「보통 N분」 안내를 측정값으로 쓰려고 */
+  coverSec: number | null;
+  bodySec: number | null;
   sleptSec: number;
   reasons: Record<string, number>;
   ungrounded: string[];
@@ -94,13 +97,15 @@ for (const [setKey, dir, setLabel] of SETS) {
       const ai = new AiService({ db, provider: new ClaudeCodeProvider() });
       const { dataDir } = await seedBrand(pair.person, pair.set, pair.draft, db);
       const sourceId = addTestSource(db, text);
-      const row: Row = { setLabel, source: name, person: pair.person, draft: pair.draft, run: n, covers: null, body: null, seconds: 0, sleptSec: 0, reasons: {}, ungrounded: [], countOk: null, cardsText: [], pngDir: null };
+      const row: Row = { setLabel, source: name, person: pair.person, draft: pair.draft, run: n, covers: null, body: null, seconds: 0, coverSec: null, bodySec: null, sleptSec: 0, reasons: {}, ungrounded: [], countOk: null, cardsText: [], pngDir: null };
       const sw = startStopwatch();
       try {
         row.covers = await generateCovers(ai, 1, sourceId, null, undefined, dataDir);
+        row.coverSec = sw.wallMs() / 1000;
         const first = row.covers.candidates[0];
         if (!first) throw new Error('보여 줄 표지 후보가 없음');
         row.body = await generateBody(ai, 1, { sourceId, cover: { headline: first.headline, sub: first.sub, pillarId: first.pillarId, chip: first.chip }, requested: null, coverJobId: null }, undefined, dataDir);
+        row.bodySec = sw.wallMs() / 1000 - row.coverSec;
         if (row.body.status === 'saved') {
           const set = getSet(db, row.body.setId)!;
           const dest = path.join(outDir, `${name}-${pair.person}-${n}`);
@@ -127,7 +132,7 @@ for (const [setKey, dir, setLabel] of SETS) {
       row.reasons = rewriteReasons(db);
       const b = row.body;
       console.log(
-        `  → ${row.sleptSec ? `[잠자기 ${row.sleptSec}초] ` : ''}표지 ${row.covers ? `${row.covers.candidates.length}개(뺀 ${row.covers.dropped.length})·재작성 ${row.covers.rewrites}` : '-'} / 본문 ${b ? `${b.status}·재작성 ${b.rewrites}` : row.error ?? '-'} · ${row.seconds.toFixed(0)}초`,
+        `  → ${row.sleptSec ? `[잠자기 ${row.sleptSec}초] ` : ''}${row.coverSec !== null ? `(표지 ${row.coverSec.toFixed(0)}초${row.bodySec !== null ? ` · 본문 ${row.bodySec.toFixed(0)}초` : ''}) ` : ''}표지 ${row.covers ? `${row.covers.candidates.length}개(뺀 ${row.covers.dropped.length})·재작성 ${row.covers.rewrites}` : '-'} / 본문 ${b ? `${b.status}·재작성 ${b.rewrites}` : row.error ?? '-'} · ${row.seconds.toFixed(0)}초`,
       );
       rows.push(row);
     }
@@ -160,6 +165,8 @@ for (const [, , setLabel] of SETS) {
   lines.push(`| 재작성 (표지 / 본문) 합 | ${sum(rs, (r) => r.covers?.rewrites ?? 0)} / ${sum(rs, (r) => r.body?.rewrites ?? 0)} |`);
   lines.push(`| AI 호출 합 (표지+본문) 평균 | ${(sum(rs, (r) => (r.covers?.calls ?? 0) + (r.body?.calls ?? 0)) / rs.length).toFixed(1)} |`);
   lines.push(`| 한 세트 시간 평균 | ${(sum(rs, (r) => r.seconds) / rs.length).toFixed(0)}초 |`);
+  const secs = (f: (r: Row) => number | null) => rs.map(f).filter((x): x is number => x !== null).map((x) => x.toFixed(0)).join(' · ') || '-';
+  lines.push(`| 단계 시간 (회차별) 표지 / 본문 | ${secs((r) => r.coverSec)} / ${secs((r) => r.bodySec)}초 |`);
   for (const c of CATS) lines.push(`| 재작성 사유 — ${c} (문제 건수) | ${sum(rs, (r) => r.reasons[c] ?? 0)} |`);
   const dropped: Record<string, number> = {};
   for (const r of rs) for (const d of r.covers?.dropped ?? []) for (const why of d.reasons.slice(0, 1)) {

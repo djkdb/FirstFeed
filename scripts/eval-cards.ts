@@ -1,11 +1,11 @@
 // 카드뉴스 측정 (FR-MK-1·2·8). 소재 × 짝 브랜드 × N회: 표지 후보 → 첫 후보 고르기 → 본문 → 세트.
-//   npm run eval:cards -- [--runs=2] [--only=ai-tool-memo] [--label=cards]
+//   npm run eval:cards -- [--runs=2] [--only=ai-tool-memo] [--label=cards] [--prompt card_body=v1 --prompt card_body_review=v2]
 // 결과: tests/results/<날짜>-<label>.md + tests/results/<날짜>-<label>/<소재>-<브랜드>-<회>/NN-*.png (사람이 열어 본다)
 // 재작성 사유는 근거 규칙 / 렌더링 넘침 / 개수 불일치 / 자기 평가로 나눈다(ai_runs 의 문제 기록에서).
 // 소재는 tests/fixtures/{real,private,generated}/sources/*.md — 세 갈래로 나눠 보고, 자료가 없는 갈래는 「자료 없음」
 import fs from 'node:fs';
 import path from 'node:path';
-import { env, getSetting } from '../server/src/config.ts';
+import { env, getSetting, setSetting } from '../server/src/config.ts';
 import { openDb, type Db } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { ClaudeCodeProvider } from '../server/src/ai/providers/claude-code.ts';
@@ -24,6 +24,11 @@ const arg = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.le
 const runs = Number(arg('runs') ?? 2);
 const only = arg('only');
 const label = arg('label') ?? 'cards';
+// 프롬프트 판 고르기(다른 측정 스크립트와 같은 방식): 회차마다 새 DB 의 설정에 넣는다
+const promptVersions: Record<string, string> = Object.fromEntries(
+  args.flatMap((a, i) => (a === '--prompt' && args[i + 1]?.includes('=') ? [args[i + 1]!.split('=') as [string, string]] : [])),
+);
+const versions: Record<string, string> = { ...getSetting(null, 'prompts.activeVersions'), ...promptVersions };
 const date = new Date().toLocaleDateString('sv-SE');
 const outDir = path.join(env.repoRoot, 'tests/results', `${date}-${label}`);
 
@@ -57,6 +62,8 @@ interface Row {
   ungrounded: string[];
   countOk: boolean | null;
   cardsText: string[];
+  /** 본문 단계 자기 평가가 낸 지적 전부(재작성 여부와 상관없이) — 풀이 표시 빠짐을 잡았는지 사람이 읽는다 */
+  reviews: string[];
   pngDir: string | null;
 }
 
@@ -81,6 +88,16 @@ function rewriteReasons(db: Db): Record<string, number> {
   return out;
 }
 
+/** 본문 생성·재작성 회차에 붙은 자기 평가 지적 전부 (fact·broken 은 error, style 은 warn) */
+function bodyReviews(db: Db): string[] {
+  const rows = db.prepare("SELECT kind, issues_json FROM ai_runs WHERE task = 'card_body' AND kind IN ('generate', 'rewrite') ORDER BY id").all() as Array<{ kind: string; issues_json: string | null }>;
+  return rows.flatMap((r, n) =>
+    (JSON.parse(r.issues_json ?? '[]') as Array<{ level: string; code: string; where?: string; message: string; from?: string }>)
+      .filter((x) => x.from === 'review')
+      .map((x) => `${n + 1}번째 ${r.kind === 'generate' ? '생성' : '재작성'} · ${x.level === 'error' ? x.code.replace('review_', '') : 'style'} · ${x.where ?? ''}: ${x.message}`),
+  );
+}
+
 const rows: Row[] = [];
 fs.rmSync(outDir, { recursive: true, force: true });
 for (const [setKey, dir, setLabel] of SETS) {
@@ -94,10 +111,11 @@ for (const [setKey, dir, setLabel] of SETS) {
     for (let n = 1; n <= runs; n++) {
       console.log(`[카드 측정] ${setKey}/${name} × ${pair.person} (시안 ${pair.draft}) ${n}/${runs} …`);
       const db = openDb(':memory:');
+      setSetting(db, 'prompts.activeVersions', versions);
       const ai = new AiService({ db, provider: new ClaudeCodeProvider() });
       const { dataDir } = await seedBrand(pair.person, pair.set, pair.draft, db);
       const sourceId = addTestSource(db, text);
-      const row: Row = { setLabel, source: name, person: pair.person, draft: pair.draft, run: n, covers: null, body: null, seconds: 0, coverSec: null, bodySec: null, sleptSec: 0, reasons: {}, ungrounded: [], countOk: null, cardsText: [], pngDir: null };
+      const row: Row = { setLabel, source: name, person: pair.person, draft: pair.draft, run: n, covers: null, body: null, seconds: 0, coverSec: null, bodySec: null, sleptSec: 0, reasons: {}, ungrounded: [], countOk: null, cardsText: [], reviews: [], pngDir: null };
       const sw = startStopwatch();
       try {
         row.covers = await generateCovers(ai, 1, sourceId, null, undefined, dataDir);
@@ -120,6 +138,7 @@ for (const [setKey, dir, setLabel] of SETS) {
             const plain = c.kind === 'cover' ? countClaims(t).reduce((x, cl) => x.replace(cl.text, ' '), t.replace(/\*\*/g, '')) : t;
             for (const u of findUngrounded(plain, { ...ctx.grounding, structural: c.kind === 'cover' ? [] : [bodyCount] }, ctx.commonTerms)) row.ungrounded.push(`${c.idx + 1}번 "${u.value}"`);
             row.cardsText.push(`${c.idx + 1}. [${c.kind}] ${t.replace(/\n/g, ' ⏎ ')}${c.evidence ? `  ← 근거: "${c.evidence}"` : ''}${c.image ? `  🖼 ${c.image.prompt}` : ''}`);
+            for (const g of c.glosses ?? []) row.cardsText.push(`   ⚑ 풀이 표시 「${g.term}」: ${g.sentence}`);
           }
           const claims = cardCountClaims([first.headline, first.sub ?? ''], [text]);
           row.countOk = claims.length ? claims.every((cl) => cl.value === bodyCount) : null;
@@ -130,6 +149,7 @@ for (const [setKey, dir, setLabel] of SETS) {
       row.seconds = sw.wallMs() / 1000;
       row.sleptSec = Math.round(sw.sleptMs() / 1000);
       row.reasons = rewriteReasons(db);
+      row.reviews = bodyReviews(db);
       const b = row.body;
       console.log(
         `  → ${row.sleptSec ? `[잠자기 ${row.sleptSec}초] ` : ''}${row.coverSec !== null ? `(표지 ${row.coverSec.toFixed(0)}초${row.bodySec !== null ? ` · 본문 ${row.bodySec.toFixed(0)}초` : ''}) ` : ''}표지 ${row.covers ? `${row.covers.candidates.length}개(뺀 ${row.covers.dropped.length})·재작성 ${row.covers.rewrites}` : '-'} / 본문 ${b ? `${b.status}·재작성 ${b.rewrites}` : row.error ?? '-'} · ${row.seconds.toFixed(0)}초`,
@@ -145,7 +165,7 @@ const sum = (rs: Row[], f: (r: Row) => number) => rs.reduce((n, r) => n + f(r), 
 const lines = [
   `# 카드뉴스 측정 · ${date} · ${label}`,
   '',
-  `- 프롬프트: ${['cover_titles', 'cover_titles_review', 'card_body', 'card_body_review', 'self_review'].map((k) => `${k}@${getSetting(null, 'prompts.activeVersions')[k] ?? 'v1'}`).join(', ')} · 모델 opus · 소재마다 ${runs}회 · 표지는 후보 중 첫 번째를 고름`,
+  `- 프롬프트: ${['cover_titles', 'cover_titles_review', 'card_body', 'card_body_review', 'self_review'].map((k) => `${k}@${versions[k] ?? 'v1'}`).join(', ')} · 모델 opus · 소재마다 ${runs}회 · 표지는 후보 중 첫 번째를 고름`,
   '- 짝: ai-tool-memo × me(시안 A) · budget-devlog × doyun(시안 C) · dessert-visit × seoyeon(시안 B) — 프로필·키트는 고정 스냅숏',
   `- PNG: \`tests/results/${date}-${label}/<소재>-<브랜드>-<회>/\``,
   '- 재작성 사유는 재작성을 부른 회차의 코드 규칙 위반 건수(자기 평가의 fact·broken 은 「자기 평가」). 표지 후보에서 빼고 받아들인 것은 「뺀 후보」로 따로',
@@ -176,6 +196,7 @@ for (const [, , setLabel] of SETS) {
   lines.push(`| 뺀 표지 후보의 사유 (재작성 아님) | ${Object.entries(dropped).map(([k, v]) => `${k} ${v}`).join(' · ') || '없음'} |`);
   lines.push(`| 최종 카드의 원문 밖 숫자·영문 (FR-MK-2, 0이어야) | ${sum(saved, (r) => r.ungrounded.length)} |`);
   lines.push(`| 표지 개수 표현 = 본문 카드 수 (개수 표현 있는 세트) | ${saved.filter((r) => r.countOk === true).length}/${saved.filter((r) => r.countOk !== null).length} |`);
+  lines.push(`| 풀이 표시 (⚑) 합 — card_body v2 부터 | ${sum(saved, (r) => r.cardsText.filter((t) => t.trimStart().startsWith('⚑')).length)} |`);
   lines.push(`| 잠자기가 낀 회차 | ${rs.filter((r) => r.sleptSec > 0).length}/${rs.length} |`);
   lines.push('');
   if (setLabel === '실제 · 비공개') continue;
@@ -194,6 +215,7 @@ for (const [, , setLabel] of SETS) {
     if (r.error) lines.push('', `오류: ${r.error}`);
     if (r.cardsText.length) lines.push('', ...r.cardsText.map((t) => `- ${t}`));
     if (r.ungrounded.length) lines.push('', `원문 밖 숫자·영문: ${r.ungrounded.join(', ')}`);
+    if (r.reviews.length) lines.push('', '본문 자기 평가 지적:', ...r.reviews.map((x) => `- ${x}`));
     lines.push(`재작성 사유: ${Object.entries(r.reasons).map(([k, v]) => `${k} ${v}`).join(' · ') || '없음'}`, '');
   }
 }

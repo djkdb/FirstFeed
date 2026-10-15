@@ -183,7 +183,7 @@ for (const [, , setLabel] of SETS) {
     lines.push(`### ${r.source} × ${r.person} (시안 ${r.draft}) · ${r.run}회${r.sleptSec ? ` (잠자기 ${r.sleptSec}초 포함)` : ''}`, '');
     if (r.covers) {
       lines.push(`표지 후보 ${r.covers.candidates.length}개 (호출 ${r.covers.calls}·재작성 ${r.covers.rewrites}): ${r.covers.candidates.map((c) => `「${c.headline.replace(/\*\*/g, '').replace(/\n/g, ' ')}」`).join(' · ')}`);
-      if (r.covers.dropped.length) lines.push('', '뺀 후보:', ...r.covers.dropped.map((d) => `- 「${d.headline.replace(/\n/g, ' ')}」 — ${d.reasons.join(' / ')}`));
+      if (r.covers.dropped.length) lines.push('', '뺀 후보:', ...r.covers.dropped.map((d) => `- 「${d.headline.replace(/\n/g, ' ')}」${d.sub ? ` / 부제 「${d.sub.replace(/\n/g, ' ')}」` : ''} — ${d.reasons.join(' / ')}`));
     }
     const b = r.body;
     if (b) {

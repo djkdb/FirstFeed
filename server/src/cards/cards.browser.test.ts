@@ -20,7 +20,7 @@ const PILLAR = '1a73b8075a69b404';
 const noIssues: FakeStep = { structured: { issues: [] } };
 const t = (headline: string, sub: string | null = null) => ({ headline, sub, pillar_id: PILLAR, why: '이유' });
 
-const card = (title: string, text: string, evidence: string, image: { prompt: string; filename: string } | null = null) => ({ title, text, evidence, image });
+const card = (title: string, text: string, evidence: string, image: { prompt: string; filename: string } | null = null) => ({ title, text, evidence, image, glosses: [] as Array<{ sentence: string; term: string }> }); // card_body v2 부터 풀이 표시 칸 필수
 const BODY: BodyOutput = {
   cards: [
     card('태그로 묶기', '태그만 붙이면 노트가 **자동으로** 묶여요.', '태그를 붙이면 노트가 자동으로 묶인다.', {

@@ -162,7 +162,10 @@ export const DEFAULTS = {
     brand_visual: 'v2',
     brand_words_review: 'v2',
     // 첫 실제 실행에서 v1 의 "인용 밖 사실 = fact" 가 소재의 다른 곳에 있는 사실까지 막아 세트가 실패 (devlog 2026-10-15-02)
-    card_body_review: 'v2',
+    // ~~card_body_review v2~~ → v3, card_body v1 → v2: 소재 밖 용어 풀이 표시(결정 2026-10-15 · 카드 풀이·그림 사람 규칙).
+    // 측정 tests/results/2026-10-15-cards-gloss-v1-v2.md — v2 풀이 4개 모두 표시, 자기 평가 v3 고정 입력 8/8 (devlog 2026-10-15-04)
+    card_body: 'v2',
+    card_body_review: 'v3',
   } as Record<string, string>,
 };
 

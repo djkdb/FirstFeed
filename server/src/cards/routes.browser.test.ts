@@ -17,7 +17,7 @@ describe('카드뉴스 API', () => {
     const { db, dataDir } = await seedBrand('me', 'real', 'C');
     const titles = ['모아 써 보니\n**3가지**', '태그만 붙이면\n노트가 묶여요', '날짜만 쓰면\n그날 노트만', '공유 링크는\n7일 뒤 사라져요', '모아 1.2 버전\n**3가지 정리**', '써 보고 알게 된\n3가지'].map((headline) => ({ headline, sub: null, pillar_id: P, why: '' }));
     const ev = ['태그를 붙이면 노트가 자동으로 묶인다.', '검색창에 날짜를 쓰면 그날 노트만 보인다.', '공유 링크는 7일 뒤 사라진다.'];
-    const body = { cards: ev.map((e, i) => ({ title: ['태그', '날짜 검색', '공유 링크'][i]!, text: e, evidence: e, image: null })), closing: { headline: '저장해 두세요', sub: null } };
+    const body = { cards: ev.map((e, i) => ({ title: ['태그', '날짜 검색', '공유 링크'][i]!, text: e, evidence: e, image: null, glosses: [] })), closing: { headline: '저장해 두세요', sub: null } };
     const provider = new FakeProvider([{ structured: { titles } }, { structured: { issues: [] } }, { structured: body }, { structured: { issues: [] } }]);
     const app = createApp({ db, ai: new AiService({ db, provider }), dataDir });
     const post = async (p: string, b: unknown) => (await app.request(`/api/cards${p}`, { method: 'POST', headers: H, body: JSON.stringify(b) })).json() as Promise<Record<string, unknown>>;

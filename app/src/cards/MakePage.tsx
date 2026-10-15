@@ -77,7 +77,9 @@ function Progress({ job, onCancel, label }: { job: JobView | null; onCancel: () 
 }
 
 function SetView({ setId }: { setId: number }) {
-  const [set, setSet] = useState<{ cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; render: { scale: number; browser: string; reference: boolean } }> } | null>(null);
+  const [set, setSet] = useState<{
+    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string }> | null; render: { scale: number; browser: string; reference: boolean } }>;
+  } | null>(null);
   useEffect(() => {
     void (async () => {
       const r = await api.api.cards.sets[':id'].$get({ param: { id: String(setId) } });
@@ -86,8 +88,14 @@ function SetView({ setId }: { setId: number }) {
     })();
   }, [setId]);
   if (!set) return <p className="muted">불러오는 중…</p>;
+  const glossCount = set.cards.reduce((n, c) => n + (c.glosses?.length ?? 0), 0);
   return (
     <>
+      {glossCount > 0 && (
+        <p className="gloss-summary small">
+          소재에 없는 설명 {glossCount}곳 — 맞는지 코드로 확인할 수 없어 표시했어요. 아래 카드에서 <mark>강조한 문장</mark>을 올리기 전에 확인하세요.
+        </p>
+      )}
       <div className="frames">
         {set.cards.map((c) => (
           <figure key={c.idx} className="frame">
@@ -97,6 +105,13 @@ function SetView({ setId }: { setId: number }) {
               {c.render.scale < 1 && <span className="muted"> · 글자 {Math.round(c.render.scale * 100)}%</span>}
               {c.edited && <span className="tag">직접 고침</span>}
             </figcaption>
+            {c.glosses?.map((g) => (
+              <p key={g.sentence} className="gloss small">
+                <mark>{g.sentence}</mark>
+                <br />
+                <span className="muted">「{g.term}」 풀이 · 소재에 없는 설명이에요 — 올리기 전에 맞는지 확인하세요</span>
+              </p>
+            ))}
             {c.image && (
               <details className="small">
                 <summary>그림 프롬프트 · {c.image.filename}</summary>

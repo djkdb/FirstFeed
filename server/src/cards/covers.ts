@@ -95,7 +95,8 @@ export function reasonOf(code: string): string {
   if (code.startsWith('review_')) return '자기 평가';
   if (code === 'count_mismatch') return '개수 불일치';
   if (['text_overflow', 'too_many_lines', 'text_outside_card', 'text_outside_safe', 'text_overlap', 'too_long_for_template', 'font_fallback'].includes(code)) return '렌더링 넘침';
-  if (['number_not_in_source', 'english_not_in_source', 'quote_not_in_source', 'quote_too_short'].includes(code)) return '근거 규칙';
+  // 풀이 표시(결정 2026-10-15)도 원문 대조라 근거 규칙으로 센다: 소재에 없는 용어 풀이 · 카드 글에 없는 문장 표시
+  if (['number_not_in_source', 'english_not_in_source', 'quote_not_in_source', 'quote_too_short', 'gloss_term_not_in_source', 'gloss_not_in_card'].includes(code)) return '근거 규칙';
   return '기타';
 }
 

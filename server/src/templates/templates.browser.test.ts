@@ -107,5 +107,39 @@ describe('렌더링 직전 글 다듬기 — 실제로 그려서 줄바꿈 위�
     for (const slot of lines) for (const l of slot) expect(l.startsWith('·') || l.endsWith('·')).toBe(false);
     expect(lines.flat().some((l) => l.includes('3분 20초'))).toBe(true);
   }, 30_000);
+
+  it('「88%까지」 는 「%」 뒤에서 갈리지 않고, 단어 이음표가 대체 글꼴로 잡히지 않는다 (카드 재측정 C·doyun c05)', async () => {
+    if (!ready) return;
+    const content: FrameContent = {
+      kind: 'body',
+      title: '72%에서\n88%까지',
+      text: '항목을 맞게 나누는 비율은 처음에 72%였어요.\n\n자주 틀리는 항목 30개를 따로 정리해서 넣었더니 **88%까지** 올랐어요.',
+      page: 5,
+      total: 8,
+      chip: '기능 제작기',
+    };
+    const r = await renderCard(null, { html: DRAFTS[2]!.html(BRANDS.doyun!, content, 1), width: FRAME_SIZE.body.width, height: FRAME_SIZE.body.height });
+    expect(r.problems).toEqual([]);
+    const { withCardPage } = await import('../render/render.ts');
+    const lines = await withCardPage(null, { html: DRAFTS[2]!.html(BRANDS.doyun!, content, 1), width: FRAME_SIZE.body.width, height: FRAME_SIZE.body.height }, (page) =>
+      page.evaluate(() => {
+        const out: Array<{ top: number; text: string }> = [];
+        const el = document.querySelector('[data-slot="text"]')!;
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode())
+          for (let i = 0; i < n.textContent!.length; i++) {
+            const r = document.createRange();
+            r.setStart(n, i);
+            r.setEnd(n, i + 1);
+            const rect = r.getBoundingClientRect();
+            if (rect.width === 0) continue;
+            const line = out.find((l) => Math.abs(l.top - rect.top) < rect.height / 2) ?? (out.push({ top: rect.top, text: '' }), out.at(-1)!);
+            line.text += n.textContent![i];
+          }
+        return out.map((l) => l.text.trim());
+      }),
+    );
+    expect(lines.some((l) => l.endsWith('%'))).toBe(false);
+  }, 30_000);
 });
 

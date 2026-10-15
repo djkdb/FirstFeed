@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { polishForRender, textToHtml } from './text.ts';
 
-const show = (s: string) => s.replace(/\u00A0/g, '⍽'); // 묶은 자리를 눈에 보이게
+const show = (s: string) => s.replace(/\u00A0/g, '⍽').replace(/\u2060/g, '⁀'); // 묶은 자리를 눈에 보이게
 
 describe('렌더링 직전 글 다듬기 (원고는 그대로, 그림에 넣는 글만)', () => {
   it('「·」 앞뒤를 묶는다 — 「1,500명 · 87% ·」 / 「3단계」 처럼 줄 끝에 혼자 남지 않게', () => {
@@ -16,6 +16,12 @@ describe('렌더링 직전 글 다듬기 (원고는 그대로, 그림에 넣는 
 
   it('숫자와 띄어 쓴 단위를 묶는다 — 「5」 / 「가지」', () => {
     expect(show(polishForRender('설정 5 가지, 1,500 원'))).toBe('설정 5⍽가지, 1,500⍽원');
+  });
+
+  it('「%」 바로 뒤 한글을 묶는다 — 「88%」 / 「까지」 (공백이 없어 단어 이음표로)', () => {
+    expect(show(polishForRender('넣었더니 88%까지 올랐어요'))).toBe('넣었더니 88%⁀까지 올랐어요');
+    expect(show(polishForRender('87% · 3단계'))).toBe('87%⍽·⍽3단계');
+    expect(show(polishForRender('88% 까지'))).toBe('88%⍽까지');
   });
 
   it('숫자와 상관없는 띄어쓰기는 그대로 — 줄은 여전히 띄어쓰기에서 바뀐다', () => {

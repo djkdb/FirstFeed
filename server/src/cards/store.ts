@@ -4,6 +4,12 @@ import path from 'node:path';
 import type { Db } from '../db/index.ts';
 import type { FrameContent } from '../templates/types.ts';
 
+/** 소재 밖 용어 풀이·비유 문장 표시 (결정 2026-10-15) */
+export interface GlossMark {
+  sentence: string;
+  term: string;
+}
+
 type Row = Record<string, unknown>;
 
 export interface Source {
@@ -38,6 +44,7 @@ export interface CardToSave {
   content: FrameContent;
   evidence: string | null;
   image: { prompt: string; filename: string } | null;
+  glosses: GlossMark[];
   edited: boolean;
   png: Buffer;
   render: { browser: string; reference: boolean; scale: number };
@@ -72,11 +79,11 @@ export function saveSet(db: Db, dataDir: string, s: SetToSave): number {
     );
     dir = rendersDir(dataDir, setId);
     fs.mkdirSync(dir, { recursive: true });
-    const ins = db.prepare('INSERT INTO cards (set_id, idx, kind, content_json, evidence, image_json, edited, png_file, render_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const ins = db.prepare('INSERT INTO cards (set_id, idx, kind, content_json, evidence, image_json, glosses_json, edited, png_file, render_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     s.cards.forEach((c, idx) => {
       const file = `${String(idx + 1).padStart(2, '0')}-${c.kind}.png`;
       fs.writeFileSync(path.join(dir!, file), c.png);
-      ins.run(setId, idx, c.kind, JSON.stringify(c.content), c.evidence, c.image ? JSON.stringify(c.image) : null, c.edited ? 1 : 0, file, JSON.stringify(c.render));
+      ins.run(setId, idx, c.kind, JSON.stringify(c.content), c.evidence, c.image ? JSON.stringify(c.image) : null, JSON.stringify(c.glosses), c.edited ? 1 : 0, file, JSON.stringify(c.render));
     });
     db.exec('COMMIT');
     return setId;
@@ -93,6 +100,8 @@ export interface SavedCard {
   content: FrameContent;
   evidence: string | null;
   image: { prompt: string; filename: string } | null;
+  /** 풀이 칸이 생기기 전(card_body v1)에 만든 세트는 null — 표시했는지 모른다 */
+  glosses: GlossMark[] | null;
   edited: boolean;
   pngFile: string;
   render: { browser: string; reference: boolean; scale: number };
@@ -108,6 +117,7 @@ export function getSet(db: Db, id: number) {
       content: JSON.parse(String(c.content_json)) as FrameContent,
       evidence: (c.evidence as string | null) ?? null,
       image: c.image_json ? (JSON.parse(String(c.image_json)) as SavedCard['image']) : null,
+      glosses: c.glosses_json ? (JSON.parse(String(c.glosses_json)) as GlossMark[]) : null,
       edited: Number(c.edited) === 1,
       pngFile: String(c.png_file),
       render: JSON.parse(String(c.render_json)) as SavedCard['render'],

@@ -18,21 +18,27 @@ import { cardCountClaims, countMismatch } from './count.ts';
 import { reasonOf } from './covers.ts';
 import { saveSet, type CardToSave } from './store.ts';
 
-export const BodySchema = z.object({
-  cards: z
-    .array(
-      z.object({
-        title: z.string().min(1).max(60),
-        text: z.string().min(1).max(600),
-        evidence: z.string().min(1).max(400),
-        image: z.object({ prompt: z.string().min(10).max(1200), filename: z.string().max(80) }).nullable(),
-      }),
-    )
-    .min(1)
-    .max(12),
-  closing: z.object({ headline: z.string().min(1).max(80), sub: z.string().max(80).nullable() }),
+const CardV1 = z.object({
+  title: z.string().min(1).max(60),
+  text: z.string().min(1).max(600),
+  evidence: z.string().min(1).max(400),
+  image: z.object({ prompt: z.string().min(10).max(1200), filename: z.string().max(80) }).nullable(),
 });
-export type BodyOutput = z.infer<typeof BodySchema>;
+const Closing = z.object({ headline: z.string().min(1).max(80), sub: z.string().max(80).nullable() });
+
+/**
+ * 소재 밖 용어 풀이·비유 표시 (결정 2026-10-15 · 카드 풀이·그림 사람 규칙): 맞는지 코드로 잴 수 없어서 사람에게 보인다.
+ * sentence 는 카드 글에 실제로 있는 문장, term 은 그 문장이 풀이하는 소재 원문의 용어 — 둘 다 코드가 대조한다
+ */
+const Gloss = z.object({ sentence: z.string().min(1).max(200), term: z.string().min(1).max(40) });
+export type Gloss = z.infer<typeof Gloss>;
+
+/** card_body v1 의 출력 — 풀이 칸이 없다. v1 을 다시 잴 때 그때와 같은 스키마로 돌리려고 남긴다 */
+export const BodySchemaV1 = z.object({ cards: z.array(CardV1).min(1).max(12), closing: Closing });
+/** card_body v2~: 카드마다 소재 밖 풀이·비유 문장 표시 */
+export const BodySchema = z.object({ cards: z.array(CardV1.extend({ glosses: z.array(Gloss).max(5) })).min(1).max(12), closing: Closing });
+export type BodyOutput = { cards: Array<z.infer<typeof CardV1> & { glosses?: Gloss[] }>; closing: z.infer<typeof Closing> };
+export const schemaFor = (version: string): z.ZodType<BodyOutput> => (version === 'v1' ? BodySchemaV1 : BodySchema);
 
 const CARD_IMAGE_NEEDS: Array<[RegExp, string]> = [
   [/\b4:5\b/, '비율 "4:5"'],
@@ -112,11 +118,35 @@ export function aiRules(c: CardContext, minQuote: number): Rule<BodyOutput>[] {
         if (!quoteInSources(x.evidence, c.grounding.source)) out.push(issue(`cards.${i}.evidence`, 'quote_not_in_source', `근거 인용이 소재 원문에 없습니다: "${x.evidence.slice(0, 40)}"`));
         else if (normalizeForQuote(x.evidence).length < minQuote) out.push(issue(`cards.${i}.evidence`, 'quote_too_short', `근거 인용이 너무 짧습니다(${minQuote}자 이상).`));
         if (x.image) out.push(...imagePromptIssues(`cards.${i}.image`, x.image, CARD_IMAGE_NEEDS, true));
+        out.push(...glossIssues(`cards.${i}`, x, c.grounding.source));
       });
       ground('closing', `${d.closing.headline}\n${d.closing.sub ?? ''}`);
       return out;
     },
   ];
+}
+
+/**
+ * 풀이 표시의 코드 규칙: 표시한 문장이 카드 글에 실제로 있는가, 풀이하는 용어가 소재 원문에 있는가.
+ * 소재에 없는 용어를 새로 꺼내 설명하는 것은 안 된다(결정 2026-10-15). 문장 속 숫자·영문은 카드 글 전체의 근거 규칙이 이미 본다
+ */
+export function glossIssues(where: string, card: BodyOutput['cards'][number], sources: string[]): Issue[] {
+  const out: Issue[] = [];
+  const cardText = normalizeForQuote(`${card.title}\n${card.text.replace(/\*\*/g, '')}`);
+  const src = sources.map(normalizeForQuote);
+  (card.glosses ?? []).forEach((g, j) => {
+    if (!cardText.includes(normalizeForQuote(g.sentence)))
+      out.push(issue(`${where}.glosses.${j}`, 'gloss_not_in_card', `표시한 풀이 문장이 카드 글에 없습니다: "${g.sentence.slice(0, 40)}". 카드 글의 문장을 그대로 옮기세요.`));
+    if (!src.some((x) => x.includes(normalizeForQuote(g.term))))
+      out.push(issue(`${where}.glosses.${j}`, 'gloss_term_not_in_source', `풀이한 용어 "${g.term}" 이 소재 원문에 없습니다. 소재에 나온 용어만 풀이하세요.`));
+  });
+  return out;
+}
+
+/** 저장할 때: 사용자가 직접 고쳐서 카드 글에서 사라진 풀이 문장은 표시에서 뺀다(고친 글은 사용자 글이라) */
+export function glossesStillIn(card: BodyOutput['cards'][number]): Gloss[] {
+  const cardText = normalizeForQuote(`${card.title}\n${card.text.replace(/\*\*/g, '')}`);
+  return (card.glosses ?? []).filter((g) => cardText.includes(normalizeForQuote(g.sentence)));
 }
 
 export interface RenderedCard {
@@ -180,6 +210,7 @@ function toSave(rendered: RenderedCard[], d: BodyOutput, editedWheres: Set<strin
       content: r.content,
       evidence: card?.evidence ?? null,
       image: card?.image ?? null,
+      glosses: card ? glossesStillIn(card) : [],
       edited: editedWheres.has(where),
       png: r.result.png!,
       render: { browser: `${r.result.browser.kind} ${r.result.browser.version}`, reference: r.result.browser.reference, scale: r.result.scale },
@@ -214,7 +245,7 @@ export async function generateBody(ai: AiService, brandId: number, input: BodyJo
       task: 'card_body',
       prompt: prompt.text,
       promptRef: prompt.ref,
-      schema: BodySchema,
+      schema: schemaFor(prompt.ref.version),
       rules: [...fixedRules(c, input.cover, count), ...aiRules(c, getSetting(ai.db, 'cards.minQuoteChars'))],
       reviewCriteria: criteria,
       signal: job?.signal,

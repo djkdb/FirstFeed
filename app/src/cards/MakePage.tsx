@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
+import { localTime } from '../time.ts';
 import { useJob, type JobView } from '../useJob.ts';
 
 type State = InferResponseType<typeof api.api.cards.$get>;
@@ -343,7 +344,7 @@ export function MakePage() {
           <ul>
             {state.sets.map((s) => (
               <li key={s.id}>
-                #{s.id} · {s.cover.replace(/\*\*/g, '').replace(/\n/g, ' ')} · 본문 {s.bodyCount}장 · {s.createdAt}
+                #{s.id} · {s.cover.replace(/\*\*/g, '').replace(/\n/g, ' ')} · 본문 {s.bodyCount}장 · {localTime(s.createdAt)}
                 <button type="button" onClick={() => setViewSet(s.id)}>
                   보기
                 </button>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
+import { localTime } from '../time.ts';
 
 type State = InferResponseType<typeof api.api.templates.$get>;
 interface Frame {
@@ -141,7 +142,7 @@ export function TemplatePage() {
           <ul>
             {state.versions.map((v) => (
               <li key={v.id}>
-                v{v.version} · 시안 {v.draftId} · {v.palette ?? ''} · {v.createdAt}
+                v{v.version} · 시안 {v.draftId} · {v.palette ?? ''} · {localTime(v.createdAt)}
                 {state.fixed?.id === v.id && <span className="badge ok">지금</span>}
               </li>
             ))}

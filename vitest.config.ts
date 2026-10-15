@@ -9,7 +9,7 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
-          include: ['server/**/*.test.ts', 'scripts/**/*.test.ts'],
+          include: ['server/**/*.test.ts', 'scripts/**/*.test.ts', 'app/**/*.test.ts'],
           exclude: ['**/node_modules/**', '**/*.live.test.ts', '**/*.browser.test.ts'],
         },
       },

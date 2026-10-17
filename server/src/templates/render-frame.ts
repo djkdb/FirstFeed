@@ -101,9 +101,9 @@ export async function renderPhotoFrame(
   const steps = getSetting(db, 'render.photoShadeSteps');
   const shadeTries: PhotoFrameResult['shadeTries'] = [];
   let last: FrameResult | null = null;
-  for (const [i, shade] of steps.entries()) {
-    const lastStep = i === steps.length - 1;
-    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: lastStep && opts.captureEvenIfBad === true });
+  for (const shade of steps) {
+    // 측정용(captureEvenIfBad)은 단계마다 넘김 — 넘침은 첫 단계에서 바로 돌려주므로, 마지막 단계에만 넘기면 넘친 PNG 가 안 남는다(측정에서 빈 칸으로 발견)
+    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: opts.captureEvenIfBad === true });
     const worst = Math.min(21, ...(r.contrast ?? []).map((x) => x.ratio));
     shadeTries.push({ shade, worst });
     last = r;

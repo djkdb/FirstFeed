@@ -61,7 +61,7 @@ export function IdentityPage() {
     const pending = fresh.state?.turns.some((t) => t.answer === null) ?? false;
     if (kind === 'profile' && result?.outcome === 'needs_more' && fresh.state?.status === 'interview' && !pending) void start('next', fresh.state.id);
   };
-  const { job, cancel } = useJob(jobId, (j) => void onFinish(j));
+  const { job, cancel } = useJob(jobId, (j) => void onFinish(j), () => setJobId(null));
 
   const submitSurvey = async (survey: SurveyAnswers) => {
     setBusy(true);

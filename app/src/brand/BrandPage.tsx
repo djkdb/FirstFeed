@@ -56,6 +56,9 @@ function KitJob({ kind, label, onDone }: { kind: Kind; label: string; onDone: ()
     if (j.phase === 'failed') setError(`${j.error?.message ?? '실패했습니다.'} ${j.error?.hint ?? ''}`);
     if (j.phase === 'cancelled') setError('취소했습니다. 다시 하려면 버튼을 누르세요.');
     onDone();
+  }, () => {
+    writeJob(kind, null);
+    setJobId(null);
   });
   const start = async () => {
     setError(null);

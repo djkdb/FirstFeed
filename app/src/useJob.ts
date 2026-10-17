@@ -1,15 +1,19 @@
 // AI 작업 상태를 1초마다 묻는다. 작업이 끝나면(done·failed·cancelled) 멈추고 onFinish 를 한 번 부른다.
+// 서버가 모르는 작업 ID 는: 끝난 것을 본 작업이면 onStale(화면이 저장한 ID 를 조용히 지운다), 아니면 실패로 안내 (결정 2026-10-18)
 import { useEffect, useRef, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from './api.ts';
+import { missingJobOutcome, rememberFinished } from './finishedJobs.ts';
 
 export type JobView = Extract<InferResponseType<(typeof api.api.ai.jobs)[':jobId']['$get']>, { phase: unknown }>;
 
-export function useJob(jobId: string | null, onFinish: (job: JobView) => void) {
+export function useJob(jobId: string | null, onFinish: (job: JobView) => void, onStale: () => void) {
   const [job, setJob] = useState<JobView | null>(null);
   const finish = useRef(onFinish);
+  const stale = useRef(onStale);
   useEffect(() => {
     finish.current = onFinish;
+    stale.current = onStale;
   });
 
   useEffect(() => {
@@ -21,6 +25,11 @@ export function useJob(jobId: string | null, onFinish: (job: JobView) => void) {
         const body = await res.json();
         if (stop) return;
         if (!('phase' in body)) {
+          if (missingJobOutcome(jobId) === 'stale') {
+            // 이미 끝난 작업이 서버 재시작으로 지워졌을 뿐 — 잃은 것이 없으니 안내 없이 지운다
+            stale.current();
+            return;
+          }
           // 서버가 다시 시작되면 메모리의 작업이 사라진다(개발 중 서버 파일을 고치면 실제로 겪음).
           // 조용히 멈추면 화면이 "만드는 중"에 영원히 머물러서, 실패로 끝내고 다시 하라고 알린다
           finish.current({
@@ -37,7 +46,10 @@ export function useJob(jobId: string | null, onFinish: (job: JobView) => void) {
         }
         setJob(body);
         if (body.phase === 'running') setTimeout(() => void tick(), 1000);
-        else finish.current(body);
+        else {
+          rememberFinished(jobId);
+          finish.current(body);
+        }
       } catch {
         if (!stop) setTimeout(() => void tick(), 2000);
       }

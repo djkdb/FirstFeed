@@ -152,6 +152,9 @@ export function MakePage() {
       save(KEY.cover, null);
       setCoverJobId(null);
     }
+  }, () => {
+    save(KEY.cover, null);
+    setCoverJobId(null);
   });
   const bodyJob = useJob(bodyJobId, (j) => {
     if (j.phase === 'done') {
@@ -166,6 +169,9 @@ export function MakePage() {
       save(KEY.body, null);
       setBodyJobId(null);
     }
+  }, () => {
+    save(KEY.body, null);
+    setBodyJobId(null);
   });
 
   const startCovers = async () => {

@@ -41,6 +41,9 @@ export function Alternatives({ baseId, onChosen }: { baseId: number; onChosen: (
   const { job, cancel } = useJob(jobId, (j) => {
     if (j.phase === 'failed') setError(`${j.error?.message ?? '실패했습니다.'} ${j.error?.hint ?? ''}`);
     if (j.phase === 'cancelled') setError('취소했습니다.');
+  }, () => {
+    writeKey(null);
+    setJobId(null);
   });
 
   const start = async () => {

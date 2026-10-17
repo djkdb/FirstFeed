@@ -133,6 +133,8 @@ export function getSet(db: Db, id: number) {
     pillarId: (r.pillar_id as string | null) ?? null,
     bodyCount: Number(r.body_count),
     edited: Number(r.edited) === 1,
+    /** 그림 바탕 표지에 올린 그림(data/brand-assets 안 이름) — 없으면 null */
+    coverImage: (r.cover_image as string | null) ?? null,
     createdAt: String(r.created_at),
     cards,
   };
@@ -167,6 +169,8 @@ export function replaceCard(
   setId: number,
   idx: number,
   c: { content: FrameContent; png: Buffer; render: CardToSave['render']; glosses: GlossMark[] },
+  /** 글을 사용자가 고쳤는가 — 그림만 바꿔 다시 그린 것은 「직접 고침」이 아니다 */
+  edited = true,
 ): void {
   const row = db.prepare('SELECT png_file FROM cards WHERE set_id = ? AND idx = ?').get(setId, idx) as Row | undefined;
   if (!row) throw new Error(`카드를 찾지 못했습니다: 세트 ${setId} · ${idx}`);
@@ -175,14 +179,14 @@ export function replaceCard(
   fs.writeFileSync(tmp, c.png);
   db.exec('BEGIN');
   try {
-    db.prepare('UPDATE cards SET content_json = ?, glosses_json = ?, render_json = ?, edited = 1 WHERE set_id = ? AND idx = ?').run(
+    db.prepare(`UPDATE cards SET content_json = ?, glosses_json = ?, render_json = ?${edited ? ', edited = 1' : ''} WHERE set_id = ? AND idx = ?`).run(
       JSON.stringify(c.content),
       JSON.stringify(c.glosses),
       JSON.stringify(c.render),
       setId,
       idx,
     );
-    db.prepare('UPDATE card_sets SET edited = 1 WHERE id = ?').run(setId);
+    if (edited) db.prepare('UPDATE card_sets SET edited = 1 WHERE id = ?').run(setId);
     fs.renameSync(tmp, file);
     db.exec('COMMIT');
   } catch (err) {
@@ -190,4 +194,8 @@ export function replaceCard(
     fs.rmSync(tmp, { force: true });
     throw err;
   }
+}
+
+export function setCoverImage(db: Db, setId: number, name: string): void {
+  db.prepare('UPDATE card_sets SET cover_image = ? WHERE id = ?').run(name, setId);
 }

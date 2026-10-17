@@ -10,10 +10,12 @@ import type { JobStore } from '../ai/jobs.ts';
 import { env, getSetting } from '../config.ts';
 import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
-import { fixedTemplate } from '../templates/store.ts';
+import { fixedTemplate, getTemplateVersion } from '../templates/store.ts';
 import { finishWithEdits, generateBody, type BodyResult } from './body.ts';
 import { generateCovers, type CoversResult } from './covers.ts';
 import { checkGloss, editGloss, GlossError } from './gloss-check.ts';
+import { applyCoverImage, CoverImageError } from './cover-image.ts';
+import { AssetError } from '../brand/assets.ts';
 import { addSource, getSet, getSource, listSets, rendersDir } from './store.ts';
 
 const BRAND_ID = 1;
@@ -100,7 +102,7 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
     .get('/sets/:id', (c) => {
       const set = getSet(db, Number(c.req.param('id')));
       if (!set) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
-      return c.json({ set, source: getSource(db, set.sourceId) });
+      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null });
     })
     .get('/sets/:id/png/:file', (c) => {
       const file = c.req.param('file');
@@ -108,6 +110,16 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
       const p = path.join(rendersDir(dataDir, Number(c.req.param('id'))), file);
       if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
       return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
+    })
+    // 그림 바탕 표지(시안 F)에 그림 올리기 — 본문은 파일 바이트 그대로. 받으면 표지만 다시 그린다
+    .post('/sets/:id/cover-image', async (c) => {
+      try {
+        return c.json(await applyCoverImage(db, dataDir, Number(c.req.param('id')), new Uint8Array(await c.req.arrayBuffer())));
+      } catch (err) {
+        if (err instanceof AssetError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        if (err instanceof CoverImageError) return c.json(bad(err.message), 400);
+        throw err;
+      }
     })
     // 표시된 풀이 문장 확인 (결정 2026-10-18): 모두 확인하거나 고치기 전엔 업로드 폴더를 만들 수 없다. 체크는 저장돼 다시 열어도 유지
     .post(

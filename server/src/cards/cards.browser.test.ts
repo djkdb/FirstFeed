@@ -3,13 +3,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { AiService } from '../ai/adapter.ts';
-import { getSetting, setSetting } from '../config.ts';
+import { env, getSetting, setSetting } from '../config.ts';
 import { FakeProvider, type FakeStep } from '../ai/testing/fake-provider.ts';
 import { closeBrowser } from '../render/browser.ts';
 import { finishWithEdits, generateBody, type BodyOutput } from './body.ts';
 import { generateCovers } from './covers.ts';
 import { getSet, rendersDir } from './store.ts';
 import { checkGloss, editGloss, uncheckedGlosses } from './gloss-check.ts';
+import { applyCoverImage } from './cover-image.ts';
 import { addTestSource, seedBrand } from './testing/setup.ts';
 
 afterAll(() => closeBrowser());
@@ -148,6 +149,32 @@ describe('본문 카드 (FR-MK-1·2·8)', () => {
     expect(fs.readFileSync(path.join(rendersDir(dataDir, setId), '06-body.png')).equals(pngBefore)).toBe(false);
     expect(uncheckedGlosses(getSet(db, setId)!)).toEqual([]);
   }, 60_000);
+
+  it('시안 F: 그림 없이 만든 세트(단색 표지)에 그림을 올리면 표지만 다시 그린다 — 다른 시안 세트·그림 아닌 파일은 거절 (결정 2026-10-18)', async () => {
+    const s = await seedBrand('me', 'real', 'F');
+    const sourceId = addTestSource(s.db, SOURCE);
+    const ai = new AiService({ db: s.db, provider: new FakeProvider([{ structured: BODY }, noIssues]) });
+    const r = await generateBody(ai, 1, { sourceId, cover, requested: null, coverJobId: null }, undefined, s.dataDir);
+    const setId = (r as { setId: number }).setId;
+    const dir = rendersDir(s.dataDir, setId);
+    const coverBefore = fs.readFileSync(path.join(dir, '01-cover.png'));
+    const bodyBefore = fs.readFileSync(path.join(dir, '02-body.png'));
+
+    await expect(applyCoverImage(s.db, s.dataDir, setId, new TextEncoder().encode('그림이 아닌 글'))).rejects.toThrow(/PNG·JPG·WEBP/);
+    const light = fs.readFileSync(path.join(env.repoRoot, 'tests/fixtures/generated/images/light.png'));
+    const done = await applyCoverImage(s.db, s.dataDir, setId, light);
+    expect(done).toMatchObject({ ok: true });
+    expect((done as { shade: number }).shade).toBeGreaterThan(0.3); // 밝은 그림이라 띠를 진하게
+    const set = getSet(s.db, setId)!;
+    expect(set.coverImage).toMatch(/^cover-.+\.png$/);
+    expect(set.cards[0]!.edited).toBe(false); // 그림만 바꾼 것은 「직접 고침」이 아니다
+    expect(fs.readFileSync(path.join(dir, '01-cover.png')).equals(coverBefore)).toBe(false);
+    expect(fs.readFileSync(path.join(dir, '02-body.png')).equals(bodyBefore)).toBe(true); // 본문은 그대로
+
+    const a = await setup([{ structured: BODY }, noIssues]); // 시안 A 세트
+    const ra = await generateBody(a.ai, 1, { sourceId: a.sourceId, cover, requested: null, coverJobId: null }, undefined, a.dataDir);
+    await expect(applyCoverImage(a.db, a.dataDir, (ra as { setId: number }).setId, light)).rejects.toThrow(/시안 A/);
+  }, 120_000);
 
   it('2회 재작성 뒤에도 넘치면 버리지 않고 어느 카드가 넘쳤는지 돌려준다 → 사용자가 줄이면 저장 (그 전엔 저장 안 함)', async () => {
     const long = structuredClone(BODY);

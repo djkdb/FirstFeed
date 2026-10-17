@@ -78,19 +78,57 @@ function Progress({ job, onCancel, label }: { job: JobView | null; onCancel: () 
 
 function SetView({ setId }: { setId: number }) {
   const [set, setSet] = useState<{
-    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string }> | null; render: { scale: number; browser: string; reference: boolean } }>;
+    coverImage: string | null;
+    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
   } | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  // 같은 주소의 PNG 를 다시 그렸을 때 화면이 옛 그림을 보이지 않게
+  const [rev, setRev] = useState(0);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(
+    () =>
+      api.api.cards.sets[':id']
+        .$get({ param: { id: String(setId) } })
+        .then((r) => r.json() as Promise<{ set?: unknown; draftId?: string | null }>)
+        .then((b) => {
+          setSet((b.set as never) ?? null);
+          setDraftId(b.draftId ?? null);
+          setRev((n) => n + 1);
+        }),
+    [setId],
+  );
   useEffect(() => {
-    void (async () => {
-      const r = await api.api.cards.sets[':id'].$get({ param: { id: String(setId) } });
-      const b = (await r.json()) as { set?: unknown };
-      setSet((b.set as never) ?? null);
-    })();
-  }, [setId]);
+    void load();
+  }, [load]);
+  // 그림 바탕 표지(시안 F): 그림 프롬프트로 만든 그림을 올리면 표지만 다시 그린다. 본문은 파일 바이트라 RPC 대신 fetch
+  const uploadCover = async (file: File) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch(`/api/cards/sets/${setId}/cover-image`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file });
+      const b = (await r.json()) as { ok?: boolean; shade?: number | null; problems?: string[]; error?: string };
+      if (b.ok) setMsg({ ok: true, text: `표지를 그림 바탕으로 다시 그렸어요${b.shade ? ` (글자 뒤 띠 진하기 ${Math.round(b.shade * 100)}%)` : ''}.` });
+      else setMsg({ ok: false, text: b.error ?? b.problems?.join(' ') ?? '표지를 다시 그리지 못했습니다.' });
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
   if (!set) return <p className="muted">불러오는 중…</p>;
   const glossCount = set.cards.reduce((n, c) => n + (c.glosses?.length ?? 0), 0);
   return (
     <>
+      {draftId === 'F' && (
+        <div className="actions small">
+          <label>
+            표지 그림 올리기 (그림 프롬프트로 만든 PNG·JPG){' '}
+            <input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => e.target.files?.[0] && void uploadCover(e.target.files[0])} />
+          </label>
+          <span className="muted">{set.coverImage ? '그림 바탕 표지예요. 다른 그림을 올리면 바꿔요.' : '아직 그림이 없어 단색 표지예요.'}</span>
+        </div>
+      )}
+      {msg && <p className={`status ${msg.ok ? 'ok' : 'error'} small`}>{msg.text}</p>}
       {glossCount > 0 && (
         <p className="gloss-summary small">
           소재에 없는 설명 {glossCount}곳 — 맞는지 코드로 확인할 수 없어 표시했어요. 아래 카드에서 <mark>강조한 문장</mark>을 올리기 전에 확인하세요.
@@ -99,7 +137,7 @@ function SetView({ setId }: { setId: number }) {
       <div className="frames">
         {set.cards.map((c) => (
           <figure key={c.idx} className="frame">
-            <img src={`/api/cards/sets/${setId}/png/${c.pngFile}`} alt={`${c.idx + 1}번 카드`} />
+            <img src={`/api/cards/sets/${setId}/png/${c.pngFile}?v=${rev}`} alt={`${c.idx + 1}번 카드`} />
             <figcaption className="small">
               {c.idx + 1}. {c.kind === 'cover' ? '표지' : c.kind === 'closing' ? '마무리' : '본문'}
               {c.render.scale < 1 && <span className="muted"> · 글자 {Math.round(c.render.scale * 100)}%</span>}

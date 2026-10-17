@@ -37,6 +37,8 @@ export function folderSlug(title: string): string {
 }
 
 const localDate = () => new Date().toLocaleDateString('sv-SE');
+/** 사용자가 여는 파일에 적는 시각은 현지 시각(저장은 ISO·UTC) — 처음엔 ISO 그대로 적어 9시간 어긋나 보였다(화면 확인에서 발견) */
+const localStamp = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString('sv-SE').slice(0, 16) : '');
 
 /** 이름이 겹치면 -2, -3 … (덮어쓰지 않는다) */
 function freeDir(root: string, name: string): string {
@@ -85,8 +87,8 @@ export function exportSet(db: Db, dataDir: string, setId: number, now: Date = ne
     files.push('그림-프롬프트.txt');
   }
   const checked = [
-    ...set.cards.flatMap((c) => (c.glosses ?? []).map((g) => `${String(c.idx + 1).padStart(2, '0')}번 카드 · 「${g.term}」 ${g.sentence} (확인 ${g.checkedAt})`)),
-    ...(caption?.glosses ?? []).map((g) => `캡션 · 「${g.term}」 ${g.sentence} (확인 ${g.checkedAt})`),
+    ...set.cards.flatMap((c) => (c.glosses ?? []).map((g) => `${String(c.idx + 1).padStart(2, '0')}번 카드 · 「${g.term}」 ${g.sentence} (확인 ${localStamp(g.checkedAt)})`)),
+    ...(caption?.glosses ?? []).map((g) => `캡션 · 「${g.term}」 ${g.sentence} (확인 ${localStamp(g.checkedAt)})`),
   ];
   if (checked.length) {
     fs.writeFileSync(path.join(dir, '확인한-설명.txt'), `# 소재에 없는 설명 — 올리기 전에 사람이 확인한 문장\n\n${checked.join('\n')}\n`);

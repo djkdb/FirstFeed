@@ -108,6 +108,34 @@ describe('렌더링 직전 글 다듬기 — 실제로 그려서 줄바꿈 위�
     expect(lines.flat().some((l) => l.includes('3분 20초'))).toBe(true);
   }, 30_000);
 
+  it('「11월 1일~15일」 은 「~」 앞뒤에서 갈리지 않는다 (실제 소재 측정 시안 A·me ig-sk-aigen c05 제목)', async () => {
+    if (!ready) return;
+    const content: FrameContent = { kind: 'body', title: '설명회 10월 28일, 지원 11월 1일~15일', text: '10월 28일에 오프라인 설명회가 있어요.', page: 5, total: 6, chip: '대외활동 기록' };
+    const html = DRAFTS[0]!.html(BRANDS.me!, content, 1);
+    const r = await renderCard(null, { html, width: FRAME_SIZE.body.width, height: FRAME_SIZE.body.height });
+    expect(r.problems).toEqual([]);
+    const { withCardPage } = await import('../render/render.ts');
+    const lines = await withCardPage(null, { html, width: FRAME_SIZE.body.width, height: FRAME_SIZE.body.height }, (page) =>
+      page.evaluate(() => {
+        const out: Array<{ top: number; text: string }> = [];
+        const walker = document.createTreeWalker(document.querySelector('[data-slot="title"]')!, NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode())
+          for (let i = 0; i < n.textContent!.length; i++) {
+            const rg = document.createRange();
+            rg.setStart(n, i);
+            rg.setEnd(n, i + 1);
+            const rect = rg.getBoundingClientRect();
+            if (rect.width === 0) continue;
+            const line = out.find((l) => Math.abs(l.top - rect.top) < rect.height / 2) ?? (out.push({ top: rect.top, text: '' }), out.at(-1)!);
+            line.text += n.textContent![i];
+          }
+        return out.map((l) => l.text.replace(/\u2060/g, '').trim());
+      }),
+    );
+    expect(lines.length).toBeGreaterThan(1); // 실제로 줄이 바뀌는 길이에서 확인
+    expect(lines.some((l) => l.startsWith('~') || l.endsWith('~'))).toBe(false);
+  }, 30_000);
+
   it('「88%까지」 는 「%」 뒤에서 갈리지 않고, 단어 이음표가 대체 글꼴로 잡히지 않는다 (카드 재측정 C·doyun c05)', async () => {
     if (!ready) return;
     const content: FrameContent = {

@@ -24,6 +24,12 @@ describe('렌더링 직전 글 다듬기 (원고는 그대로, 그림에 넣는 
     expect(show(polishForRender('88% 까지'))).toBe('88%⍽까지');
   });
 
+  it('「~」 범위는 앞뒤를 묶는다 — 「11월 1일」 / 「~15일」', () => {
+    expect(show(polishForRender('지원 11월 1일~15일'))).toBe('지원 11월⍽1일⁀~⁀15일');
+    expect(show(polishForRender('만 19~34세'))).toBe('만 19⁀~⁀34세');
+    expect(polishForRender('가~나')).toBe('가~나');
+  });
+
   it('숫자와 상관없는 띄어쓰기는 그대로 — 줄은 여전히 띄어쓰기에서 바뀐다', () => {
     expect(polishForRender('처음 쓰는 사람을 위한 설정')).toBe('처음 쓰는 사람을 위한 설정');
     expect(show(polishForRender('3단계 안에 끝냈고'))).toBe('3단계 안에 끝냈고');

@@ -3,7 +3,7 @@
 import { getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { renderCard, type RenderProblem, type RenderResult } from '../render/render.ts';
-import { FRAME_SIZE, type BrandLook, type Draft, type FrameContent } from './types.ts';
+import { FRAME_SIZE, type BrandLook, type Draft, type FrameContent, type PhotoOpts } from './types.ts';
 
 export interface FrameResult extends RenderResult {
   /** 통과한(또는 마지막으로 시도한) 글자 크기 비율 */
@@ -49,7 +49,7 @@ export async function renderFrame(
   look: BrandLook,
   content: FrameContent,
   /** 측정·테스트 세트용: 마지막 단계에서 넘쳐도 PNG 를 만든다 (앱에서는 쓰지 않는다 — 반쯤 만든 결과) */
-  opts: { captureEvenIfBad?: boolean } = {},
+  opts: { captureEvenIfBad?: boolean; photo?: PhotoOpts } = {},
 ): Promise<FrameResult> {
   const { width, height, safe } = FRAME_SIZE[content.kind];
   const safeRect = safe ? getSetting(db, 'render.safeArea')[safe] : null;
@@ -58,7 +58,14 @@ export async function renderFrame(
   let last: RenderResult | null = null;
   for (const [i, scale] of steps.entries()) {
     const lastStep = i === steps.length - 1;
-    const r = await renderCard(db, { html: draft.html(look, content, scale), width, height, safe: safeRect, captureEvenIfBad: lastStep && opts.captureEvenIfBad === true });
+    const r = await renderCard(db, {
+      html: draft.html(look, content, scale, opts.photo),
+      width,
+      height,
+      safe: safeRect,
+      captureEvenIfBad: lastStep && opts.captureEvenIfBad === true,
+      measureContrast: !!opts.photo?.background,
+    });
     tries.push({ scale, problems: r.problems.length });
     last = r;
     if (r.ok) return { ...r, scale, tries, shorten: [] };
@@ -67,4 +74,57 @@ export async function renderFrame(
   }
   const scale = steps[steps.length - 1]!;
   return { ...last!, scale, tries, shorten: shortenHints(last!, content, scale) };
+}
+
+export interface PhotoFrameResult extends FrameResult {
+  /** 쓴 띠 진하기 (그림이 없으면 null) */
+  shade: number | null;
+  /** 진하기 단계마다 가장 나쁜 칸의 명암비 — 기록용 */
+  shadeTries: Array<{ shade: number; worst: number }>;
+}
+
+/**
+ * 그림 바탕 표지 그리기 (결정 2026-10-18): 글자 뒤 어두운 띠를 옅은 단계부터 그려 보고, 그린 PNG 에서 잰 글자 뒤 명암비가
+ * 기준(render.photoMinContrast)을 넘는 첫 단계를 쓴다. 가장 진하게 해도 모자라면 PNG 없이 실패(low_contrast_on_photo).
+ * 그림이 없으면 단색 바탕으로 한 번만 그린다. 넘침은 띠 진하기로 안 고쳐지므로 바로 돌려준다
+ */
+export async function renderPhotoFrame(
+  db: Db | null,
+  draft: Draft,
+  look: BrandLook,
+  content: FrameContent,
+  background: string | null,
+  opts: { captureEvenIfBad?: boolean } = {},
+): Promise<PhotoFrameResult> {
+  if (!background || (content.kind !== 'cover' && content.kind !== 'reel_cover')) return { ...(await renderFrame(db, draft, look, content, opts)), shade: null, shadeTries: [] };
+  const min = getSetting(db, 'render.photoMinContrast');
+  const steps = getSetting(db, 'render.photoShadeSteps');
+  const shadeTries: PhotoFrameResult['shadeTries'] = [];
+  let last: FrameResult | null = null;
+  for (const [i, shade] of steps.entries()) {
+    const lastStep = i === steps.length - 1;
+    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: lastStep && opts.captureEvenIfBad === true });
+    const worst = Math.min(21, ...(r.contrast ?? []).map((x) => x.ratio));
+    shadeTries.push({ shade, worst });
+    last = r;
+    if (!r.ok) return { ...r, shade, shadeTries };
+    if (worst >= min) return { ...r, shade, shadeTries };
+  }
+  const shade = steps[steps.length - 1]!;
+  const bad = (last!.contrast ?? []).filter((x) => x.ratio < min);
+  return {
+    ...last!,
+    ok: false,
+    png: opts.captureEvenIfBad ? last!.png : null,
+    problems: [
+      ...last!.problems,
+      ...bad.map((x) => ({
+        code: 'low_contrast_on_photo' as const,
+        slot: x.slot,
+        message: `그림 위 "${x.slot}" 글자의 명암비가 ${x.ratio}:1 로 ${min}:1 보다 낮습니다(글자 뒤 띠를 가장 진하게 해도). 글자 자리가 덜 밝은 그림으로 바꾸거나 다른 그림을 올리세요.`,
+      })),
+    ],
+    shade,
+    shadeTries,
+  };
 }

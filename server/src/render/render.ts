@@ -11,11 +11,13 @@ import type { BrowserContext, Page } from 'playwright';
 import { getBrowser, RenderError, type BrowserInfo } from './browser.ts';
 import { FONT_ORIGIN, fontFileFor } from './fonts-css.ts';
 import { measureInPage, type Measure, type Rect } from './measure.page.ts';
+import { collectPhotoSlots, contrastInPage, type SlotContrast } from './contrast.page.ts';
 
 export type { Measure, Rect, SlotMeasure } from './measure.page.ts';
+export type { SlotContrast } from './contrast.page.ts';
 
 export interface RenderProblem {
-  code: 'font_fallback' | 'text_overflow' | 'too_many_lines' | 'text_outside_card' | 'text_outside_safe' | 'text_overlap';
+  code: 'font_fallback' | 'text_overflow' | 'too_many_lines' | 'text_outside_card' | 'text_outside_safe' | 'text_overlap' | 'low_contrast_on_photo';
   slot?: string;
   message: string;
 }
@@ -28,6 +30,8 @@ export interface RenderInput {
   safe?: Rect | null;
   /** true 면 문제가 있어도 PNG 를 만든다 — 측정·테스트 세트 비교용. 앱에서는 쓰지 않는다 */
   captureEvenIfBad?: boolean;
+  /** 그림 위 글 칸([data-on-photo])의 글자 뒤 명암비를 잰다(그림 바탕 시안). 판정은 부르는 쪽이 한다 */
+  measureContrast?: boolean;
 }
 
 export interface RenderResult {
@@ -38,6 +42,8 @@ export interface RenderResult {
   browser: BrowserInfo;
   /** 실제로 쓰인 글꼴 (DevTools 가 알려 준 것) */
   fontsUsed: Array<{ family: string; custom: boolean; glyphs: number }>;
+  /** measureContrast 일 때만: 그림 위 글 칸마다 글자 뒤 명암비 */
+  contrast?: SlotContrast[];
 }
 
 const TOL = 1; // px — 반올림 오차
@@ -126,10 +132,19 @@ export async function renderCard(db: Db | null, input: RenderInput): Promise<Ren
 
     const measure = await page.evaluate(measureInPage, { width: input.width, height: input.height, safe: input.safe ?? null });
     problems.push(...problemsOf(measure));
+    let contrast: SlotContrast[] | undefined;
+    if (input.measureContrast) {
+      // 글자만 투명하게 하고(배치는 그대로) 찍은 화면에서 글자 뒤 화소를 잰 뒤, 되돌리고 진짜 화면을 찍는다
+      const slots = await page.evaluate(collectPhotoSlots);
+      const hide = await page.addStyleTag({ content: '[data-on-photo],[data-on-photo] *{color:transparent!important;text-shadow:none!important;text-decoration-color:transparent!important}' });
+      const bare = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: input.width, height: input.height } });
+      await hide.evaluate((el) => (el as Element).remove());
+      contrast = await page.evaluate(contrastInPage, { png: bare.toString('base64'), slots, q: getSetting(db, 'render.photoContrastQuantile') });
+    }
     const fontBad = problems.some((p) => p.code === 'font_fallback');
     // 반쯤 만든 결과는 저장하지 않는다: 대체 글꼴이면 측정용으로도 찍지 않는다(줄바꿈 자체가 다른 글꼴 기준이라 의미가 없다)
     const capture = !fontBad && (problems.length === 0 || input.captureEvenIfBad === true);
     const png = capture ? await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: input.width, height: input.height } }) : null;
-    return { ok: problems.length === 0, png, problems, measure, browser: info, fontsUsed };
+    return { ok: problems.length === 0, png, problems, measure, browser: info, fontsUsed, ...(contrast ? { contrast } : {}) };
   });
 }

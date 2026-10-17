@@ -4,7 +4,8 @@ import { draftB } from './draft-b.ts';
 import { draftC } from './draft-c.ts';
 import { draftD } from './draft-d.ts';
 import { draftE } from './draft-e.ts';
+import { draftF } from './draft-f.ts';
 import type { Draft } from './types.ts';
 
-export const DRAFTS: Draft[] = [draftA, draftB, draftC, draftD, draftE];
+export const DRAFTS: Draft[] = [draftA, draftB, draftC, draftD, draftE, draftF];
 export const draftById = (id: string): Draft | undefined => DRAFTS.find((d) => d.id === id);

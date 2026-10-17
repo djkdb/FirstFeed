@@ -16,7 +16,7 @@ interface Frame {
   browser: string;
   reference: boolean;
 }
-type DraftId = 'A' | 'B' | 'C' | 'D' | 'E';
+type DraftId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 const KIND_LABEL: Record<string, string> = { cover: '표지', body: '본문', closing: '마무리', reel_cover: '릴스 표지' };
 
 async function fetchState(): Promise<State> {

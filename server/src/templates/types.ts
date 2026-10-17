@@ -47,10 +47,16 @@ export const FRAME_SIZE: Record<FrameKind, { width: number; height: number; safe
   reel_cover: { width: 1080, height: 1920, safe: 'reel' },
 };
 
+/** 그림 바탕 시안(F)만 쓰는 옵션: 바탕 그림(data: 주소)과 글자 뒤 어두운 띠의 진하기(0~1). 다른 시안은 무시한다 */
+export interface PhotoOpts {
+  background?: string | null;
+  shade?: number;
+}
+
 export interface Draft {
-  id: 'A' | 'B' | 'C' | 'D' | 'E';
+  id: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
   name: string;
   description: string;
   /** scale: 넘칠 때 글자 크기를 줄이는 비율 (1 = 원래 크기) */
-  html(look: BrandLook, content: FrameContent, scale: number): string;
+  html(look: BrandLook, content: FrameContent, scale: number, photo?: PhotoOpts): string;
 }

@@ -1,5 +1,5 @@
 // 카드뉴스 측정 (FR-MK-1·2·8). 소재 × 짝 브랜드 × N회: 표지 후보 → 첫 후보 고르기 → 본문 → 세트.
-//   npm run eval:cards -- [--runs=2] [--only=ai-tool-memo] [--label=cards] [--prompt card_body=v1 --prompt card_body_review=v2]
+//   npm run eval:cards -- [--runs=2] [--only=ai-tool-memo] [--set=real] [--label=cards] [--prompt card_body=v1 --prompt card_body_review=v2]
 // 결과: tests/results/<날짜>-<label>.md + tests/results/<날짜>-<label>/<소재>-<브랜드>-<회>/NN-*.png (사람이 열어 본다)
 // 재작성 사유는 근거 규칙 / 렌더링 넘침 / 개수 불일치 / 자기 평가로 나눈다(ai_runs 의 문제 기록에서).
 // 소재는 tests/fixtures/{real,private,generated}/sources/*.md — 세 갈래로 나눠 보고, 자료가 없는 갈래는 「자료 없음」
@@ -23,6 +23,8 @@ const args = process.argv.slice(2);
 const arg = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
 const runs = Number(arg('runs') ?? 2);
 const only = arg('only');
+/** 세 갈래 중 하나만(real · private · generated) — 실제 소재만 다시 잴 때 */
+const onlySet = arg('set');
 const label = arg('label') ?? 'cards';
 // 프롬프트 판 고르기(다른 측정 스크립트와 같은 방식): 회차마다 새 DB 의 설정에 넣는다
 const promptVersions: Record<string, string> = Object.fromEntries(
@@ -101,6 +103,7 @@ function bodyReviews(db: Db): string[] {
 const rows: Row[] = [];
 fs.rmSync(outDir, { recursive: true, force: true });
 for (const [setKey, dir, setLabel] of SETS) {
+  if (onlySet && setKey !== onlySet) continue;
   const abs = path.join(env.repoRoot, dir);
   if (!fs.existsSync(abs)) continue;
   for (const f of fs.readdirSync(abs).filter((x) => x.endsWith('.md'))) {
@@ -171,7 +174,11 @@ const lines = [
   '- 재작성 사유는 재작성을 부른 회차의 코드 규칙 위반 건수(자기 평가의 fact·broken 은 「자기 평가」). 표지 후보에서 빼고 받아들인 것은 「뺀 후보」로 따로',
   '',
 ];
-for (const [, , setLabel] of SETS) {
+for (const [setKey, , setLabel] of SETS) {
+  if (onlySet && setKey !== onlySet) {
+    lines.push(`## ${setLabel}`, '', `이번 측정에서 돌리지 않음(--set=${onlySet})`, '');
+    continue;
+  }
   const rs = rows.filter((r) => r.setLabel === setLabel);
   lines.push(`## ${setLabel} (${rs.length}회)`, '');
   if (rs.length === 0) {

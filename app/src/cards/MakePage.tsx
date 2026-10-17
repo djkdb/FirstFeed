@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
+import { PublishPanel } from './PublishPanel.tsx';
 import { useJob, type JobView } from '../useJob.ts';
 
 type State = InferResponseType<typeof api.api.cards.$get>;
@@ -72,6 +73,57 @@ function Progress({ job, onCancel, label }: { job: JobView | null; onCancel: () 
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+/** 카드 아래 표시된 풀이 문장: 「확인했어요」 체크(저장돼 다시 열어도 유지) 또는 직접 고치기(그 카드만 다시 그림) — 결정 2026-10-18 */
+function GlossItem({ setId, idx, gloss, onChanged }: { setId: number; idx: number; gloss: { sentence: string; term: string; checkedAt?: string | null }; onChanged: () => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const send = async (path: string, body: unknown) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await fetch(`/api/cards/sets/${setId}/glosses/${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const b = (await r.json()) as { error?: string; ok?: boolean; problems?: string[] };
+      if (b.error) throw new Error(b.error);
+      if (b.ok === false) throw new Error(`다시 그리니 넘쳐요: ${(b.problems ?? []).join(' ')}`);
+      setDraft(null);
+      onChanged();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className={`gloss small${gloss.checkedAt ? ' checked' : ''}`}>
+      <mark>{gloss.sentence}</mark>
+      <br />
+      <span className="muted">「{gloss.term}」 풀이 · 소재에 없는 설명이에요 — 올리기 전에 맞는지 확인하세요</span>
+      {draft === null ? (
+        <div className="actions">
+          <label>
+            <input type="checkbox" checked={!!gloss.checkedAt} disabled={busy} onChange={(e) => void send('check', { idx, sentence: gloss.sentence, checked: e.target.checked })} /> 확인했어요
+          </label>
+          <button type="button" className="link" disabled={busy} onClick={() => setDraft(gloss.sentence)}>
+            고치기
+          </button>
+        </div>
+      ) : (
+        <div className="actions">
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} />
+          <button type="button" disabled={busy} onClick={() => void send('edit', { idx, sentence: gloss.sentence, replacement: draft })}>
+            {busy ? '다시 그리는 중…' : '저장(비우면 문장을 지워요)'}
+          </button>
+          <button type="button" disabled={busy} onClick={() => setDraft(null)}>
+            그만두기
+          </button>
+        </div>
+      )}
+      {err && <span className="status error">{err}</span>}
     </div>
   );
 }
@@ -144,11 +196,7 @@ function SetView({ setId }: { setId: number }) {
               {c.edited && <span className="tag">직접 고침</span>}
             </figcaption>
             {c.glosses?.map((g) => (
-              <p key={g.sentence} className="gloss small">
-                <mark>{g.sentence}</mark>
-                <br />
-                <span className="muted">「{g.term}」 풀이 · 소재에 없는 설명이에요 — 올리기 전에 맞는지 확인하세요</span>
-              </p>
+              <GlossItem key={g.sentence} setId={setId} idx={c.idx} gloss={g} onChanged={() => void load()} />
             ))}
             {c.image && (
               <details className="small">
@@ -160,6 +208,7 @@ function SetView({ setId }: { setId: number }) {
         ))}
       </div>
       <p className="muted small">찍은 브라우저: {set.cards[0]?.render.browser}{set.cards[0] && !set.cards[0].render.reference && ' · 기준 브라우저 아님'}</p>
+      <PublishPanel setId={setId} cardUnchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} onChanged={() => void load()} />
     </>
   );
 }

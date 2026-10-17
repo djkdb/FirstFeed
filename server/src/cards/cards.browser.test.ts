@@ -9,6 +9,7 @@ import { closeBrowser } from '../render/browser.ts';
 import { finishWithEdits, generateBody, type BodyOutput } from './body.ts';
 import { generateCovers } from './covers.ts';
 import { getSet, rendersDir } from './store.ts';
+import { checkGloss, editGloss, uncheckedGlosses } from './gloss-check.ts';
 import { addTestSource, seedBrand } from './testing/setup.ts';
 
 afterAll(() => closeBrowser());
@@ -114,6 +115,38 @@ describe('본문 카드 (FR-MK-1·2·8)', () => {
     const set = getSet(db, (r as { setId: number }).setId)!;
     expect(set.cards[1]!.glosses).toEqual([{ sentence: '태그는 노트에 다는 이름표예요.', term: '태그' }]);
     expect(set.cards[2]!.glosses).toEqual([]);
+  }, 60_000);
+
+  it('표시된 풀이: 확인 체크는 저장되고, 직접 고치면 그 카드만 다시 그린다 — 넘치면 저장하지 않는다 (결정 2026-10-18)', async () => {
+    const withGloss = structuredClone(BODY);
+    withGloss.cards = withGloss.cards.map((c) => ({ ...c, glosses: [] }));
+    withGloss.cards[0]!.text = '태그만 붙이면 노트가 **자동으로** 묶여요. 태그는 노트에 다는 이름표예요.';
+    withGloss.cards[0]!.glosses = [{ sentence: '태그는 노트에 다는 이름표예요.', term: '태그' }];
+    withGloss.cards[4]!.text = '내보내기는 마크다운 파일로만 돼요. 마크다운은 기호로 서식을 적는 글 파일이에요.';
+    withGloss.cards[4]!.glosses = [{ sentence: '마크다운은 기호로 서식을 적는 글 파일이에요.', term: '마크다운' }];
+    const { ai, db, dataDir, sourceId } = await setup([{ structured: withGloss }, noIssues]);
+    setSetting(db, 'prompts.activeVersions', { ...getSetting(db, 'prompts.activeVersions'), card_body: 'v2', card_body_review: 'v3' });
+    const r = await generateBody(ai, 1, { sourceId, cover, requested: null, coverJobId: null }, undefined, dataDir);
+    const setId = (r as { setId: number }).setId;
+    expect(uncheckedGlosses(getSet(db, setId)!).length).toBe(2);
+
+    checkGloss(db, setId, 1, '태그는 노트에 다는 이름표예요.', true);
+    expect(getSet(db, setId)!.cards[1]!.glosses![0]!.checkedAt).toMatch(/^\d{4}-/); // 다시 읽어도 유지
+    expect(uncheckedGlosses(getSet(db, setId)!).map((u) => u.idx)).toEqual([5]);
+
+    const pngBefore = fs.readFileSync(path.join(rendersDir(dataDir, setId), '06-body.png'));
+    const tooLong = await editGloss(db, dataDir, setId, 5, '마크다운은 기호로 서식을 적는 글 파일이에요.', '아주 긴 문장을 계속 이어서 씁니다. '.repeat(40));
+    expect(tooLong.ok).toBe(false);
+    expect(getSet(db, setId)!.cards[5]!.glosses!.length).toBe(1); // 넘치면 아무것도 바꾸지 않는다
+
+    const fixed = await editGloss(db, dataDir, setId, 5, '마크다운은 기호로 서식을 적는 글 파일이에요.', '마크다운은 제목·목록을 기호로 적는 글이에요.');
+    expect(fixed).toEqual({ ok: true });
+    const card = getSet(db, setId)!.cards[5]!;
+    expect((card.content as { text: string }).text).toBe('내보내기는 마크다운 파일로만 돼요. 마크다운은 제목·목록을 기호로 적는 글이에요.');
+    expect(card.glosses).toEqual([]); // 고친 문장은 사용자 글이라 표시에서 빠진다
+    expect(card.edited).toBe(true);
+    expect(fs.readFileSync(path.join(rendersDir(dataDir, setId), '06-body.png')).equals(pngBefore)).toBe(false);
+    expect(uncheckedGlosses(getSet(db, setId)!)).toEqual([]);
   }, 60_000);
 
   it('2회 재작성 뒤에도 넘치면 버리지 않고 어느 카드가 넘쳤는지 돌려준다 → 사용자가 줄이면 저장 (그 전엔 저장 안 함)', async () => {

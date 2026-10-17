@@ -8,6 +8,8 @@ import type { FrameContent } from '../templates/types.ts';
 export interface GlossMark {
   sentence: string;
   term: string;
+  /** 사용자가 「확인했어요」를 누른 때 (결정 2026-10-18 — 모두 확인하기 전엔 업로드 폴더를 만들 수 없다) */
+  checkedAt?: string | null;
 }
 
 type Row = Record<string, unknown>;
@@ -151,4 +153,41 @@ export function listSets(db: Db, brandId: number): Array<{ id: number; sourceId:
     createdAt: String(r.created_at),
     cover: (JSON.parse(String(r.content_json)) as { headline?: string }).headline ?? '',
   }));
+}
+
+/** 카드 한 장의 풀이 표시만 바꾼다 (확인 체크) */
+export function updateCardGlosses(db: Db, setId: number, idx: number, glosses: GlossMark[]): void {
+  db.prepare('UPDATE cards SET glosses_json = ? WHERE set_id = ? AND idx = ?').run(JSON.stringify(glosses), setId, idx);
+}
+
+/** 카드 한 장을 사용자가 고친 글로 바꾼다: 원고·PNG·렌더링 기록·풀이 표시를 함께. PNG 를 먼저 임시 파일로 써서 DB 와 어긋나지 않게 */
+export function replaceCard(
+  db: Db,
+  dataDir: string,
+  setId: number,
+  idx: number,
+  c: { content: FrameContent; png: Buffer; render: CardToSave['render']; glosses: GlossMark[] },
+): void {
+  const row = db.prepare('SELECT png_file FROM cards WHERE set_id = ? AND idx = ?').get(setId, idx) as Row | undefined;
+  if (!row) throw new Error(`카드를 찾지 못했습니다: 세트 ${setId} · ${idx}`);
+  const file = path.join(rendersDir(dataDir, setId), String(row.png_file));
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, c.png);
+  db.exec('BEGIN');
+  try {
+    db.prepare('UPDATE cards SET content_json = ?, glosses_json = ?, render_json = ?, edited = 1 WHERE set_id = ? AND idx = ?').run(
+      JSON.stringify(c.content),
+      JSON.stringify(c.glosses),
+      JSON.stringify(c.render),
+      setId,
+      idx,
+    );
+    db.prepare('UPDATE card_sets SET edited = 1 WHERE id = ?').run(setId);
+    fs.renameSync(tmp, file);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    fs.rmSync(tmp, { force: true });
+    throw err;
+  }
 }

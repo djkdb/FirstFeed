@@ -13,6 +13,7 @@ import { activeProfile } from '../identity/store.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { finishWithEdits, generateBody, type BodyResult } from './body.ts';
 import { generateCovers, type CoversResult } from './covers.ts';
+import { checkGloss, editGloss, GlossError } from './gloss-check.ts';
 import { addSource, getSet, getSource, listSets, rendersDir } from './store.ts';
 
 const BRAND_ID = 1;
@@ -107,5 +108,39 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
       const p = path.join(rendersDir(dataDir, Number(c.req.param('id'))), file);
       if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
       return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
-    });
+    })
+    // 표시된 풀이 문장 확인 (결정 2026-10-18): 모두 확인하거나 고치기 전엔 업로드 폴더를 만들 수 없다. 체크는 저장돼 다시 열어도 유지
+    .post(
+      '/sets/:id/glosses/check',
+      validator('json', (v, c) => {
+        const b = z.object({ idx: z.number().int().min(0), sentence: z.string().min(1).max(200), checked: z.boolean() }).safeParse(v);
+        return b.success ? b.data : c.json(bad('확인할 풀이를 다시 골라 주세요.'), 400);
+      }),
+      (c) => {
+        const { idx, sentence, checked } = c.req.valid('json');
+        try {
+          return c.json({ glosses: checkGloss(db, Number(c.req.param('id')), idx, sentence, checked) });
+        } catch (err) {
+          if (err instanceof GlossError) return c.json(bad(err.message), 404);
+          throw err;
+        }
+      },
+    )
+    // 풀이 문장을 직접 고치기 — 사용자 글이라 근거 규칙은 걸지 않고 같은 틀로 다시 그려 넘침만 본다
+    .post(
+      '/sets/:id/glosses/edit',
+      validator('json', (v, c) => {
+        const b = z.object({ idx: z.number().int().min(0), sentence: z.string().min(1).max(200), replacement: z.string().max(300) }).safeParse(v);
+        return b.success ? b.data : c.json(bad('고친 문장을 300자 안으로 써 주세요.'), 400);
+      }),
+      async (c) => {
+        const { idx, sentence, replacement } = c.req.valid('json');
+        try {
+          return c.json(await editGloss(db, dataDir, Number(c.req.param('id')), idx, sentence, replacement));
+        } catch (err) {
+          if (err instanceof GlossError) return c.json(bad(err.message), 404);
+          throw err;
+        }
+      },
+    );
 }

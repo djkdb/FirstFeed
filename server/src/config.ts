@@ -54,6 +54,8 @@ export const DEFAULTS = {
     card_body: 'opus',
     reel_script: 'opus',
     caption_set: 'opus',
+    // 중간 발표용 최소 캡션 (결정 2026-10-18 · FR-PB-1)
+    caption_min: 'opus',
     self_review: 'opus',
   } as Record<string, ModelAlias>,
 
@@ -85,6 +87,7 @@ export const DEFAULTS = {
     cover_titles: 300_000,
     // 본문은 카드 N장 + 그림 프롬프트를 한 번에 써서 출력이 길다
     card_body: 480_000,
+    caption_min: 240_000,
   } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
   'ai.webTimeoutMs': 300_000,
@@ -160,6 +163,16 @@ export const DEFAULTS = {
    * 밝은·복잡한 그림은 0.65(me)~0.7(doyun·seoyeon)부터 4.5:1. 그래서 옅은 0.3 부터 문턱 0.7 을 지나 1.0 까지
    */
   'render.photoShadeSteps': [0.3, 0.5, 0.7, 0.85, 1] as number[],
+  /**
+   * 업로드 폴더를 만들 곳 (결정 2026-10-18 · FR-PB-1). 사용자가 찾기 쉬운 곳 — 앱의 data/ 는 기본값으로 쓰지 않는다.
+   * 「~」 는 홈 폴더. 화면에서 바꾸면 DB 에 저장
+   */
+  'publish.uploadRoot': '~/Downloads/FirstFeed',
+  /**
+   * 캡션 해시태그 상한 — 코드가 자른다(재작성 사유 아님). **외부 자료 등급 · 확인 대기**: 2025-12 인스타가 캡션 해시태그를 5개로 줄인다는
+   * 보도가 여럿(socialmediatoday·socialsamosa) 있지만 도움말 원문 미확인. 예전 상한 30 보다 엄한 쪽(결정 2026-10-18)
+   */
+  'publish.maxHashtags': 5,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
@@ -179,6 +192,8 @@ export const DEFAULTS = {
     // 측정 tests/results/2026-10-15-cards-gloss-v1-v2.md — v2 풀이 4개 모두 표시, 자기 평가 v3 고정 입력 8/8 (devlog 2026-10-15-04)
     card_body: 'v2',
     card_body_review: 'v3',
+    caption_min: 'v1',
+    caption_min_review: 'v1',
   } as Record<string, string>,
 };
 

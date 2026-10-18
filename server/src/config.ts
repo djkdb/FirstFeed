@@ -169,8 +169,8 @@ export const DEFAULTS = {
    */
   'publish.uploadRoot': '~/Downloads/FirstFeed',
   /**
-   * 캡션 해시태그 상한 — 코드가 자른다(재작성 사유 아님). **외부 자료 등급 · 확인 대기**: 2025-12 인스타가 캡션 해시태그를 5개로 줄인다는
-   * 보도가 여럿(socialmediatoday·socialsamosa) 있지만 도움말 원문 미확인. 예전 상한 30 보다 엄한 쪽(결정 2026-10-18)
+   * 캡션 해시태그 상한 — 코드가 자른다(재작성 사유 아님). **공식 발표 · 도움말 원문 미확인**(결정 2026-10-18): 인스타 공식 @creators 의
+   * Threads 발표(2025-12-18, 게시물·릴스 캡션 5개로 점진 적용) + 보도 여럿. 넘겼을 때 막는지·자르는지·댓글 해시태그도 세는지는 공식 설명 없음
    */
   'publish.maxHashtags': 5,
   /**
@@ -178,6 +178,8 @@ export const DEFAULTS = {
    * null 이면 표시 안 함. 「점검」 탭에서 켜고 끈다
    */
   'demo.premadeBefore': null as string | null,
+  /** 캐러셀 최대 장수 — **확인됨**: 인스타 도움말 원문 "You can upload up to 20 photos and videos … as a single post"(help.instagram.com/269314186824048). 넘으면 업로드 폴더를 안 만든다(결정 2026-10-18) */
+  'publish.maxCarousel': 20,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**

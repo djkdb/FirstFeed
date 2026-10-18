@@ -1,5 +1,8 @@
 // 업로드 폴더 만들기 (FR-PB-1 · 결정 2026-10-18). 수용 기준: 업로드 창에서 전체 선택하면 순서가 맞는다.
-// <업로드 루트>/<날짜>_<표지 제목>/업로드/01.png … + 캡션.txt · 그림-프롬프트.txt · 확인한-설명.txt
+// <업로드 루트>/<날짜>_<표지 제목>/업로드/01_cover.png … + 캡션.txt · 그림-프롬프트.txt · 확인한-설명.txt
+// - 인스타 업로드 순서는 공식 설명이 없어서(결정 2026-10-18) 이름 순·시간 순 어느 쪽으로 정렬해도 같은 순서가 되게:
+//   이름은 앞자리 0 을 붙인 번호 + 밑줄(01_, 02_ …), 수정 시각도 카드 순서대로 1초씩
+// - 캐러셀 최대 장수(확인됨, 설정 publish.maxCarousel)를 넘는 세트는 만들지 않는다
 // - 올릴 그림만 업로드/ 에 — 전체 선택에 글 파일이 섞이지 않게
 // - 이름은 두 자리 번호(이름순 = 카드 순서), 수정 시각도 카드 순서대로 1초씩(휴대폰 사진 앱은 날짜순)
 // - 같은 이름 폴더가 있으면 덮어쓰지 않고 -2, -3 … · 서버는 업로드 루트 밖에 쓰지 않는다
@@ -58,6 +61,8 @@ export function exportSet(db: Db, dataDir: string, setId: number, now: Date = ne
   if (!set) throw new ExportError('카드 세트를 찾지 못했습니다.');
   const caption = getCaption(db, setId);
   const unchecked = uncheckedGlosses(set).length + (caption?.glosses.filter((g) => !g.checkedAt).length ?? 0);
+  const max = getSetting(db, 'publish.maxCarousel');
+  if (set.cards.length > max) throw new ExportError(`이 세트는 ${set.cards.length}장이라 인스타 캐러셀 최대 ${max}장을 넘습니다. 본문 카드를 줄여 다시 만들어 주세요.`);
   if (unchecked > 0) throw new ExportError(`확인하지 않은 「소재에 없는 설명」이 ${unchecked}곳 있습니다. 모두 「확인했어요」를 누르거나 직접 고친 뒤 만들어 주세요.`);
   const root = uploadRoot(db);
   const cover = set.cards.find((c) => c.kind === 'cover');
@@ -70,7 +75,7 @@ export function exportSet(db: Db, dataDir: string, setId: number, now: Date = ne
   const files: string[] = [];
   const base = Math.floor(now.getTime() / 1000) - set.cards.length;
   for (const [i, c] of set.cards.entries()) {
-    const name = `${String(i + 1).padStart(2, '0')}.png`;
+    const name = `${String(i + 1).padStart(2, '0')}_${c.kind}.png`;
     const to = path.join(up, name);
     fs.copyFileSync(path.join(rendersDir(dataDir, setId), c.pngFile), to);
     // 수정 시각을 카드 순서대로 1초씩 — 날짜순으로 보이는 곳(휴대폰 사진 앱 등)에서도 순서가 맞게

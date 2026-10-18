@@ -49,16 +49,27 @@ describe('업로드 폴더 (수용 기준: 업로드 창에서 전체 선택하�
     expect(path.dirname(r.dir)).toBe(root);
     expect(path.basename(r.dir)).toMatch(/^\d{4}-\d{2}-\d{2}_모아-1\.2-써-본-메모$/);
     const up = fs.readdirSync(path.join(r.dir, '업로드'));
-    expect(up).toEqual(['01.png', '02.png', '03.png', '04.png', '05.png']); // 표지 + 본문 3 + 마무리, 그림만
+    expect(up).toEqual(['01_cover.png', '02_body.png', '03_body.png', '04_body.png', '05_closing.png']); // 표지 + 본문 3 + 마무리, 그림만
     expect([...up].sort()).toEqual(up); // 이름순 = 카드 순서
+    // 시간순 = 카드 순서 (결정 2026-10-18: 휴대폰 사진 앱은 이름이 아니라 시간으로 정렬할 수 있다)
+    const byTime = [...up].sort((a, b) => fs.statSync(path.join(r.dir, '업로드', a)).mtimeMs - fs.statSync(path.join(r.dir, '업로드', b)).mtimeMs);
+    expect(byTime).toEqual(up);
     const mtimes = up.map((f) => fs.statSync(path.join(r.dir, '업로드', f)).mtimeMs);
-    expect(mtimes.every((t, i) => i === 0 || t > mtimes[i - 1]!)).toBe(true);
+    expect(mtimes.every((t, i) => i === 0 || t - mtimes[i - 1]! >= 1000)).toBe(true); // 1초씩
     expect(fs.readFileSync(path.join(r.dir, '그림-프롬프트.txt'), 'utf8')).toContain('02번 카드 · card-02-tags.png');
     expect(fs.readFileSync(path.join(r.dir, '확인한-설명.txt'), 'utf8')).toContain('태그는 노트에 다는 이름표예요.');
     // 다시 만들면 덮어쓰지 않고 -2
     const again = exportSet(db, dataDir, setId);
     expect(path.basename(again.dir)).toBe(`${path.basename(r.dir)}-2`);
     expect(fs.readdirSync(root).length).toBe(2);
+  }, 60_000);
+
+  it('캐러셀 최대 장수를 넘는 세트는 만들지 않는다 (확인됨: 인스타 도움말 20장 — 설정값을 줄여 재현)', async () => {
+    const { db, dataDir, setId, root } = await makeSet();
+    checkGloss(db, setId, 1, '태그는 노트에 다는 이름표예요.', true);
+    setSetting(db, 'publish.maxCarousel', 4); // 이 세트는 5장
+    expect(() => exportSet(db, dataDir, setId)).toThrow(/캐러셀 최대 4장/);
+    expect(fs.readdirSync(root)).toEqual([]);
   }, 60_000);
 });
 

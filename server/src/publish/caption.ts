@@ -8,7 +8,8 @@ import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
 import { cardContext, profileBlock } from '../cards/context.ts';
 import { getSet, type GlossMark } from '../cards/store.ts';
-import { findUngrounded, normalizeForQuote } from '../rules/grounding.ts';
+import { findUngrounded, normalizeForQuote, numbersIn } from '../rules/grounding.ts';
+import { datedNumberIssues, datedNumbers } from '../rules/dated.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { getCaption, saveCaption, updateCaptionGlosses } from './store.ts';
 
@@ -34,7 +35,7 @@ export function trimHashtags(tags: string[], max: number): { kept: string[]; cut
  * 근거: 소재·프로필·메모 + **이미 검증된 카드 글**(표지의 「5가지」 같은 개수가 여기 있다). 구조 숫자(카드 수)는 따로 허용하지 않는다 —
  * 카드 수를 허용했더니 지어낸 「3배」가 본문 카드 3장과 같아 통과했다(테스트로 발견, 카드 본문 때와 같은 함정)
  */
-export function captionRules(c: ReturnType<typeof cardContext>, cardTexts: string[]): Rule<CaptionOutput>[] {
+export function captionRules(c: ReturnType<typeof cardContext>, cardTexts: string[], bodyTexts: string[] = []): Rule<CaptionOutput>[] {
   return [
     (d) => {
       const out: Issue[] = [];
@@ -56,6 +57,11 @@ export function captionRules(c: ReturnType<typeof cardContext>, cardTexts: strin
         if (!text.includes(normalizeForQuote(g.sentence))) out.push(issue(`glosses.${j}`, 'gloss_not_in_card', `표시한 풀이 문장이 캡션에 없습니다: "${g.sentence.slice(0, 40)}".`));
         if (!src.some((x) => x.includes(normalizeForQuote(g.term)))) out.push(issue(`glosses.${j}`, 'gloss_term_not_in_source', `풀이한 용어 "${g.term}" 이 소재 원문에 없습니다. 소재에 나온 용어만 풀이하세요.`));
       });
+      // 기준일 숫자(결정 2026-10-18 · B): 캡션에만 나온 것은 캡션이 지킨다 — 본문 카드에 나온 숫자는 본문 규칙이 이미 지켰다
+      // 본문 카드만 — 표지는 기준일 예외라, 표지에만 나온 숫자를 「본문이 지켰다」고 보면 아무 곳에도 기준일이 없을 수 있다
+      const inCards = new Set(bodyTexts.flatMap((t) => numbersIn(t)));
+      for (const p of datedNumberIssues([{ where: 'caption', text: [d.hook, ...d.lines].join('\n') }], datedNumbers(c.source.body), inCards))
+        out.push(issue(p.where, 'dated_number_without_date', `"${p.number}" 은 소재에서 「${p.date.text} 기준」 숫자입니다. 캡션에 기준일(${p.date.text})을 같이 쓰세요.`));
       return out;
     },
   ];
@@ -73,9 +79,10 @@ export async function generateCaption(ai: AiService, brandId: number, setId: num
     .join('\n');
   const prompt = loadPrompt(ai.db, 'caption_min', { max_hashtags: String(max), cards, profile: profileBlock(c), memo: c.source.memo ?? '(없음)', source: c.source.body });
   const cardTexts = set.cards.map((x) => Object.values(x.content).filter((v): v is string => typeof v === 'string').join('\n'));
+  const bodyTexts = set.cards.filter((x) => x.kind === 'body').map((x) => Object.values(x.content).filter((v): v is string => typeof v === 'string').join('\n'));
   const r = await generateChecked(
     ai,
-    { task: 'caption_min', prompt: prompt.text, promptRef: prompt.ref, schema: CaptionSchema, rules: captionRules(c, cardTexts), reviewCriteria: loadPrompt(ai.db, 'caption_min_review', {}).text, signal: job?.signal },
+    { task: 'caption_min', prompt: prompt.text, promptRef: prompt.ref, schema: CaptionSchema, rules: captionRules(c, cardTexts, bodyTexts), reviewCriteria: loadPrompt(ai.db, 'caption_min_review', {}).text, signal: job?.signal },
     job,
   );
   if (!r.ok) return { status: 'failed', errors: r.errors.map((e) => `[${e.code}] ${e.where ?? ''} ${e.message}`), calls: r.calls, rewrites: r.rewrites };

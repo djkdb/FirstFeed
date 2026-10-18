@@ -10,6 +10,7 @@ import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
 import { cardPeopleRule, imagePromptIssues } from '../brand/visual.ts';
 import { englishTermsIn, findUngrounded, normalizeForQuote, numbersIn, quoteInSources } from '../rules/grounding.ts';
+import { datedNumberIssues, datedNumbers } from '../rules/dated.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { renderFrame, type FrameResult } from '../templates/render-frame.ts';
 import type { BodyContent, ClosingContent, CoverContent, FrameContent } from '../templates/types.ts';
@@ -142,6 +143,9 @@ export function aiRules(c: CardContext, minQuote: number): Rule<BodyOutput>[] {
         out.push(...glossIssues(`cards.${i}`, x, c.grounding.source));
       });
       ground('closing', `${d.closing.headline}\n${d.closing.sub ?? ''}`);
+      // 기준일 숫자(결정 2026-10-18 · B): 본문 카드에 나온 것은 본문 카드 중 한 곳에 기준일이 같이(표지는 예외)
+      for (const p of datedNumberIssues(d.cards.map((x, i) => ({ where: `cards.${i}`, text: `${x.title}\n${x.text}` })), datedNumbers(c.source.body)))
+        out.push(issue(p.where, 'dated_number_without_date', `"${p.number}" 은 소재에서 「${p.date.text} 기준」 숫자입니다. 이 숫자가 나오는 카드 중 한 곳에 기준일(${p.date.text})을 같이 쓰세요.`));
       return out;
     },
   ];

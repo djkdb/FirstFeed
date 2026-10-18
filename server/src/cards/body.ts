@@ -260,7 +260,9 @@ export async function generateBody(ai: AiService, brandId: number, input: BodyJo
     profile: profileBlock(c),
     memo: c.source.memo ?? '(없음)',
     source: c.source.body,
-  });
+    cover_facts: coverFacts(input.cover, c.commonTerms).map((f) => `- ${f}`).join('\n') || '(없음)',
+    dated_numbers: [...datedNumbers(c.source.body)].map(([n, d]) => `- ${n} → ${d.text} 기준`).join('\n') || '(없음)',
+  }, undefined, ['cover_facts', 'dated_numbers']); // v1·v2 에는 없는 칸
   const criteria = loadPrompt(ai.db, 'card_body_review', {}).text;
   let last: { rendered: RenderedCard[]; issues: Issue[]; key: string } | null = null;
 

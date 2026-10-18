@@ -176,6 +176,22 @@ describe('본문 카드 (FR-MK-1·2·8)', () => {
     await expect(applyCoverImage(a.db, a.dataDir, (ra as { setId: number }).setId, light)).rejects.toThrow(/시안 A/);
   }, 120_000);
 
+  it('card_body v3: 프롬프트에 「표지가 꺼낸 사실」 목록이 들어가고, 본문이 빠뜨리면 다시 쓴다 (결정 2026-10-18 · A)', async () => {
+    const withGloss = structuredClone(BODY);
+    withGloss.cards = withGloss.cards.map((c) => ({ ...c, glosses: [] }));
+    const promised = { ...cover, sub: '모아 1.2 버전 기준' };
+    const missing = structuredClone(withGloss); // 본문 어디에도 「1.2」가 없다
+    const kept = structuredClone(withGloss);
+    kept.cards[0]!.text = '모아 1.2 에서는 태그만 붙이면 노트가 **자동으로** 묶여요.';
+    const { ai, db, dataDir, sourceId, provider } = await setup([{ structured: missing }, { structured: kept }, noIssues]);
+    setSetting(db, 'prompts.activeVersions', { ...getSetting(db, 'prompts.activeVersions'), card_body: 'v3', card_body_review: 'v4' });
+    const r = await generateBody(ai, 1, { sourceId, cover: promised, requested: null, coverJobId: null }, undefined, dataDir);
+    expect(r).toMatchObject({ status: 'saved', rewrites: 1 });
+    expect(provider.calls[0]!.prompt).toContain('## 표지가 꺼낸 사실');
+    expect(provider.calls[0]!.prompt).toMatch(/- 1\.2/);
+    expect(provider.calls[1]!.prompt).toContain('[cover_fact_missing]');
+  }, 60_000);
+
   it('2회 재작성 뒤에도 넘치면 버리지 않고 어느 카드가 넘쳤는지 돌려준다 → 사용자가 줄이면 저장 (그 전엔 저장 안 함)', async () => {
     const long = structuredClone(BODY);
     long.cards[2]!.text = '공유 링크는 7일 뒤 사라져요. '.repeat(30); // 스키마 상한(600자) 안, 템플릿 본문 칸(약 300자)은 넘게

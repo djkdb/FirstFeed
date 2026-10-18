@@ -1,5 +1,5 @@
 // 카드뉴스 측정 (FR-MK-1·2·8). 소재 × 짝 브랜드 × N회: 표지 후보 → 첫 후보 고르기 → 본문 → 세트.
-//   npm run eval:cards -- [--runs=2] [--only=ai-tool-memo] [--set=real] [--label=cards] [--prompt card_body=v1 --prompt card_body_review=v2]
+//   npm run eval:cards -- [--runs=2] [--only=ai-tool-memo] [--set=real] [--caption] [--label=cards] [--prompt card_body=v1 --prompt card_body_review=v2]
 // 결과: tests/results/<날짜>-<label>.md + tests/results/<날짜>-<label>/<소재>-<브랜드>-<회>/NN-*.png (사람이 열어 본다)
 // 재작성 사유는 근거 규칙 / 렌더링 넘침 / 개수 불일치 / 자기 평가로 나눈다(ai_runs 의 문제 기록에서).
 // 소재는 tests/fixtures/{real,private,generated}/sources/*.md — 세 갈래로 나눠 보고, 자료가 없는 갈래는 「자료 없음」
@@ -17,6 +17,10 @@ import { cardCountClaims, countClaims } from '../server/src/cards/count.ts';
 import { generateCovers, reasonOf, type CoversResult } from '../server/src/cards/covers.ts';
 import { generateBody, type BodyResult } from '../server/src/cards/body.ts';
 import { getSet, rendersDir } from '../server/src/cards/store.ts';
+import { coverPromiseIssues } from '../server/src/cards/body.ts';
+import { datedNumberIssues, datedNumbers } from '../server/src/rules/dated.ts';
+import { generateCaption } from '../server/src/publish/caption.ts';
+import { captionText, getCaption } from '../server/src/publish/store.ts';
 import { addTestSource, seedBrand } from '../server/src/cards/testing/setup.ts';
 
 const args = process.argv.slice(2);
@@ -25,6 +29,8 @@ const runs = Number(arg('runs') ?? 2);
 const only = arg('only');
 /** 세 갈래 중 하나만(real · private · generated) — 실제 소재만 다시 잴 때 */
 const onlySet = arg('set');
+/** 세트마다 최소 캡션까지 만들어 잰다(남은 일 3 · 2026-10-18) */
+const withCaption = args.includes('--caption');
 const label = arg('label') ?? 'cards';
 // 프롬프트 판 고르기(다른 측정 스크립트와 같은 방식): 회차마다 새 DB 의 설정에 넣는다
 const promptVersions: Record<string, string> = Object.fromEntries(
@@ -66,6 +72,12 @@ interface Row {
   cardsText: string[];
   /** 본문 단계 자기 평가가 낸 지적 전부(재작성 여부와 상관없이) — 풀이 표시 빠짐을 잡았는지 사람이 읽는다 */
   reviews: string[];
+  /** 본문 회차마다 코드 규칙 지적 전문 — 근거 인용 불일치 원인을 보려고(남은 일 4) */
+  ruleErrors: string[];
+  /** 결정 A·B 다시 세기: 최종 세트에 표지 약속이 빠졌나 · 기준일 없이 남은 기준일 숫자 */
+  coverMissing: string[];
+  datedMissing: string[];
+  caption: null | { status: string; rewrites: number; calls: number; cut: string[]; text: string | null; glosses: string[]; ungrounded: string[]; reviews: string[]; ruleErrors: string[]; error?: string };
   pngDir: string | null;
 }
 
@@ -88,6 +100,28 @@ function rewriteReasons(db: Db): Record<string, number> {
     for (const x of JSON.parse(r.issues_json) as Array<{ code: string; level: string }>) if (x.level === 'error') out[reasonOf(x.code)] = (out[reasonOf(x.code)] ?? 0) + 1;
   });
   return out;
+}
+
+const numbersInText = (t: string) => (t.match(/\d+(?:[.,]\d+)*/g) ?? []).map((n) => n.replace(/,(?=\d{3}(?!\d))/g, ''));
+
+/** 과제의 생성·재작성 회차에 붙은 코드 규칙 지적(error) 전문 */
+function taskRuleErrors(db: Db, task: string): string[] {
+  const rows = db.prepare("SELECT kind, issues_json FROM ai_runs WHERE task = ? AND kind IN ('generate', 'rewrite') ORDER BY id").all(task) as Array<{ kind: string; issues_json: string | null }>;
+  return rows.flatMap((r, n) =>
+    (JSON.parse(r.issues_json ?? '[]') as Array<{ level: string; code: string; where?: string; message: string; from?: string }>)
+      .filter((x) => x.from === 'rule' && x.level === 'error')
+      .map((x) => `${n + 1}번째 ${r.kind === 'generate' ? '생성' : '재작성'} · ${x.code} · ${x.where ?? ''}: ${x.message}`),
+  );
+}
+
+/** 과제의 생성·재작성 회차에 붙은 자기 평가 지적 */
+function taskReviews(db: Db, task: string): string[] {
+  const rows = db.prepare("SELECT kind, issues_json FROM ai_runs WHERE task = ? AND kind IN ('generate', 'rewrite') ORDER BY id").all(task) as Array<{ kind: string; issues_json: string | null }>;
+  return rows.flatMap((r, n) =>
+    (JSON.parse(r.issues_json ?? '[]') as Array<{ level: string; code: string; where?: string; message: string; from?: string }>)
+      .filter((x) => x.from === 'review')
+      .map((x) => `${n + 1}번째 ${r.kind === 'generate' ? '생성' : '재작성'} · ${x.level === 'error' ? x.code.replace('review_', '') : 'style'} · ${x.where ?? ''}: ${x.message}`),
+  );
 }
 
 /** 본문 생성·재작성 회차에 붙은 자기 평가 지적 전부 (fact·broken 은 error, style 은 warn) */
@@ -118,7 +152,7 @@ for (const [setKey, dir, setLabel] of SETS) {
       const ai = new AiService({ db, provider: new ClaudeCodeProvider() });
       const { dataDir } = await seedBrand(pair.person, pair.set, pair.draft, db);
       const sourceId = addTestSource(db, text);
-      const row: Row = { setLabel, source: name, person: pair.person, draft: pair.draft, run: n, covers: null, body: null, seconds: 0, coverSec: null, bodySec: null, sleptSec: 0, reasons: {}, ungrounded: [], countOk: null, cardsText: [], reviews: [], pngDir: null };
+      const row: Row = { setLabel, source: name, person: pair.person, draft: pair.draft, run: n, covers: null, body: null, seconds: 0, coverSec: null, bodySec: null, sleptSec: 0, reasons: {}, ungrounded: [], countOk: null, cardsText: [], reviews: [], ruleErrors: [], coverMissing: [], datedMissing: [], caption: null, pngDir: null };
       const sw = startStopwatch();
       try {
         row.covers = await generateCovers(ai, 1, sourceId, null, undefined, dataDir);
@@ -145,6 +179,26 @@ for (const [setKey, dir, setLabel] of SETS) {
           }
           const claims = cardCountClaims([first.headline, first.sub ?? ''], [text]);
           row.countOk = claims.length ? claims.every((cl) => cl.value === bodyCount) : null;
+          // A·B 다시 세기 (규칙을 거쳤어도 최종 세트에서 다시)
+          const bodyCards = set.cards.filter((c) => c.kind === 'body').map((c) => c.content as { title: string; text: string });
+          const asBody = { cards: bodyCards.map((x) => ({ title: x.title, text: x.text, evidence: '', image: null })), closing: { headline: '', sub: null } };
+          row.coverMissing = coverPromiseIssues({ headline: first.headline, sub: first.sub, pillarId: null, chip: null }, asBody, ctx.commonTerms).map((x) => x.message);
+          const dated = datedNumbers(text);
+          const bodyDated = datedNumberIssues(bodyCards.map((x, i) => ({ where: `cards.${i}`, text: `${x.title}\n${x.text}` })), dated);
+          row.datedMissing = bodyDated.map((x) => `본문 ${x.where} "${x.number}" (${x.date.text})`);
+          if (withCaption) {
+            try {
+              const cr = await generateCaption(ai, 1, set.id, undefined, dataDir);
+              const cap = getCaption(db, set.id);
+              const ctext = cap ? captionText(cap) : null;
+              const capGround = cap ? findUngrounded([cap.hook, ...cap.lines].join('\n'), { ...ctx.grounding, source: [...ctx.grounding.source, ...set.cards.map((c) => Object.values(c.content).filter((v) => typeof v === 'string').join('\n'))], structural: [] }, ctx.commonTerms).map((u) => u.value) : [];
+              const inBody = new Set(bodyCards.flatMap((x) => numbersInText(`${x.title}\n${x.text}`)));
+              if (cap) for (const x of datedNumberIssues([{ where: 'caption', text: [cap.hook, ...cap.lines].join('\n') }], dated, inBody)) row.datedMissing.push(`캡션 "${x.number}" (${x.date.text})`);
+              row.caption = { status: cr.status, rewrites: cr.rewrites, calls: cr.calls, cut: cr.status === 'saved' ? cr.cutHashtags : [], text: ctext, glosses: (cap?.glosses ?? []).map((g) => `「${g.term}」 ${g.sentence}`), ungrounded: capGround, reviews: taskReviews(db, 'caption_min'), ruleErrors: taskRuleErrors(db, 'caption_min'), ...(cr.status === 'failed' ? { error: cr.errors.join(' / ') } : {}) };
+            } catch (err) {
+              row.caption = { status: 'error', rewrites: 0, calls: 0, cut: [], text: null, glosses: [], ungrounded: [], reviews: [], ruleErrors: [], error: (err as Error).message };
+            }
+          }
         }
       } catch (err) {
         row.error = (err as Error).message;
@@ -153,6 +207,7 @@ for (const [setKey, dir, setLabel] of SETS) {
       row.sleptSec = Math.round(sw.sleptMs() / 1000);
       row.reasons = rewriteReasons(db);
       row.reviews = bodyReviews(db);
+      row.ruleErrors = taskRuleErrors(db, 'card_body');
       const b = row.body;
       console.log(
         `  → ${row.sleptSec ? `[잠자기 ${row.sleptSec}초] ` : ''}${row.coverSec !== null ? `(표지 ${row.coverSec.toFixed(0)}초${row.bodySec !== null ? ` · 본문 ${row.bodySec.toFixed(0)}초` : ''}) ` : ''}표지 ${row.covers ? `${row.covers.candidates.length}개(뺀 ${row.covers.dropped.length})·재작성 ${row.covers.rewrites}` : '-'} / 본문 ${b ? `${b.status}·재작성 ${b.rewrites}` : row.error ?? '-'} · ${row.seconds.toFixed(0)}초`,
@@ -169,7 +224,8 @@ const lines = [
   `# 카드뉴스 측정 · ${date} · ${label}`,
   '',
   `- 프롬프트: ${['cover_titles', 'cover_titles_review', 'card_body', 'card_body_review', 'self_review'].map((k) => `${k}@${versions[k] ?? 'v1'}`).join(', ')} · 모델 opus · 소재마다 ${runs}회 · 표지는 후보 중 첫 번째를 고름`,
-  '- 짝: ai-tool-memo × me(시안 A) · budget-devlog × doyun(시안 C) · dessert-visit × seoyeon(시안 B) — 프로필·키트는 고정 스냅숏',
+  // 실제로 돌린 짝만(남은 일 5 — 전엔 고정 문구라 실제 소재 회차와 맞지 않았다)
+  `- 짝: ${[...new Set(rows.map((r) => `${r.source} × ${r.person}(시안 ${r.draft})`))].join(' · ') || '(없음)'} — 프로필·키트는 고정 스냅숏`,
   `- PNG: \`tests/results/${date}-${label}/<소재>-<브랜드>-<회>/\``,
   '- 재작성 사유는 재작성을 부른 회차의 코드 규칙 위반 건수(자기 평가의 fact·broken 은 「자기 평가」). 표지 후보에서 빼고 받아들인 것은 「뺀 후보」로 따로',
   '',
@@ -205,6 +261,14 @@ for (const [setKey, , setLabel] of SETS) {
   lines.push(`| 표지 개수 표현 = 본문 카드 수 (개수 표현 있는 세트) | ${saved.filter((r) => r.countOk === true).length}/${saved.filter((r) => r.countOk !== null).length} |`);
   lines.push(`| 풀이 표시 (⚑) 합 — card_body v2 부터 | ${sum(saved, (r) => r.cardsText.filter((t) => t.trimStart().startsWith('⚑')).length)} |`);
   lines.push(`| 잠자기가 낀 회차 | ${rs.filter((r) => r.sleptSec > 0).length}/${rs.length} |`);
+  lines.push(`| 최종 세트의 표지 약속 빠짐 (결정 A, 0이어야) | ${sum(saved, (r) => r.coverMissing.length)} |`);
+  lines.push(`| 기준일 없이 남은 기준일 숫자 (결정 B, 0이어야) | ${sum(saved, (r) => r.datedMissing.length)} |`);
+  if (withCaption) {
+    const caps = saved.map((r) => r.caption).filter((c): c is NonNullable<Row['caption']> => !!c);
+    lines.push(`| 캡션 저장 / 실패 | ${caps.filter((c) => c.status === 'saved').length} / ${caps.filter((c) => c.status !== 'saved').length} |`);
+    lines.push(`| 캡션 재작성 합 · 코드 규칙 지적 · 자기 평가 fact·broken | ${sum(saved, (r) => r.caption?.rewrites ?? 0)} · ${sum(saved, (r) => r.caption?.ruleErrors.length ?? 0)} · ${sum(saved, (r) => r.caption?.reviews.filter((x) => !x.includes(' · style · ')).length ?? 0)} |`);
+    lines.push(`| 캡션 해시태그 자른 수 · 풀이 표시 · 원문 밖 숫자·영문 | ${sum(saved, (r) => r.caption?.cut.length ?? 0)} · ${sum(saved, (r) => r.caption?.glosses.length ?? 0)} · ${sum(saved, (r) => r.caption?.ungrounded.length ?? 0)} |`);
+  }
   lines.push('');
   if (setLabel === '실제 · 비공개') continue;
   for (const r of rs) {
@@ -223,6 +287,16 @@ for (const [setKey, , setLabel] of SETS) {
     if (r.cardsText.length) lines.push('', ...r.cardsText.map((t) => `- ${t}`));
     if (r.ungrounded.length) lines.push('', `원문 밖 숫자·영문: ${r.ungrounded.join(', ')}`);
     if (r.reviews.length) lines.push('', '본문 자기 평가 지적:', ...r.reviews.map((x) => `- ${x}`));
+    if (r.ruleErrors.length) lines.push('', '본문 코드 규칙 지적(전문):', ...r.ruleErrors.map((x) => `- ${x}`));
+    if (r.coverMissing.length || r.datedMissing.length) lines.push('', `결정 A·B 다시 세기: ${[...r.coverMissing, ...r.datedMissing].join(' / ')}`);
+    if (r.caption) {
+      lines.push('', `캡션: ${r.caption.status} (호출 ${r.caption.calls}·재작성 ${r.caption.rewrites})${r.caption.cut.length ? ` · 자른 해시태그 ${r.caption.cut.join(' ')}` : ''}${r.caption.error ? ` · ${r.caption.error}` : ''}`);
+      if (r.caption.text) lines.push('', '```', r.caption.text, '```');
+      for (const g of r.caption.glosses) lines.push(`- ⚑ 캡션 풀이 표시 ${g}`);
+      if (r.caption.ungrounded.length) lines.push(`- 캡션 원문 밖 숫자·영문: ${r.caption.ungrounded.join(', ')}`);
+      if (r.caption.ruleErrors.length) lines.push('', '캡션 코드 규칙 지적:', ...r.caption.ruleErrors.map((x) => `- ${x}`));
+      if (r.caption.reviews.length) lines.push('', '캡션 자기 평가 지적:', ...r.caption.reviews.map((x) => `- ${x}`));
+    }
     lines.push(`재작성 사유: ${Object.entries(r.reasons).map(([k, v]) => `${k} ${v}`).join(' · ') || '없음'}`, '');
   }
 }

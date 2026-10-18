@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
+import { PremadeBadge } from '../premade.tsx';
 
 type History = InferResponseType<typeof api.api.identity.profiles.$get>;
 const REASON: Record<string, string> = { interview: '인터뷰로 만든 초안', edit: '직접 수정', alternative: '다른 방향에서 고름', rollback: '되돌림' };
@@ -44,7 +45,7 @@ export function ProfileHistory({ refreshKey, onChanged }: { refreshKey: number; 
           <li key={v.id}>
             <strong>v{v.version}</strong> · {REASON[v.reason] ?? v.reason}
             {v.basedOn !== null && <span className="muted"> (판 {h.versions.find((x) => x.id === v.basedOn)?.version ?? '?'}에서)</span>} ·{' '}
-            <span className="muted small">{localTime(v.createdAt)}</span>
+            <span className="muted small">{localTime(v.createdAt)}</span> <PremadeBadge createdAt={v.createdAt} />
             {v.isActive ? (
               <span className="tag">지금 적용 중</span>
             ) : (

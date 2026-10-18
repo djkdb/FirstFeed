@@ -6,6 +6,7 @@ import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
 import { PublishPanel } from './PublishPanel.tsx';
+import { PremadeBadge } from '../premade.tsx';
 import { useJob, type JobView } from '../useJob.ts';
 
 type State = InferResponseType<typeof api.api.cards.$get>;
@@ -131,6 +132,7 @@ function GlossItem({ setId, idx, gloss, onChanged }: { setId: number; idx: numbe
 function SetView({ setId }: { setId: number }) {
   const [set, setSet] = useState<{
     coverImage: string | null;
+    createdAt: string;
     cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
   } | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -171,6 +173,7 @@ function SetView({ setId }: { setId: number }) {
   const glossCount = set.cards.reduce((n, c) => n + (c.glosses?.length ?? 0), 0);
   return (
     <>
+      <PremadeBadge createdAt={set.createdAt} />
       {draftId === 'F' && (
         <div className="actions small">
           <label>
@@ -452,7 +455,7 @@ export function MakePage() {
           <ul>
             {state.sets.map((s) => (
               <li key={s.id}>
-                #{s.id} · {s.cover.replace(/\*\*/g, '').replace(/\n/g, ' ')} · 본문 {s.bodyCount}장 · {localTime(s.createdAt)}
+                #{s.id} · {s.cover.replace(/\*\*/g, '').replace(/\n/g, ' ')} · 본문 {s.bodyCount}장 · {localTime(s.createdAt)} <PremadeBadge createdAt={s.createdAt} />
                 <button type="button" onClick={() => setViewSet(s.id)}>
                   보기
                 </button>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from './api.ts';
 import { AiConnection } from './AiConnection.tsx';
 import { SmokeTest } from './SmokeTest.tsx';
+import { DemoMode } from './premade.tsx';
 import { IdentityPage } from './identity/IdentityPage.tsx';
 import { BrandPage } from './brand/BrandPage.tsx';
 import { TemplatePage } from './templates/TemplatePage.tsx';
@@ -83,6 +84,7 @@ export function App() {
             )}
           </section>
           <AiConnection />
+          <DemoMode />
           <SmokeTest />
         </>
       )}

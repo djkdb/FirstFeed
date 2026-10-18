@@ -1,4 +1,5 @@
 // 브랜드 프로필 초안 (FR-ID-4): 축마다 원문 인용과 출처. 근거 부족으로 뺀 축도 숨기지 않고 보여 준다.
+import { PremadeBadge } from '../premade.tsx';
 import type { Profile } from './types.ts';
 
 export function ProfileView({ profile, active, busy, onConfirm }: { profile: Profile; active: boolean; busy: boolean; onConfirm: () => void }) {
@@ -6,7 +7,9 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
     <div className="profile">
       <div className="profile-head">
         <div>
-          <p className="muted small">브랜드 프로필 v{profile.version}</p>
+          <p className="muted small">
+            브랜드 프로필 v{profile.version} <PremadeBadge createdAt={profile.createdAt} />
+          </p>
           <h3 className="account-line">{profile.accountLine}</h3>
           <p>
             <span className="muted">보는 사람 · </span>

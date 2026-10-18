@@ -173,6 +173,11 @@ export const DEFAULTS = {
    * 보도가 여럿(socialmediatoday·socialsamosa) 있지만 도움말 원문 미확인. 예전 상한 30 보다 엄한 쪽(결정 2026-10-18)
    */
   'publish.maxHashtags': 5,
+  /**
+   * 발표용 「미리 만든 결과」 기준 시각(ISO, UTC) — 이 시각 이전에 만든 프로필·키트·카드 세트에 화면이 배지를 붙인다(결정 2026-10-18).
+   * null 이면 표시 안 함. 「점검」 탭에서 켜고 끈다
+   */
+  'demo.premadeBefore': null as string | null,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
@@ -225,7 +230,15 @@ export function getSetting<K extends SettingKey>(db: DatabaseSync | null, key: K
 /** 사용자가 바꾼 설정을 저장한다. 기본값과 타입이 다르면 저장하지 않는다. */
 export function setSetting<K extends SettingKey>(db: DatabaseSync, key: K, value: Settings[K], userId = 1): void {
   const fallback = DEFAULTS[key];
-  const sameKind = isPlainObject(fallback) ? isPlainObject(value) : Array.isArray(fallback) ? Array.isArray(value) : typeof value === typeof fallback;
+  // 기본값이 null 인 설정(예: demo.premadeBefore)은 null 또는 문자열 — 처음엔 typeof null('object')과 비교해 문자열을 거절했다(화면 확인에서 500)
+  const sameKind =
+    fallback === null
+      ? value === null || typeof value === 'string'
+      : isPlainObject(fallback)
+        ? isPlainObject(value)
+        : Array.isArray(fallback)
+          ? Array.isArray(value)
+          : typeof value === typeof fallback;
   if (!sameKind) {
     throw new Error(
       `설정 "${key}" 의 값 형식이 맞지 않습니다 (기대: ${isPlainObject(fallback) ? '객체' : Array.isArray(fallback) ? '목록' : typeof fallback}). 값을 고쳐 다시 저장하세요.`,

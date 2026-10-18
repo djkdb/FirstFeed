@@ -143,3 +143,6 @@ pre.caption{white-space:pre-wrap;background:#f6f6f4;padding:10px;border-radius:6
 .cap-edit input,.cap-edit textarea{width:100%}
 .gloss.checked{border-left-color:var(--ok);background:#effaf3}
 button.link{background:none;border:none;color:#1d4ed8;text-decoration:underline;cursor:pointer;padding:0}
+
+/* 발표용 「미리 만든 결과」 배지 (결정 2026-10-18) — 실시간처럼 보이지 않게 눈에 띄게 */
+.premade{display:inline-block;margin-left:6px;font-size:12px;font-weight:700;color:#5b21b6;background:#ede9fe;border:1px solid #c4b5fd;border-radius:4px;padding:1px 6px;vertical-align:middle}

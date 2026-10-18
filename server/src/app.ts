@@ -16,6 +16,7 @@ import { brandRoutes } from './brand/routes.ts';
 import { templateRoutes } from './templates/routes.ts';
 import { cardRoutes } from './cards/routes.ts';
 import { publishRoutes } from './publish/routes.ts';
+import { demoRoutes } from './demo/routes.ts';
 
 export interface AppDeps {
   db: Db;
@@ -69,7 +70,8 @@ export function createApp(deps: AppDeps) {
     .route('/api/brand', brandRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/templates', templateRoutes(deps.db, deps.dataDir))
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
-    .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir));
+    .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir))
+    .route('/api/demo', demoRoutes(deps.db));
   return app;
 }
 

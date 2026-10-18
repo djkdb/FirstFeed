@@ -7,6 +7,7 @@ import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from './loadFonts.ts';
 import { ProfileImage } from './ProfileImage.tsx';
+import { PremadeBadge } from '../premade.tsx';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -271,7 +272,9 @@ export function BrandPage() {
       </section>
 
       <section className="card">
-        <h2>아이디 · 표시 이름 · 바이오</h2>
+        <h2>
+          아이디 · 표시 이름 · 바이오 <PremadeBadge createdAt={words?.createdAt} />
+        </h2>
         {stale(words) && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
         <KitJob kind="words" label={words ? '글 후보 다시 만들기' : '글 후보 만들기'} onDone={() => void refresh()} />
         {words && (
@@ -302,7 +305,9 @@ export function BrandPage() {
       </section>
 
       <section className="card">
-        <h2>색 · 폰트 · 그림</h2>
+        <h2>
+          색 · 폰트 · 그림 <PremadeBadge createdAt={visual?.createdAt} />
+        </h2>
         {stale(visual) && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
         <KitJob kind="visual" label={visual ? '시각 후보 다시 만들기' : '시각 후보 만들기'} onDone={() => void refresh()} />
         {visual && (

@@ -20,7 +20,8 @@ const SOURCE = '노트 정리 앱 모아 1.2 버전을 써 봤다. 태그를 붙
 const noIssues: FakeStep = { structured: { issues: [] } };
 const BODY: BodyOutput = {
   cards: [
-    { title: '태그로 묶기', text: '태그만 붙이면 노트가 묶여요. 태그는 노트에 다는 이름표예요.', evidence: '태그를 붙이면 노트가 자동으로 묶인다.', image: { prompt: 'Flat illustration of tag labels on notes, 4:5, 1080x1350, no text, no people', filename: 'card-02-tags.png' }, glosses: [{ sentence: '태그는 노트에 다는 이름표예요.', term: '태그' }] },
+    // 표지 「모아 1.2」의 1.2 를 본문이 지킨다(결정 2026-10-18 · A 표지 약속 규칙)
+    { title: '태그로 묶기', text: '모아 1.2에서는 태그만 붙이면 노트가 묶여요. 태그는 노트에 다는 이름표예요.', evidence: '태그를 붙이면 노트가 자동으로 묶인다.', image: { prompt: 'Flat illustration of tag labels on notes, 4:5, 1080x1350, no text, no people', filename: 'card-02-tags.png' }, glosses: [{ sentence: '태그는 노트에 다는 이름표예요.', term: '태그' }] },
     { title: '날짜로 찾기', text: '검색창에 날짜를 쓰면 그날 노트만 보여요.', evidence: '검색창에 날짜를 쓰면 그날 노트만 보인다.', image: null, glosses: [] },
     { title: '공유 링크', text: '공유 링크는 7일 뒤 사라져요.', evidence: '공유 링크는 7일 뒤 사라진다.', image: null, glosses: [] },
   ],

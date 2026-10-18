@@ -9,12 +9,12 @@ import type { AiService, JobContext } from '../ai/adapter.ts';
 import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
 import { cardPeopleRule, imagePromptIssues } from '../brand/visual.ts';
-import { findUngrounded, normalizeForQuote, quoteInSources } from '../rules/grounding.ts';
+import { englishTermsIn, findUngrounded, normalizeForQuote, numbersIn, quoteInSources } from '../rules/grounding.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { renderFrame, type FrameResult } from '../templates/render-frame.ts';
 import type { BodyContent, ClosingContent, CoverContent, FrameContent } from '../templates/types.ts';
 import { cardContext, estimatedLines, profileBlock, type CardContext } from './context.ts';
-import { cardCountClaims, countMismatch } from './count.ts';
+import { cardCountClaims, countClaims, countMismatch } from './count.ts';
 import { reasonOf } from './covers.ts';
 import { saveSet, type CardToSave } from './store.ts';
 
@@ -84,6 +84,7 @@ export function fixedRules(c: CardContext, cover: ChosenCover, count: number | n
       if (count !== null && d.cards.length !== count) out.push(issue('cards', 'count_mismatch', `본문 카드가 ${d.cards.length}장입니다. 표지와 맞춰 정확히 ${count}장이어야 합니다.`));
       if (count === null && (d.cards.length < min || d.cards.length > max)) out.push(issue('cards', 'count_mismatch', `본문 카드는 ${min}~${max}장이어야 합니다(지금 ${d.cards.length}장).`));
       const m = countMismatch([cover.headline, cover.sub ?? ''], d.cards.length, c.grounding.source);
+      out.push(...coverPromiseIssues(cover, d, c.commonTerms));
       if (m && count === null) out.push(issue('cards', 'count_mismatch', m));
       if (!estimate) return out;
       d.cards.forEach((x, i) => {
@@ -101,6 +102,26 @@ export function fixedRules(c: CardContext, cover: ChosenCover, count: number | n
   ];
 }
 
+/**
+ * 표지가 꺼낸 사실은 본문이 지킨다(결정 2026-10-18 · A): 표지 제목·부제의 숫자·영문 이름은 본문 카드 어딘가에 있어야 한다.
+ * 개수 표현(「5가지」)은 개수 규칙이 따로 보므로 빼고, 영문 약어 허용 목록(DM 등)은 이름이 아니라 뺀다.
+ * 계기: sk-aigen 2회 — 표지 부제의 「50명 안팎 선발」을 본문이 빼서, 자기 평가 지적이 엇갈리다 실패(devlog 2026-10-18-01)
+ */
+export function coverFacts(cover: ChosenCover, commonTerms: readonly string[]): string[] {
+  const raw = `${cover.headline}\n${cover.sub ?? ''}`.replace(/\*\*/g, '');
+  const text = countClaims(raw).reduce((t, cl) => t.replace(cl.text, ' '), raw);
+  const common = new Set(commonTerms.map((t) => t.toLowerCase()));
+  return [...new Set([...numbersIn(text), ...englishTermsIn(text).filter((t) => !common.has(t.toLowerCase()))])];
+}
+
+export function coverPromiseIssues(cover: ChosenCover, d: BodyOutput, commonTerms: readonly string[]): Issue[] {
+  const body = d.cards.map((x) => `${x.title}\n${x.text}`).join('\n');
+  const nums = new Set(numbersIn(body));
+  const lower = body.toLowerCase();
+  const missing = coverFacts(cover, commonTerms).filter((f) => (/^\d/.test(f) ? !nums.has(f) : !lower.includes(f.toLowerCase())));
+  return missing.length ? [issue('cards', 'cover_fact_missing', `표지가 꺼낸 ${missing.map((f) => `"${f}"`).join(', ')} 이(가) 본문 카드에 없습니다. 표지는 약속이라 본문 카드 어딘가에 써야 합니다.`)] : [];
+}
+
 /** AI 가 쓴 글에 거는 규칙: 근거(숫자·영문)·근거 인용·그림 프롬프트 */
 export function aiRules(c: CardContext, minQuote: number): Rule<BodyOutput>[] {
   return [
@@ -115,7 +136,7 @@ export function aiRules(c: CardContext, minQuote: number): Rule<BodyOutput>[] {
       };
       d.cards.forEach((x, i) => {
         ground(`cards.${i}`, `${x.title}\n${x.text}`);
-        if (!quoteInSources(x.evidence, c.grounding.source)) out.push(issue(`cards.${i}.evidence`, 'quote_not_in_source', `근거 인용이 소재 원문에 없습니다: "${x.evidence.slice(0, 40)}"`));
+        if (!quoteInSources(x.evidence, c.grounding.source)) out.push(issue(`cards.${i}.evidence`, 'quote_not_in_source', `근거 인용이 소재 원문에 없습니다: "${x.evidence}"`));
         else if (normalizeForQuote(x.evidence).length < minQuote) out.push(issue(`cards.${i}.evidence`, 'quote_too_short', `근거 인용이 너무 짧습니다(${minQuote}자 이상).`));
         if (x.image) out.push(...imagePromptIssues(`cards.${i}.image`, x.image, CARD_IMAGE_NEEDS, cardPeopleRule(c.profile.presence)));
         out.push(...glossIssues(`cards.${i}`, x, c.grounding.source));

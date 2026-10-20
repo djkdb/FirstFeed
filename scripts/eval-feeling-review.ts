@@ -16,6 +16,8 @@ import { generateCaption, type CaptionOutput } from '../server/src/publish/capti
 
 const args = process.argv.slice(2);
 const runs = Number(args.find((a) => a.startsWith('--runs='))?.slice(7) ?? 2);
+const only = args.find((a) => a.startsWith('--only='))?.slice(7).split(',');
+const label = args.find((a) => a.startsWith('--label='))?.slice(8) ?? 'feeling-review';
 const date = new Date().toLocaleDateString('sv-SE');
 
 /** 생성은 고정 입력, 자기 평가만 실제 CLI. 캡션 경우엔 본문 자기 평가를 「문제 없음」으로 넘긴다(캡션 평가만 재려고) */
@@ -65,7 +67,7 @@ const edit = (b: BodyOutput, f: (c: BodyOutput) => void) => {
   f(x);
   return x;
 };
-const CAP: CaptionOutput = { hook: '온실 베이커리, 줄 서도 될까?', lines: ['딸기 타르트는 두 번 다 만족했어요', '주말엔 문 여는 11시에 맞춰 가세요', '저장해 두고 주말에 꺼내 보세요'], hashtags: ['#디저트', '#베이커리'], glosses: [] };
+const CAP: CaptionOutput = { hook: '온실 베이커리, 줄 서도 될까?', lines: ['딸기 타르트는 두 번 다 만족했어요', '주말이면 오픈 시간에 맞춰 가세요', '저장해 두고 주말에 꺼내 보세요'], hashtags: ['#디저트', '#베이커리'], glosses: [] };
 
 interface Case {
   id: string;
@@ -136,7 +138,8 @@ const lines = [
   '|---|---|---|---|---|',
 ];
 const details: string[] = [];
-for (const c of CASES) {
+// 처음 「정상」 캡션에 카드엔 없고 소재에만 있는 「11시」를 넣어, 「카드 세트에 없는 사실」 기준(v1 부터)대로 fact 가 나왔다 — 고정 입력의 잘못이라 고침
+for (const c of CASES.filter((x) => !only || only.includes(x.id))) {
   const cols: string[] = [];
   for (const ver of c.kind === 'card' ? ['v3', 'v4'] : ['v1', 'v2']) {
     const res: string[] = [];
@@ -175,6 +178,6 @@ for (const c of CASES) {
 }
 await closeBrowser();
 lines.push('', '## 자기 평가 지적 전문', '', ...details);
-const out = path.join(env.repoRoot, 'tests/results', `${date}-feeling-review.md`);
+const out = path.join(env.repoRoot, 'tests/results', `${date}-${label}.md`);
 fs.writeFileSync(out, lines.join('\n'));
 console.log(`[감상 판정] ${path.relative(env.repoRoot, out)} 에 저장`);

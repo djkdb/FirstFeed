@@ -197,10 +197,12 @@ export const DEFAULTS = {
     // 첫 실제 실행에서 v1 의 "인용 밖 사실 = fact" 가 소재의 다른 곳에 있는 사실까지 막아 세트가 실패 (devlog 2026-10-15-02)
     // ~~card_body_review v2~~ → v3, card_body v1 → v2: 소재 밖 용어 풀이 표시(결정 2026-10-15 · 카드 풀이·그림 사람 규칙).
     // 측정 tests/results/2026-10-15-cards-gloss-v1-v2.md — v2 풀이 4개 모두 표시, 자기 평가 v3 고정 입력 8/8 (devlog 2026-10-15-04)
-    card_body: 'v2',
-    card_body_review: 'v3',
+    // card_body v2 → v3 · card_body_review v3 → v4 · caption_min_review v1 → v2 (결정 2026-10-18 · A·B·C).
+    // 측정 tests/results/2026-10-20-cards-real-v3.md(실제 소재 저장 6/6, 10-18 은 5/1) · 2026-10-20-feeling-review*.md(감상 v3·v1 놓침 → v4·v2 잡음, 과잉 0)
+    card_body: 'v3',
+    card_body_review: 'v4',
     caption_min: 'v1',
-    caption_min_review: 'v1',
+    caption_min_review: 'v2',
   } as Record<string, string>,
 };
 

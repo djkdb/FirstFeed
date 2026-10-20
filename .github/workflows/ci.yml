@@ -1,0 +1,26 @@
+# 푸시 뒤 검출용 CI. 1차 방어선은 커밋 전 훅(.githooks/pre-commit)이고, 여기서는 훅을 건너뛴 커밋(--no-verify)이나
+# 다른 컴퓨터에서 온 커밋을 뒤에서 잡는다. 개인정보 검사는 공개 레포에 이미 올라간 뒤에 알리는 것이라 막지는 못한다.
+# 브라우저 테스트(*.browser.test.ts)는 넣지 않았다 — Playwright Chromium 설치·폰트·리눅스 렌더링 차이가 필요해서(devlog 2026-10-21-01).
+name: CI
+
+on: push
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # prepare(scripts/setup-git-hooks.ts)도 여기서 돈다 — checkout 이 git 저장소를 만들어 두어 훅 폴더 설정이 성공한다
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npx vitest run --project unit
+      # 플래그 없이 = 추적 중인 모든 파일 전체 검사(커밋 전 훅은 --staged 로 올린 것만 본다)
+      - run: npm run check:privacy

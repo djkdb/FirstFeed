@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { env, getSetting, setSetting } from '../server/src/config.ts';
+import { parsePromptArgs } from './prompt-args.ts';
 import { openDb, type Db } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { ClaudeCodeProvider } from '../server/src/ai/providers/claude-code.ts';
@@ -37,9 +38,7 @@ const args = process.argv.slice(2);
 const arg = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
 const only = arg('only');
 const runs = Number(arg('runs') ?? 2);
-const promptVersions: Record<string, string> = Object.fromEntries(
-  args.flatMap((a, i) => (a === '--prompt' && args[i + 1]?.includes('=') ? [args[i + 1]!.split('=') as [string, string]] : [])),
-);
+const promptVersions: Record<string, string> = parsePromptArgs(args, path.join(env.repoRoot, 'prompts'));
 const versions: Record<string, string> = { brand_words: 'v1', brand_visual: 'v1', brand_words_review: 'v1', ...getSetting(null, 'prompts.activeVersions'), ...promptVersions };
 const label = arg('label') ?? `brand-visual${versions.brand_visual}-review${versions.brand_words_review}`;
 const date = new Date().toISOString().slice(0, 10);

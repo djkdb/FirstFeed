@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { env, getSetting, setSetting } from '../server/src/config.ts';
+import { parsePromptArgs } from './prompt-args.ts';
 import { openDb } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { ClaudeCodeProvider } from '../server/src/ai/providers/claude-code.ts';
@@ -34,9 +35,7 @@ const args = process.argv.slice(2);
 const arg = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
 const only = arg('only');
 const repeat = Number(arg('repeat') ?? 1);
-const promptVersions: Record<string, string> = Object.fromEntries(
-  args.flatMap((a, i) => (a === '--prompt' && args[i + 1]?.includes('=') ? [args[i + 1]!.split('=') as [string, string]] : [])),
-);
+const promptVersions: Record<string, string> = parsePromptArgs(args, path.join(env.repoRoot, 'prompts'));
 const versions: Record<string, string> = { identity_profile: 'v1', ...getSetting(null, 'prompts.activeVersions'), ...promptVersions };
 const label = arg('label') ?? `profile-${versions.identity_profile}-review-${versions.self_review ?? 'v1'}`;
 

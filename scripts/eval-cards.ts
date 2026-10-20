@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { env, getSetting, setSetting } from '../server/src/config.ts';
+import { parsePromptArgs } from './prompt-args.ts';
 import { openDb, type Db } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { ClaudeCodeProvider } from '../server/src/ai/providers/claude-code.ts';
@@ -33,9 +34,7 @@ const onlySet = arg('set');
 const withCaption = args.includes('--caption');
 const label = arg('label') ?? 'cards';
 // 프롬프트 판 고르기(다른 측정 스크립트와 같은 방식): 회차마다 새 DB 의 설정에 넣는다
-const promptVersions: Record<string, string> = Object.fromEntries(
-  args.flatMap((a, i) => (a === '--prompt' && args[i + 1]?.includes('=') ? [args[i + 1]!.split('=') as [string, string]] : [])),
-);
+const promptVersions: Record<string, string> = parsePromptArgs(args, path.join(env.repoRoot, 'prompts'));
 const versions: Record<string, string> = { ...getSetting(null, 'prompts.activeVersions'), ...promptVersions };
 const date = new Date().toLocaleDateString('sv-SE');
 const outDir = path.join(env.repoRoot, 'tests/results', `${date}-${label}`);

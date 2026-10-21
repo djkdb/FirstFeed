@@ -17,6 +17,7 @@
     "test": "vitest run --project unit && vitest run --project browser",
     "check": "npm run lint && npm run typecheck && npm test",
     "check:privacy": "node scripts/check-privacy.ts",
+    "check:offline": "node scripts/check-offline.ts",
     "fixtures:manifest": "node scripts/fixtures-manifest.ts",
     "prepare": "node scripts/setup-git-hooks.ts",
     "export:transcripts": "node scripts/export-transcripts.ts",

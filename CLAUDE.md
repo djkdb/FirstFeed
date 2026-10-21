@@ -61,7 +61,7 @@ tests/fixtures/
 tests/results/          측정 표 — 실제·공개 / 실제·비공개(숫자만) / AI 생성 으로 나눈다
 references/             디자인 참고 캡처 (따라 하지 말고 참고만)
 docs/PRD.md · docs/devlog/
-scripts/                check-privacy · fixtures-manifest · export-transcripts · setup-git-hooks
+scripts/                check-privacy · check-offline · fixtures-manifest · export-transcripts · setup-git-hooks
 .githooks/pre-commit    커밋 전: 개인정보 검사 → 린트 → 타입 체크
 privacy-allowlist.json  개인정보 검사 오탐 허용 목록 (항목마다 이유 한 줄 필수)
 data/                   로컬 DB 등 (.gitignore)
@@ -78,6 +78,7 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 | 린트 / 타입 체크 / 테스트 | `npm run lint` / `npm run typecheck` / `npm test` |
 | 실제 AI 호출 시험 (구독 사용량 듦) | 화면의 「AI 시험 호출」(생성→규칙→자기 평가, 취소 가능) · `npm run ai:probe` (CLAUDE.md 섞임 대조 실험) |
 | 공개 레포 개인정보 검사 | `npm run check:privacy` (커밋 때는 훅이 `--staged` 로 자동 실행) |
+| 오프라인 동작 확인 (macOS, 구독 사용량 없음) | `npm run check:offline` — sandbox-exec 로 바깥 연결만 막고 테스트(가짜 AI) · 로컬 서버 · 화면이 응답하는지(FR-AC-1). 먼저 차단이 실제로 걸렸는지 확인 |
 | 비공개 자료 목록 갱신 | `npm run fixtures:manifest` |
 | 대화 원본 내보내기 (제출용) | `npm run export:transcripts -- <세션ID>` 또는 `--latest` / `--all` → `exports/` |
 | 정체성 프로필 측정 (구독 사용량 듦) | `npm run eval:identity -- --repeat=2 --prompt identity_profile=v2 --label=profile-v2` (`--only=me`) → `tests/results/<날짜>-identity-<이름>.md` (실제·공개 / 실제·비공개 / AI 생성으로 나눔) |

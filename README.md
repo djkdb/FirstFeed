@@ -28,6 +28,7 @@ git clone https://github.com/djkdb/FirstFeed.git
 cd FirstFeed
 npm install                        # 의존성 설치 (git 저장소면 커밋 전 검사 훅도 같이 켜짐)
 npx playwright install chromium    # 카드 이미지를 그릴 브라우저 — 처음 한 번
+npm run doctor                     # 설치 점검: Node · Claude Code 설치·로그인·구독 · 브라우저 · 포트 — 문제마다 다음 할 일
 npm run dev                        # 서버 127.0.0.1:4317 + 화면 5173
 ```
 
@@ -35,7 +36,8 @@ npm run dev                        # 서버 127.0.0.1:4317 + 화면 5173
 
 - 앱은 브라우저를 직접 내려받지 않습니다. Playwright Chromium 이 없으면 설치된 Google Chrome 으로 그리되 「기준 브라우저 아님」을 표시하고, 둘 다 없으면 설치 명령을 안내합니다(결정 2026-10-15)
 - 업로드 폴더는 기본으로 `~/Downloads/FirstFeed/` 에 만들어집니다(화면에서 바꿀 수 있음)
-- 더블클릭 실행 · 설치 점검 명령(FR-AC-6)은 아직 없습니다
+- `npm run doctor` 가 ✗ 를 보이면 그 아래 → 줄대로 한 뒤 다시 실행하세요(AI 는 부르지 않습니다). 더블클릭 실행은 아직 없습니다
+- 아래 「단계 수」 표는 `npm run doctor` 를 넣기 전에 센 것이라 이 단계를 세지 않았습니다(다시 셀 때 반영)
 
 ### 검사 명령 (개발용)
 

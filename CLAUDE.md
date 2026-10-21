@@ -73,6 +73,7 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 | 하는 일 | 명령 |
 |---|---|
 | 설치 (커밋 전 훅도 같이 켜짐) | `npm install` |
+| 설치 점검 (구독 사용량 없음) | `npm run doctor` — Node · 의존성 · Claude Code 설치·로그인·구독(앱 감지 코드 그대로) · 렌더링 브라우저 · 포트, 문제마다 다음 할 일(FR-AC-6) |
 | 개발 실행 (서버 4317 + 화면 5173) | `npm run dev` → http://localhost:5173 |
 | 린트 · 타입 체크 · 테스트 한 번에 | `npm run check` |
 | 린트 / 타입 체크 / 테스트 | `npm run lint` / `npm run typecheck` / `npm test` |

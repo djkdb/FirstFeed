@@ -10,7 +10,7 @@ coverage/
 !.env.example
 
 # 로컬 앱 데이터 (SQLite·렌더링 결과·업로드 폴더) — 사용자 컴퓨터에만 둔다
-data/
+/data/
 *.sqlite
 *.sqlite-journal
 *.db

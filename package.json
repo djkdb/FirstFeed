@@ -19,6 +19,7 @@
     "check:privacy": "node scripts/check-privacy.ts",
     "check:offline": "node scripts/check-offline.ts",
     "doctor": "node scripts/doctor.ts",
+    "export:demo-site": "node scripts/export-demo-site.ts",
     "fixtures:manifest": "node scripts/fixtures-manifest.ts",
     "prepare": "node scripts/setup-git-hooks.ts",
     "export:transcripts": "node scripts/export-transcripts.ts",

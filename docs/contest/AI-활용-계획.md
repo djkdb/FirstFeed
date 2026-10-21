@@ -1,6 +1,6 @@
 # AI 활용 계획 (중간 심사 40%)
 
-> 2026-10-22 작성. 숫자·날짜·개수는 모두 레포 안의 파일에서 옮겼고 출처를 옆에 적었다. 출처를 못 찾은 것은 「확인 못 함」.
+> 2026-10-21 작성. 숫자·날짜·개수는 모두 레포 안의 파일에서 옮겼고 출처를 옆에 적었다. 출처를 못 찾은 것은 「확인 못 함」.
 > PRD v0.1 부록 B(개발 워크플로우)를 지금 레포 기준으로 다시 쓴 것이다 — 원본은 통합본 458~468줄([`docs/source/manyfast-2026-10-20/입력/`](../source/manyfast-2026-10-20/README.md))
 
 이 프로젝트에서 AI 는 두 곳에 있다. **(1) 만드는 도구**(Claude Code 로 개발)와 **(2) 제품 안의 기능**(앱이 사용자 구독의 Claude Code CLI 를 불러 프로필·브랜딩·카드를 만든다). 두 쪽 모두 「AI 가 한 말을 그대로 믿지 않고 코드·측정으로 확인한다」는 같은 원칙을 따른다.
@@ -148,7 +148,7 @@
 
 - 평가 스크립트: `eval:identity` · `eval:followup` · `eval:alternatives` · `eval:brand` · `eval:templates` · `eval:cards` · `eval:gloss-review` · `eval:feeling-review`(`package.json`)
 - 테스트 세트는 **실제 자료 우선, 부족한 부분만 AI 생성** — AI 가 만든 세트로 AI 를 평가하면 순환이 되어서(결정 2026-10-13). 결과도 **실제·공개 / 실제·비공개(숫자만) / AI 생성**으로 나눈다(CLAUDE.md 6장, `tests/fixtures/real` · `private` · `generated`)
-- 측정 결과 파일: `tests/results/` (48개 항목, 2026-10-22 기준 `ls`)
+- 측정 결과 파일: `tests/results/` (48개 항목, 2026-10-21 기준 `ls`)
 
 ### 수정 전후 숫자
 

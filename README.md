@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/djkdb/FirstFeed/actions/workflows/ci.yml/badge.svg)](https://github.com/djkdb/FirstFeed/actions/workflows/ci.yml)
 
+**소개 페이지 → https://djkdb.github.io/FirstFeed/** — 「게시물 하나 올리기 전에, 30일 뒤 내 계정을 먼저」. 화면은 앱으로 만든 데모 브랜드(AI 생성 테스트 자료)다.
+
 인스타그램을 처음 시작하는 사람이 **정체성 찾기 → 브랜딩 → 템플릿 고정 → 카드뉴스 만들기 → 업로드 준비**를 한 곳에서 하는 **로컬 앱**입니다. 자기 컴퓨터에서 웹 화면 + 로컬 서버로 돌고, AI 는 사용자 본인의 Claude 구독(Claude Code CLI)으로 부릅니다.
 
 CUVIC 바이브 코딩 대회(개인전) 출품작입니다.

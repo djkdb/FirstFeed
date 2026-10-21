@@ -151,7 +151,6 @@ button.link{background:none;border:none;color:#1d4ed8;text-decoration:underline;
 .preview .ig-profile { max-width: 480px; margin: 12px 0; }
 .ig-head { display: flex; gap: 16px; align-items: center; }
 .ig-avatar { width: 77px; height: 77px; border-radius: 50%; object-fit: cover; flex: none; }
-.ig-mono { display: grid; place-items: center; color: #fff; font-size: 32px; font-weight: 700; }
 .ig-empty { border: 2px dashed #bbb; box-sizing: border-box; }
 .ig-handle { font-weight: 700; font-size: 18px; }
 .ig-counts { font-size: 14px; margin-top: 4px; }

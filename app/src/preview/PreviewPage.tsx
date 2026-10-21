@@ -96,7 +96,7 @@ export function PreviewPage() {
 
       <div className="ig-profile" key={`p${play}`}>
         <div className="ig-head">
-          <Avatar image={p.profileImage} name={p.displayName ?? p.handle} color={view.look?.primary ?? null} />
+          <Avatar image={p.profileImage} />
           <div>
             <div className="ig-handle">{p.handle ?? <span className="muted">(아이디 미정 — 「브랜드」에서 고르세요)</span>}</div>
             <div className="ig-counts">
@@ -172,14 +172,9 @@ export function PreviewPage() {
   );
 }
 
-function Avatar({ image, name, color }: { image: string | null; name: string | null; color: string | null }) {
-  if (image && image !== 'monogram') return <img className="ig-avatar" src={`/api/brand/assets/${image}`} alt="프로필 사진" />;
-  if (image === 'monogram')
-    return (
-      <span className="ig-avatar ig-mono" style={{ background: color ?? '#999' }}>
-        {[...(name ?? '?')][0]}
-      </span>
-    );
+/** 프로필 사진: 올린 파일(「브랜드」의 글자형 시안도 그림으로 올라간다)이 있으면 그것, 없으면 빈 원 */
+function Avatar({ image }: { image: string | null }) {
+  if (image) return <img className="ig-avatar" src={`/api/brand/assets/${image}`} alt="프로필 사진" />;
   return <span className="ig-avatar ig-empty" title="프로필 사진을 아직 고르지 않았어요" />;
 }
 

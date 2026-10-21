@@ -51,6 +51,8 @@ export const DEFAULTS = {
     brand_words: 'opus',
     brand_visual: 'opus',
     cover_titles: 'opus',
+    // 30일 뒤 미리보기의 시리즈 계획 — 제목 카피라 표지 제목과 같은 모델 (FR-BR-6)
+    series_plan: 'opus',
     card_body: 'opus',
     reel_script: 'opus',
     caption_set: 'opus',
@@ -183,6 +185,8 @@ export const DEFAULTS = {
    * null 이면 표시 안 함. 「점검」 탭에서 켜고 끈다
    */
   'demo.premadeBefore': null as string | null,
+  /** 30일 뒤 미리보기 격자 칸 수 = 처음 계획할 게시물 수. 인스타 프로필 격자 3열 × 3줄(사용자 지시 「첫 9개」, 결정 2026-10-21) */
+  'preview.gridCells': 9,
   /** 캐러셀 최대 장수 — **확인됨**: 인스타 도움말 원문 "You can upload up to 20 photos and videos … as a single post"(help.instagram.com/269314186824048). 넘으면 업로드 폴더를 안 만든다(결정 2026-10-18) */
   'publish.maxCarousel': 20,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */

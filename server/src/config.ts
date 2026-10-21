@@ -109,6 +109,11 @@ export const DEFAULTS = {
   'brand.handleMax': 30,
   'brand.displayNameMax': 30,
   'brand.bioMax': 150,
+  /**
+   * 인스타가 실제로 글자 수를 어떻게 세는지(숫자 30·150 과 이모지 세기) 사용자가 앱에서 확인했는가. 확인 전(false)에는
+   * 글자 수 옆에 「확인 대기」를 보인다(PRD v0.2 FR-BR-1). 확인하면 CLAUDE.md 결정에 결과를 남기고 true 로 (결정 2026-10-14 · 2026-10-18 · D)
+   */
+  'brand.instagramCountConfirmed': false,
   /** 바이오에 남길 링크 안내 문구 자리 (바이오 상한 = bioMax − 이 값). 0 이면 150자를 다 쓴다 */
   'brand.bioLinkReserve': 20,
   /** 글자/배경 최소 명암비 (FR-BR-2, WCAG AA 본문) */

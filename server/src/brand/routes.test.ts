@@ -1,6 +1,7 @@
 // 브랜딩 키트 HTTP: 조회 → 글 후보 생성(작업) → 고르기(바로 저장, 이력) — 가짜 공급자
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.ts';
+import { setSetting } from '../config.ts';
 import { openDb } from '../db/index.ts';
 import { AiService } from '../ai/adapter.ts';
 import { FakeProvider, type FakeStep } from '../ai/testing/fake-provider.ts';
@@ -57,6 +58,14 @@ describe('브랜딩 키트 API', () => {
     expect(b.words.profileId).toBe(b.activeProfile.id);
     expect(b.words.candidates.bios).toHaveLength(5);
     expect(b.limits.bioUsable).toBe(130);
+  });
+
+  it('인스타 글자 수 세는 방식은 확인 전이라 조회에 「확인 대기」(countConfirmed: false)가 실리고, 설정을 켜면 바뀐다 (FR-BR-1)', async () => {
+    const t = setup([]);
+    const get = async () => ((await (await t.req('GET', '')).json()) as { limits: { countConfirmed: boolean } }).limits.countConfirmed;
+    expect(await get()).toBe(false);
+    setSetting(t.db, 'brand.instagramCountConfirmed', true);
+    expect(await get()).toBe(true);
   });
 
   it('프로필이 없으면 작업이 실패하고 할 일을 알려 준다', async () => {

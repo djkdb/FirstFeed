@@ -45,6 +45,7 @@ export function brandLimits(db: Db) {
     bioLinkReserve: reserve,
     bioUsable: bioMax - reserve,
     minContrast: getSetting(db, 'brand.minContrast'),
+    countConfirmed: getSetting(db, 'brand.instagramCountConfirmed'),
   };
 }
 

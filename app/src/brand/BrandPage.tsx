@@ -8,6 +8,7 @@ import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from './loadFonts.ts';
 import { ProfileImage } from './ProfileImage.tsx';
 import { PremadeBadge } from '../premade.tsx';
+import { countNote } from './countNote.ts';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -126,6 +127,7 @@ function TextPick({
   max,
   hint,
   multiline,
+  countConfirmed,
   save,
 }: {
   title: string;
@@ -135,14 +137,22 @@ function TextPick({
   max: number;
   hint?: string;
   multiline?: boolean;
+  countConfirmed: boolean;
   save: (p: Patch) => Promise<boolean>;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const n = draft === null ? 0 : igLength(draft);
+  const pending = countNote(countConfirmed);
   return (
     <div className="pick">
       <h3>
         {title} <span className="muted small">최대 {max}자</span>
+        {pending && (
+          <span className="muted small" title={pending.detail}>
+            {' '}
+            · {pending.note}
+          </span>
+        )}
       </h3>
       {hint && <p className="muted small">{hint}</p>}
       <ul className="options">
@@ -286,9 +296,10 @@ export function BrandPage() {
               chosen={selection.handle}
               max={limits.handleMax}
               hint="이미 누가 쓰는 아이디인지는 앱이 알 수 없어요. 인스타 프로필 편집에서 직접 입력해 보고 확인하세요."
+              countConfirmed={limits.countConfirmed}
               save={save}
             />
-            <TextPick title="표시 이름" field="displayName" items={words.candidates.displayNames} chosen={selection.displayName} max={limits.displayNameMax} save={save} />
+            <TextPick title="표시 이름" field="displayName" items={words.candidates.displayNames} chosen={selection.displayName} max={limits.displayNameMax} countConfirmed={limits.countConfirmed} save={save} />
             <TextPick
               title="바이오"
               field="bio"
@@ -297,6 +308,7 @@ export function BrandPage() {
               max={limits.bioUsable}
               hint={`인스타 바이오는 ${limits.bioMax}자 — 링크 안내 문구 자리로 ${limits.bioLinkReserve}자를 남겨요. 주소는 바이오가 아니라 링크 칸에 넣어요.`}
               multiline
+              countConfirmed={limits.countConfirmed}
               save={save}
             />
             <Dropped items={words.dropped} />

@@ -129,6 +129,25 @@ describe('HTML → PNG 렌더링과 넘침 측정', () => {
     );
   });
 
+  it('카드 HTML 이 바깥 주소(스타일·그림·폰트)를 불러도 렌더러는 막고 PNG 를 만든다 — 오프라인 동작(FR-AC-1)', async () => {
+    if (!info) return;
+    const ext = 'https://example.com';
+    const r = await renderCard(null, {
+      html: page(
+        `<link rel="stylesheet" href="${ext}/x.css"><img src="${ext}/x.png" style="width:10px;height:10px"><h1 class="t" style="top:100px" data-slot="title">바깥 주소</h1>`,
+        `@font-face{font-family:Remote;src:url(${ext}/x.woff2)} .t{font-family:'Pretendard',Remote}`,
+      ),
+      width: W,
+      height: H,
+    });
+    expect(codes(r)).toEqual([]);
+    expect(r.png).not.toBeNull();
+    expect(r.fontsUsed.every((f) => f.custom)).toBe(true);
+    // 막은 목록에 바깥 주소가 모두 있고, 막지 않은 것은 카드·폰트 파일(가짜 origin)뿐이다
+    expect(r.blockedRequests).toEqual(expect.arrayContaining([`${ext}/x.css`, `${ext}/x.png`]));
+    expect(r.blockedRequests.every((u) => u.startsWith(ext))).toBe(true);
+  });
+
   it('개발 서버처럼 tsx 로 돌아도 측정 함수가 브라우저에서 돈다 (esbuild 의 __name 도우미 — 개발 서버에서만 실제로 겪음)', () => {
     if (!info) return;
     const out = execFileSync(path.join(env.repoRoot, 'node_modules/.bin/tsx'), [path.join(env.repoRoot, 'server/src/render/testing/tsx-render.ts')], { encoding: 'utf8' });

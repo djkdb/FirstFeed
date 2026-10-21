@@ -44,6 +44,8 @@ export interface RenderResult {
   fontsUsed: Array<{ family: string; custom: boolean; glyphs: number }>;
   /** measureContrast 일 때만: 그림 위 글 칸마다 글자 뒤 명암비 */
   contrast?: SlotContrast[];
+  /** 막은 요청 주소 — 카드 HTML 과 폰트 파일 말고는 네트워크로 내보내지 않는다(오프라인 동작 FR-AC-1 을 테스트로 확인하려고 남김) */
+  blockedRequests: string[];
 }
 
 const TOL = 1; // px — 반올림 오차
@@ -67,7 +69,7 @@ export function problemsOf(m: Measure): RenderProblem[] {
 export async function withCardPage<T>(
   db: Db | null,
   input: { html: string; width: number; height: number },
-  fn: (page: Page, context: BrowserContext, info: BrowserInfo) => Promise<T>,
+  fn: (page: Page, context: BrowserContext, info: BrowserInfo, blockedRequests: string[]) => Promise<T>,
 ): Promise<T> {
   const { browser, info } = await getBrowser(db);
   const context = await browser.newContext({ viewport: { width: input.width, height: input.height }, deviceScaleFactor: 1 });
@@ -77,12 +79,14 @@ export async function withCardPage<T>(
     // 함수에는 그 도우미가 없어 ReferenceError 가 난다 — 개발 서버(npm run dev)에서만 실제로 겪음(테스트·node 실행은 안 끼움)
     await page.addInitScript('globalThis.__name = globalThis.__name || ((f) => f);');
     // 네트워크로 나가지 않는다: 카드 HTML 과 폰트 파일만 디스크에서 채우고 나머지 요청은 막는다
+    const blockedRequests: string[] = [];
     await page.route('**/*', async (route) => {
       const url = route.request().url();
       if (url === `${FONT_ORIGIN}/card`) return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: input.html });
       const file = fontFileFor(url);
       if (file) return route.fulfill({ status: 200, contentType: 'font/woff2', body: fs.readFileSync(file) });
       if (url.startsWith('data:')) return route.continue();
+      blockedRequests.push(url);
       return route.abort();
     });
     // 멈춘 채로 기다리지 않게 단계마다 시간 제한 — 어디서 멈췄는지가 오류 문구에 남는다
@@ -101,14 +105,14 @@ export async function withCardPage<T>(
     };
     await step('페이지 열기', 15_000, page.goto(`${FONT_ORIGIN}/card`, { waitUntil: 'load', timeout: 15_000 }));
     await step('폰트 불러오기', 15_000, page.evaluate(() => document.fonts.ready.then(() => undefined)));
-    return await step('측정·캡처', 20_000, fn(page, context, info));
+    return await step('측정·캡처', 20_000, fn(page, context, info, blockedRequests));
   } finally {
     await context.close();
   }
 }
 
 export async function renderCard(db: Db | null, input: RenderInput): Promise<RenderResult> {
-  return withCardPage(db, input, async (page, context, info) => {
+  return withCardPage(db, input, async (page, context, info, blockedRequests) => {
 
     // 캡처 직전 글꼴 확인: 화면의 모든 글자가 웹폰트(앱에 넣은 OFL 폰트)로 그려졌는가
     const cdp = await context.newCDPSession(page);
@@ -145,6 +149,6 @@ export async function renderCard(db: Db | null, input: RenderInput): Promise<Ren
     // 반쯤 만든 결과는 저장하지 않는다: 대체 글꼴이면 측정용으로도 찍지 않는다(줄바꿈 자체가 다른 글꼴 기준이라 의미가 없다)
     const capture = !fontBad && (problems.length === 0 || input.captureEvenIfBad === true);
     const png = capture ? await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: input.width, height: input.height } }) : null;
-    return { ok: problems.length === 0, png, problems, measure, browser: info, fontsUsed, ...(contrast ? { contrast } : {}) };
+    return { ok: problems.length === 0, png, problems, measure, browser: info, fontsUsed, blockedRequests, ...(contrast ? { contrast } : {}) };
   });
 }

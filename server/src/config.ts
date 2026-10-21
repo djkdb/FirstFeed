@@ -207,7 +207,10 @@ export const DEFAULTS = {
     // ~~card_body_review v2~~ → v3, card_body v1 → v2: 소재 밖 용어 풀이 표시(결정 2026-10-15 · 카드 풀이·그림 사람 규칙).
     // 측정 tests/results/2026-10-15-cards-gloss-v1-v2.md — v2 풀이 4개 모두 표시, 자기 평가 v3 고정 입력 8/8 (devlog 2026-10-15-04)
     // card_body v2 → v3 · card_body_review v3 → v4 · caption_min_review v1 → v2 (결정 2026-10-18 · A·B·C).
-    // 측정 tests/results/2026-10-20-cards-real-v3.md(실제 소재 저장 6/6, 10-18 은 5/1) · 2026-10-20-feeling-review*.md(감상 v3·v1 놓침 → v4·v2 잡음, 과잉 0)
+    // ~~측정 tests/results/2026-10-20-cards-real-v3.md(실제 소재 저장 6/6, 10-18 은 5/1)~~ — 그 회차는 옛 판으로 돈 측정이었다(파일 9줄 정정 메모).
+    // 새 판으로 다시 잰 것: 2026-10-21-cards-real-v3.md · -gen-v3.md — 세트 저장/실패 실제 소재 5/1(옛 판 6/0) · AI 생성 6/0(옛 판 5/1),
+    // 표지 약속 빠짐은 0 으로(목적 달성), 실제 소재에서 이어 붙인 인용이 늘어 원인은 확인 못 함 — 활성 판은 그대로 둔다(devlog 2026-10-18-03).
+    // 감상: 2026-10-20-feeling-review*.md(v3·v1 놓침 → v4·v2 잡음, 과잉 0)
     card_body: 'v3',
     card_body_review: 'v4',
     caption_min: 'v1',

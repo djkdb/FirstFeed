@@ -5,6 +5,34 @@
 
 이 프로젝트에서 AI 는 두 곳에 있다. **(1) 만드는 도구**(Claude Code 로 개발)와 **(2) 제품 안의 기능**(앱이 사용자 구독의 Claude Code CLI 를 불러 프로필·브랜딩·카드를 만든다). 두 쪽 모두 「AI 가 한 말을 그대로 믿지 않고 코드·측정으로 확인한다」는 같은 원칙을 따른다.
 
+> 공지의 세부 기준: 「목적에 맞는 AI 도구(Cursor, Claude, Copilot 등)를 선정하고, 개발 파이프라인을 적절히 설계했는가」 · 중간 양식 ② 「AI 워크플로우 및 환경 설정」 · ③ 「초기 프롬프트 전략」([README](README.md))
+
+---
+
+## 0. 도구 선정과 환경 설정
+
+| 단계 | 도구 | 출처 |
+|---|---|---|
+| 기획 | Claude(대화) → PRD v0.1 | PRD v0.1 부록 B 「기획」 행(통합본 461줄) |
+| 기획 정리 | 매니패스트(Manyfast) → PRD v0.2 · 기능명세서 · 유저플로우 | 결정 2026-10-20 · devlog 2026-10-20-01 |
+| 구현 · 검증 · 기록 | **Claude Code**(계획을 보이고 승인받은 뒤 구현) · 모델 Claude Opus 5.5 | devlog 첫 표 「도구 · 모델」 칸 — 2026-10-13-01 「Claude Code 2.1.296 · Claude Opus 5.5 (effort high)」 |
+| 제품 안의 AI | 사용자 구독의 **Claude Code CLI**(`claude -p`) | CLAUDE.md 2장 · 결정 2026-10-13 |
+
+- **레포에서 읽히는 선정 이유**: 운영자가 2026-08 부터 Claude Max 를 써 왔다(PRD v0.1 「1-1」, 통합본 36줄). 제품이 사용자의 Claude 구독 CLI 를 부르므로, 개발에 같은 CLI 를 쓰면서 그 동작(구독 로그인 · `--bare` 가 구독을 못 씀 · 실행 폴더의 CLAUDE.md 가 섞임)을 직접 재고 확인했다(devlog 2026-10-13-02 · 03, 결정 2026-10-13)
+- **Cursor · Copilot 등과 비교해 고른 기록은 레포에 없다** — 보고서에 「왜 이 도구인가」를 쓰려면 운영자의 이유가 필요하다(사용자 확인 필요)
+
+### 환경 설정 (레포에 있는 것)
+
+| 무엇 | 어디 | 왜 |
+|---|---|---|
+| AI 작업 규칙 · 결정 · 겪은 오류 | [CLAUDE.md](../../CLAUDE.md) — 세션마다 AI 가 먼저 읽음 | 세션이 바뀌어도 규칙과 결정이 이어지게 |
+| 커밋 전 검사 | `.githooks/pre-commit`(개인정보 → 린트 → 타입 → 테스트), `npm install` 의 prepare 가 켬(`scripts/setup-git-hooks.ts`) | 사람(AI)이 기억해서 돌리는 검사는 빠진다(겪은 오류 2026-10-13) |
+| 푸시 뒤 검사 | `.github/workflows/ci.yml`(ubuntu-latest · Node 24) | 훅을 건너뛴 커밋을 뒤에서 잡는다(devlog 2026-10-21-01) |
+| 공개 레포 개인정보 | `npm run check:privacy` · `privacy-allowlist.json`(항목마다 이유) · 비공개 자료는 `tests/fixtures/private/`(커밋 제외) | 레포가 공개라서(CLAUDE.md 7장) |
+| 도구 판 고정 | Node 24 · TypeScript 6.0.3(7 아님) · Vite 8 · Vitest 5 | typescript-eslint 호환(결정 2026-10-13) |
+| 앱이 부르는 CLI 격리 | `--safe-mode` + 빈 임시 폴더 + `--tools ""` 등 | 개발용 설정이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행을 열지 않게 |
+| 긴 측정 | `caffeinate -i` 로 감싸고 덮개를 연 채로 | 잠자기가 시간에 섞인 것을 실제로 겪음(겪은 오류 2026-10-14) |
+
 ---
 
 ## 1. 개발 방식 — 사람과 AI 가 어떻게 나눠 일했나

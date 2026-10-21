@@ -215,6 +215,9 @@ export const DEFAULTS = {
     card_body_review: 'v4',
     caption_min: 'v1',
     caption_min_review: 'v2',
+    // series_plan v1 → v3(사용자 결정 2026-10-22): v2 가 표지 제목답게 끌었지만 프로필에 없는 「자격증」이 나와, v3 에 근거 없는 사실(자격·경력·경험·성과) 금지 한 줄.
+    // 같은 공개 fixture(me) 1회씩 — 규칙 첫 통과, v3 제목 9개에 지어낸 사실 없음(사람이 읽고 판정, devlog 2026-10-22-04)
+    series_plan: 'v3',
   } as Record<string, string>,
 };
 

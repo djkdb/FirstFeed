@@ -34,8 +34,8 @@ textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; 
 .facts blockquote { margin: 4px 0 0; padding-left: 10px; border-left: 3px solid #ddd; color: var(--muted); font-size: 14px; }
 
 /* 탭 */
-.tabs { display: flex; gap: 4px; margin: 0 0 16px; }
-.tabs a { padding: 6px 14px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 16px; }
+.tabs a { padding: 6px 14px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; }
 .tabs a.on { background: var(--text); color: #fff; }
 
 /* 공통 */
@@ -166,10 +166,23 @@ button.link{background:none;border:none;color:#1d4ed8;text-decoration:underline;
 .ig-plan { border: 2px dashed; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; padding: 10px; gap: 6px; }
 .ig-plan-title { font-size: 15px; line-height: 1.25; word-break: keep-all; }
 .ig-empty-cell { background: repeating-linear-gradient(45deg, #f3f3f3 0 8px, #ebebeb 8px 16px); }
-.ig-tag { position: absolute; left: 4px; top: 4px; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: rgb(0 0 0 / 60%); color: #fff; }
-.ig-tag-plan { background: rgb(255 255 255 / 85%); color: #333; border: 1px dashed #666; }
 .ig-cell .premade { position: absolute; left: 4px; bottom: 4px; font-size: 10px; }
 .ig-plan-actions, .ig-plan-edit { position: absolute; right: 4px; bottom: 4px; display: flex; gap: 2px; }
+/* 고치기 · 고정 버튼은 칸에 마우스를 올렸을 때만 — 격자가 완성된 계정처럼 보이게 */
+.ig-plan-actions { opacity: 0; transition: opacity 0.15s; }
+.ig-cell:hover .ig-plan-actions, .ig-cell:focus-within .ig-plan-actions { opacity: 1; }
 .ig-plan-edit input { width: 90px; font-size: 11px; }
 .ig-hidden { position: absolute; top: 0; bottom: 0; background: rgb(220 40 40 / 35%); }
-.preview .actions label { display: inline-flex; gap: 4px; align-items: center; }
+.preview .actions label { display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; flex: none; }
+
+/* 계획 칸 배지 — 만든 칸에는 없다(결정 2026-10-21: 계획을 만든 것처럼 보이게 하지 않는다) */
+.ig-badge { position: absolute; right: 4px; top: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgb(255 255 255 / 92%); color: #222; box-shadow: 0 0 0 1px rgb(0 0 0 / 25%); }
+.ig-plan-reason { font-size: 10px; opacity: 0.8; }
+/* 채워지는 모션 — 칸마다 지연을 다르게(grid.ts flipDelay), 바이오는 줄마다 타이핑 */
+.ig-anim .ig-cell { animation-name: ig-flip; animation-timing-function: ease-out; animation-fill-mode: both; backface-visibility: hidden; }
+@keyframes ig-flip { from { transform: perspective(600px) rotateY(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.ig-bio .ig-type { display: block; white-space: pre; overflow: hidden; animation: ig-type calc(var(--n) * 0.02s) steps(var(--n)) var(--d) both; }
+@keyframes ig-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .ig-anim .ig-cell, .ig-bio .ig-type { animation: none !important; }
+}

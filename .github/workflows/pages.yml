@@ -1,6 +1,6 @@
 # 소개 페이지(site/)를 GitHub Pages 로 배포한다 (결정 2026-10-22 · 소개 페이지). 앱과 분리된 정적 파일이라 빌드 단계가 없다 —
 # site/ 를 그대로 올린다. 데모 데이터(site/data · site/img)는 npm run export:demo-site 로 만든 것만 들어간다.
-# 저장소 설정 Settings → Pages → Source 가 「GitHub Actions」여야 배포된다(처음 한 번, 사용자).
+# 저장소 설정 Settings → Pages → Source 가 「GitHub Actions」여야 배포된다 — 사용자가 2026-10-22 에 켰다(그 전 첫 실행은 404 로 실패).
 name: Pages
 
 on:

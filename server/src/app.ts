@@ -73,7 +73,7 @@ export function createApp(deps: AppDeps) {
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/demo', demoRoutes(deps.db))
-    .route('/api/preview', previewRoutes(deps.ai, jobs));
+    .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir));
   return app;
 }
 

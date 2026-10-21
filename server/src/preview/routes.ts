@@ -6,7 +6,7 @@ import { validator } from 'hono/validator';
 import { z } from 'zod';
 import type { AiService } from '../ai/adapter.ts';
 import type { JobStore } from '../ai/jobs.ts';
-import { getSetting } from '../config.ts';
+import { env, getSetting } from '../config.ts';
 import { currentSelection, latestKit } from '../brand/store.ts';
 import type { VisualCandidates } from '../brand/types.ts';
 import { fontById } from '../brand/fonts.ts';
@@ -16,6 +16,9 @@ import { activeProfile } from '../identity/store.ts';
 import { FRAME_SIZE } from '../templates/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { editSlot, generatePlan, latestPlan, type PlanSlot } from './plan.ts';
+import { PLAN_FILE, planCover, previewDir } from './covers.ts';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
@@ -41,7 +44,7 @@ export function composeGrid(
   return out;
 }
 
-export function previewRoutes(ai: AiService, jobs: JobStore) {
+export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir) {
   const db = ai.db;
   return new Hono()
     .get('/', (c) => {
@@ -78,6 +81,15 @@ export function previewRoutes(ai: AiService, jobs: JobStore) {
         pillars: (profile?.pillars ?? []).map((p) => ({ id: p.id, name: p.name })),
         premadeBefore: getSetting(db, 'demo.premadeBefore'),
       });
+    })
+    // 계획 칸을 고정 템플릿 표지로(넘치면 이유) — 칸마다 따로 물어 그 칸만 그린다. 같은 제목·축·판이면 그린 것을 다시 쓴다
+    .get('/plan/:idx/cover', async (c) => c.json(await planCover(db, dataDir, BRAND_ID, Number(c.req.param('idx')))))
+    .get('/png/:file', (c) => {
+      const file = c.req.param('file');
+      if (!PLAN_FILE.test(file)) return c.json(bad('파일 이름이 맞지 않습니다.'), 400);
+      const p = path.join(previewDir(dataDir), file);
+      if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
+      return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
     })
     .post('/plan', (c) => c.json({ jobId: jobs.start('series_plan', (job) => generatePlan(ai, BRAND_ID, job)) }))
     .put(

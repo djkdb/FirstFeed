@@ -146,3 +146,30 @@ button.link{background:none;border:none;color:#1d4ed8;text-decoration:underline;
 
 /* 발표용 「미리 만든 결과」 배지 (결정 2026-10-18) — 실시간처럼 보이지 않게 눈에 띄게 */
 .premade{display:inline-block;margin-left:6px;font-size:12px;font-weight:700;color:#5b21b6;background:#ede9fe;border:1px solid #c4b5fd;border-radius:4px;padding:1px 6px;vertical-align:middle}
+
+/* 30일 뒤 내 계정 미리보기 (FR-BR-6) — 인스타 프로필 화면 모양. 계획 칸은 점선으로 만든 카드와 구분한다 */
+.preview .ig-profile { max-width: 480px; margin: 12px 0; }
+.ig-head { display: flex; gap: 16px; align-items: center; }
+.ig-avatar { width: 77px; height: 77px; border-radius: 50%; object-fit: cover; flex: none; }
+.ig-mono { display: grid; place-items: center; color: #fff; font-size: 32px; font-weight: 700; }
+.ig-empty { border: 2px dashed #bbb; box-sizing: border-box; }
+.ig-handle { font-weight: 700; font-size: 18px; }
+.ig-counts { font-size: 14px; margin-top: 4px; }
+.ig-name { font-weight: 600; margin-top: 10px; font-size: 14px; }
+.ig-bio { font-size: 14px; margin-top: 2px; }
+.ig-highlights { display: flex; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+.ig-hl { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; text-align: center; }
+.ig-hl-circle { width: 56px; height: 56px; border-radius: 50%; border: 2px dashed #bbb; box-sizing: border-box; }
+.ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; max-width: 480px; margin-top: 12px; }
+.ig-cell { position: relative; overflow: hidden; background: #f0f0f0; }
+.ig-made img { position: absolute; top: 0; height: 100%; max-width: none; }
+.ig-plan { border: 2px dashed; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; padding: 10px; gap: 6px; }
+.ig-plan-title { font-size: 15px; line-height: 1.25; word-break: keep-all; }
+.ig-empty-cell { background: repeating-linear-gradient(45deg, #f3f3f3 0 8px, #ebebeb 8px 16px); }
+.ig-tag { position: absolute; left: 4px; top: 4px; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: rgb(0 0 0 / 60%); color: #fff; }
+.ig-tag-plan { background: rgb(255 255 255 / 85%); color: #333; border: 1px dashed #666; }
+.ig-cell .premade { position: absolute; left: 4px; bottom: 4px; font-size: 10px; }
+.ig-plan-actions, .ig-plan-edit { position: absolute; right: 4px; bottom: 4px; display: flex; gap: 2px; }
+.ig-plan-edit input { width: 90px; font-size: 11px; }
+.ig-hidden { position: absolute; top: 0; bottom: 0; background: rgb(220 40 40 / 35%); }
+.preview .actions label { display: inline-flex; gap: 4px; align-items: center; }

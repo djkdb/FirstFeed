@@ -9,6 +9,7 @@ import type { JobStore } from '../ai/jobs.ts';
 import { getSetting } from '../config.ts';
 import { currentSelection, latestKit } from '../brand/store.ts';
 import type { VisualCandidates } from '../brand/types.ts';
+import { fontById } from '../brand/fonts.ts';
 import { listSets } from '../cards/store.ts';
 import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
@@ -64,7 +65,11 @@ export function previewRoutes(ai: AiService, jobs: JobStore) {
         },
         highlights: (visual?.candidates.imagePrompts ?? []).filter((p) => p.target === 'highlight').map((p) => p.label),
         look: fixed?.look.palette ?? sel.palette?.colors ?? null,
-        titleFont: fixed?.look.titleFont ?? sel.titleFont,
+        /** 계획 칸 자리표시를 고정 템플릿의 제목 글꼴로 그리려고 */
+        titleFont: (() => {
+          const f = fontById(fixed?.look.titleFont ?? sel.titleFont ?? '');
+          return f ? { family: f.family, weight: f.weights.at(-1) ?? 700 } : null;
+        })(),
         /** 격자에서 가려지는 영역(결정 2026-10-18 확인값) — 카드 크기와 함께 넘겨 화면이 같은 비율로 자른다 */
         grid: { card: { width: FRAME_SIZE.cover.width, height: FRAME_SIZE.cover.height }, safe: getSetting(db, 'render.safeArea').feed },
         cells,

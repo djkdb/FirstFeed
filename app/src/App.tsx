@@ -7,14 +7,15 @@ import { IdentityPage } from './identity/IdentityPage.tsx';
 import { BrandPage } from './brand/BrandPage.tsx';
 import { TemplatePage } from './templates/TemplatePage.tsx';
 import { MakePage } from './cards/MakePage.tsx';
+import { PreviewPage } from './preview/PreviewPage.tsx';
 
 type ServerState =
   | { kind: 'checking' }
   | { kind: 'ok'; brandName: string | null }
   | { kind: 'error'; message: string };
 
-type Tab = 'identity' | 'brand' | 'template' | 'make' | 'check';
-const TABS: Tab[] = ['identity', 'brand', 'template', 'make', 'check'];
+type Tab = 'identity' | 'brand' | 'template' | 'make' | 'preview' | 'check';
+const TABS: Tab[] = ['identity', 'brand', 'template', 'make', 'preview', 'check'];
 const tabFromHash = (): Tab => TABS.find((t) => window.location.hash === `#/${t}`) ?? 'identity';
 
 export function App() {
@@ -58,6 +59,9 @@ export function App() {
           <a href="#/make" className={tab === 'make' ? 'on' : ''}>
             만들기
           </a>
+          <a href="#/preview" className={tab === 'preview' ? 'on' : ''}>
+            30일 뒤 미리보기
+          </a>
           <a href="#/check" className={tab === 'check' ? 'on' : ''}>
             점검
           </a>
@@ -72,6 +76,7 @@ export function App() {
       {tab === 'brand' && <BrandPage />}
       {tab === 'template' && <TemplatePage />}
       {tab === 'make' && <MakePage />}
+      {tab === 'preview' && <PreviewPage />}
       {tab === 'check' && (
         <>
           <section className="card" aria-live="polite">

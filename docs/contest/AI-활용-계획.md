@@ -9,29 +9,44 @@
 
 ---
 
-## 0. 도구 선정과 환경 설정
+## 0-1. 도구 선정과 이유
 
-| 단계 | 도구 | 출처 |
+> 다른 도구(Cursor · Copilot 등)와 비교해 고른 기록은 레포에 없다. 그래서 비교 주장은 쓰지 않고, **레포에서 확인되는 이유**만 적는다
+
+| 단계 | 도구 | 레포에서 확인되는 이유 | 출처 |
+|---|---|---|---|
+| 기획 | **Claude(대화)** → PRD v0.1 | 요구사항과 수용 기준을 질의응답으로 정리 | PRD v0.1 부록 B 「기획」 행(통합본 461줄) · devlog 2026-10-13-01 |
+| 기획 정리 | **매니패스트(Manyfast)** → PRD v0.2 · 기능명세서 · 유저플로우 | 개발 중 쌓인 결정(자료 2)·상태(자료 3)·방향 메모(자료 4)를 넣어 기준 문서를 다시 만듦. 원본은 그대로 보관하고 레포 문서로 옮김 | 결정 2026-10-20 · `docs/source/manyfast-2026-10-20/` |
+| 구현 · 검증 · 기록 | **Claude Code** · 모델 Claude Opus 5.5 | ① 세션마다 먼저 읽는 규칙 문서(CLAUDE.md)로 결정·겪은 오류를 다음 세션에 넘긴다 ② 계획을 보이고 사람이 승인한 뒤 구현(부록 B 「구현」 행: 「Plan 모드 → 구현」) ③ **제품이 부르는 것과 같은 CLI** 라서, 개발하면서 그 동작을 직접 재고 확인했다 — `--bare` 는 구독 로그인을 못 씀, 실행 폴더의 CLAUDE.md 가 섞임, `auth status` 로 구독 판정 ④ 대화가 로컬에 남아 제출용 기록을 스크립트로 꺼낼 수 있다 ⑤ 운영자가 2026-08 부터 Claude Max 를 써 왔다 | ① CLAUDE.md 머리말 ② 통합본 463줄 · CLAUDE.md 7장 ③ 결정 2026-10-13(두 묶음) · devlog 2026-10-13-02 · 03 ④ `scripts/export-transcripts.ts` ⑤ PRD v0.1 1-1(통합본 36줄) · devlog 첫 표 「도구 · 모델」(2026-10-13-01: Claude Code 2.1.296 · Claude Opus 5.5) |
+| 제품 안의 AI | **사용자 구독의 Claude Code CLI**(`claude -p`) | 「사용자 본인의 AI 구독으로 돈다」가 핵심 가치 — 운영자가 API 요금을 대지 않고 사용자는 이미 쓰는 구독으로 쓴다. API 키가 필요한 방법(임베딩 등)은 이 원칙과 부딪혀 쓰지 않음 | CLAUDE.md 1장 · 결정 2026-10-13 |
+
+### 제품 안 AI(구독 CLI)의 한계
+
+| 한계 | 근거 |
+|---|---|
+| **유료 구독 필요** — 구독이 아니면(API 키 등) 실행 전에 막는다 | README 「필요한 것」 · 결정 2026-10-13(구독 보호는 차단) |
+| **터미널 · CLI 설치 · 로그인**이 필요하다 — 대상 사용자(입문자)에게 문턱 | README 「설치와 실행」 · devlog 2026-10-21-03 「제출 뒤 할 일」(PRD 10장 리스크 후보) |
+| **호출이 느리다** — 프로필 생성 평균 63초(v2, `tests/results/2026-10-14-identity-profile-v2.md`), 앱 안내 「보통 1~1.5분」(브랜딩 글, `app/src/brand/BrandPage.tsx` 19줄). 동시 호출 기본 1 | devlog 2026-10-14-01 59줄 · `server/src/config.ts` `ai.concurrency` |
+| **오프라인에선 AI 를 못 쓴다** — FR-AC-1 수용 기준도 「AI 호출을 제외한 기능」 | PRD v0.2 FR-AC-1 |
+| **공급자가 하나** — Codex · Gemini · API 키는 S(FR-AI-6·7) | PRD v0.2 4-0 |
+| 구독 CLI 의 최신 약관 · 사용 한도는 출시 전에 확인해야 한다 | PRD v0.2 10장 |
+
+## 0-2. 환경 설정
+
+| 무엇 | 파일 · 명령 | 왜 |
 |---|---|---|
-| 기획 | Claude(대화) → PRD v0.1 | PRD v0.1 부록 B 「기획」 행(통합본 461줄) |
-| 기획 정리 | 매니패스트(Manyfast) → PRD v0.2 · 기능명세서 · 유저플로우 | 결정 2026-10-20 · devlog 2026-10-20-01 |
-| 구현 · 검증 · 기록 | **Claude Code**(계획을 보이고 승인받은 뒤 구현) · 모델 Claude Opus 5.5 | devlog 첫 표 「도구 · 모델」 칸 — 2026-10-13-01 「Claude Code 2.1.296 · Claude Opus 5.5 (effort high)」 |
-| 제품 안의 AI | 사용자 구독의 **Claude Code CLI**(`claude -p`) | CLAUDE.md 2장 · 결정 2026-10-13 |
-
-- **레포에서 읽히는 선정 이유**: 운영자가 2026-08 부터 Claude Max 를 써 왔다(PRD v0.1 「1-1」, 통합본 36줄). 제품이 사용자의 Claude 구독 CLI 를 부르므로, 개발에 같은 CLI 를 쓰면서 그 동작(구독 로그인 · `--bare` 가 구독을 못 씀 · 실행 폴더의 CLAUDE.md 가 섞임)을 직접 재고 확인했다(devlog 2026-10-13-02 · 03, 결정 2026-10-13)
-- **Cursor · Copilot 등과 비교해 고른 기록은 레포에 없다** — 보고서에 「왜 이 도구인가」를 쓰려면 운영자의 이유가 필요하다(사용자 확인 필요)
-
-### 환경 설정 (레포에 있는 것)
-
-| 무엇 | 어디 | 왜 |
-|---|---|---|
-| AI 작업 규칙 · 결정 · 겪은 오류 | [CLAUDE.md](../../CLAUDE.md) — 세션마다 AI 가 먼저 읽음 | 세션이 바뀌어도 규칙과 결정이 이어지게 |
-| 커밋 전 검사 | `.githooks/pre-commit`(개인정보 → 린트 → 타입 → 테스트), `npm install` 의 prepare 가 켬(`scripts/setup-git-hooks.ts`) | 사람(AI)이 기억해서 돌리는 검사는 빠진다(겪은 오류 2026-10-13) |
-| 푸시 뒤 검사 | `.github/workflows/ci.yml`(ubuntu-latest · Node 24) | 훅을 건너뛴 커밋을 뒤에서 잡는다(devlog 2026-10-21-01) |
-| 공개 레포 개인정보 | `npm run check:privacy` · `privacy-allowlist.json`(항목마다 이유) · 비공개 자료는 `tests/fixtures/private/`(커밋 제외) | 레포가 공개라서(CLAUDE.md 7장) |
-| 도구 판 고정 | Node 24 · TypeScript 6.0.3(7 아님) · Vite 8 · Vitest 5 | typescript-eslint 호환(결정 2026-10-13) |
-| 앱이 부르는 CLI 격리 | `--safe-mode` + 빈 임시 폴더 + `--tools ""` 등 | 개발용 설정이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행을 열지 않게 |
-| 긴 측정 | `caffeinate -i` 로 감싸고 덮개를 연 채로 | 잠자기가 시간에 섞인 것을 실제로 겪음(겪은 오류 2026-10-14) |
+| Node 24 | `package.json` `engines: node >=24` · `node:sqlite`(Node 내장) · 보조 스크립트는 `node scripts/x.ts` 로 바로 실행 | 네이티브 빌드 없는 SQLite(결정 2026-10-13), 타입 제거 실행 |
+| 도구 판 | TypeScript 6.0.3(7 아님) · Vite 8 · Vitest 5 · ESLint 10(CLAUDE.md 2장) | typescript-eslint 호환(결정 2026-10-13) |
+| 작업 규칙 | [`CLAUDE.md`](../../CLAUDE.md) | 세션이 바뀌어도 규칙·결정·겪은 오류가 이어지게 |
+| 커밋 전 검사 | `.githooks/pre-commit`(개인정보 → 린트 → 타입 → 테스트) — `npm install` 의 prepare 가 `scripts/setup-git-hooks.ts` 로 켬 | 사람(AI)이 기억해서 돌리는 검사는 빠진다(겪은 오류 2026-10-13) |
+| CI | `.github/workflows/ci.yml` — push 때 ubuntu-latest · Node 24 · lint · typecheck · 단위 테스트 · 개인정보 전체 검사 | 훅을 건너뛴 커밋을 푸시 뒤에 잡는다(devlog 2026-10-21-01) |
+| 카드 렌더링 브라우저 | Playwright `1.64.0`(`server/package.json`) · `npx playwright install chromium` · `server/src/render/browser.ts` · 실제 브라우저 테스트는 `*.browser.test.ts`(`vitest.config.ts` 의 browser 프로젝트) | 넘침 판정의 기준 브라우저를 하나로(결정 2026-10-15) |
+| 프롬프트 판 | `prompts/<이름>/vN.md`(17종 28판) · 활성 판 `server/src/config.ts` `prompts.activeVersions` | 고치지 않고 새 판 → 같은 세트로 전/후 비교 |
+| 평가 스크립트 · 테스트 세트 | `scripts/eval-*.ts`(8개, `npm run eval:*`) · `tests/fixtures/real` · `generated` · `private`(커밋 제외) → `tests/results/` | 기준값을 감으로 정하지 않고 재서 정한다(CLAUDE.md 6장) |
+| 개인정보 | `npm run check:privacy` · `server/src/lib/redact.ts` · `privacy-allowlist.json`(항목마다 이유) | 레포가 공개 |
+| 대화 기록 내보내기 | `npm run export:transcripts -- <세션ID>` / `--all` → `exports/`(`.gitignore`) · `scripts/export-transcripts.ts` · 가림은 `redact.ts` 와 같은 함수 | 제출용 AI 대화 기록(가림 함수 하나를 커밋 검사와 같이 씀 — 결정 2026-10-13) |
+| 앱이 부르는 CLI 격리 | `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence`(`server/src/ai/providers/`) | 개발용 설정이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행을 열지 않게 |
+| 모델 배정 | `server/src/config.ts` `ai.taskModels` — sonnet: 인터뷰 왕복·사실 추출 / opus: 프로필·브랜딩·카피·자기 평가 | 왕복이 잦은 곳은 빠른 모델(결정 2026-10-13) |
 
 ---
 

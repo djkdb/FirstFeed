@@ -229,8 +229,11 @@ export class AiService {
   }
 
   /** 규칙 검증 결과를 그 호출의 기록에 덧붙인다 */
-  markRun(runId: number, status: RunStatus, issues: unknown[]): void {
-    this.db.prepare('UPDATE ai_runs SET status = ?, issues_json = ? WHERE id = ?').run(status, JSON.stringify(issues), runId);
+  /** output 은 재작성 기록용(걸린 시도와 그 다음 시도만 — loop.ts). 넘기지 않으면 남기지 않는다 */
+  markRun(runId: number, status: RunStatus, issues: unknown[], output?: unknown): void {
+    this.db
+      .prepare('UPDATE ai_runs SET status = ?, issues_json = ?, output_json = ? WHERE id = ?')
+      .run(status, JSON.stringify(issues), output === undefined ? null : JSON.stringify(output), runId);
   }
 
   private log(r: {

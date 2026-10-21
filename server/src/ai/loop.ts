@@ -124,7 +124,8 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
 
       const errors = issues.filter((i) => i.level === 'error');
       const warnings = issues.filter((i) => i.level === 'warn');
-      ai.markRun(gen.runId, errors.length ? 'rule_error' : 'ok', issues);
+      // 재작성 기록: 걸린 시도와 다시 쓴 시도의 출력만 남긴다(작업마다 — 그 job_id 에만 붙는다). 한 번에 통과하면 남기지 않는다
+      ai.markRun(gen.runId, errors.length ? 'rule_error' : 'ok', issues, errors.length || rewrites > 0 ? gen.data : undefined);
 
       if (errors.length === 0) {
         return { ok: true, data: gen.data, dropped: [], jobId: job.jobId, calls: job.attempt, rewrites, warnings };

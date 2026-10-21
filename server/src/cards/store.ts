@@ -157,6 +157,12 @@ export function listSets(db: Db, brandId: number): Array<{ id: number; sourceId:
   }));
 }
 
+/** 세트를 만든 AI 작업(표지 후보 · 본문) — 재작성 기록을 그 작업에서 읽으려고 */
+export function setJobIds(db: Db, id: number): { cover: string | null; body: string | null } | null {
+  const r = db.prepare('SELECT cover_job_id, body_job_id FROM card_sets WHERE id = ?').get(id) as Row | undefined;
+  return r ? { cover: (r.cover_job_id as string | null) ?? null, body: (r.body_job_id as string | null) ?? null } : null;
+}
+
 /** 카드 한 장의 풀이 표시만 바꾼다 (확인 체크) */
 export function updateCardGlosses(db: Db, setId: number, idx: number, glosses: GlossMark[]): void {
   db.prepare('UPDATE cards SET glosses_json = ? WHERE set_id = ? AND idx = ?').run(JSON.stringify(glosses), setId, idx);

@@ -16,7 +16,8 @@ import { generateCovers, type CoversResult } from './covers.ts';
 import { checkGloss, editGloss, GlossError } from './gloss-check.ts';
 import { applyCoverImage, CoverImageError } from './cover-image.ts';
 import { AssetError } from '../brand/assets.ts';
-import { addSource, getSet, getSource, listSets, rendersDir } from './store.ts';
+import { addSource, getSet, getSource, listSets, rendersDir, setJobIds } from './store.ts';
+import { rewriteHistory } from '../ai/history.ts';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
@@ -103,6 +104,12 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
       const set = getSet(db, Number(c.req.param('id')));
       if (!set) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
       return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null });
+    })
+    // 재작성 기록(결정 2026-10-21 · C): 이 세트를 만든 표지 · 본문 작업에서 걸린 규칙과 바뀐 칸 전/후
+    .get('/sets/:id/rewrites', (c) => {
+      const ids = setJobIds(db, Number(c.req.param('id')));
+      if (!ids) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
+      return c.json({ cover: ids.cover ? rewriteHistory(db, ids.cover) : [], body: ids.body ? rewriteHistory(db, ids.body) : [] });
     })
     .get('/sets/:id/png/:file', (c) => {
       const file = c.req.param('file');

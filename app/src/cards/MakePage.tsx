@@ -129,6 +129,44 @@ function GlossItem({ setId, idx, gloss, onChanged }: { setId: number; idx: numbe
   );
 }
 
+type Rewrites = Extract<InferResponseType<(typeof api.api.cards.sets)[':id']['rewrites']['$get']>, { body: unknown }>;
+
+/** 재작성 기록 한 줄(결정 2026-10-21 · C) — 펼치면 걸린 규칙 · 이유와 바뀐 칸 전/후. 기록은 2026-10-21 이후 만든 세트부터 남는다 */
+function RewriteLine({ setId }: { setId: number }) {
+  const [r, setR] = useState<Rewrites | null>(null);
+  useEffect(() => {
+    api.api.cards.sets[':id'].rewrites
+      .$get({ param: { id: String(setId) } })
+      .then(async (res) => {
+        const b = (await res.json()) as Rewrites | { error: string };
+        if ('body' in b) setR(b);
+      })
+      .catch(() => setR(null));
+  }, [setId]);
+  if (!r) return null;
+  const steps = [...r.cover.map((x) => ({ ...x, part: '표지 후보' })), ...r.body.map((x) => ({ ...x, part: '본문' }))];
+  return (
+    <details className="small rewrites">
+      <summary>AI 가 고친 곳 {steps.length}개{steps.length === 0 ? ' (한 번에 규칙 통과, 또는 기록 기능 전에 만든 세트)' : ''}</summary>
+      <ul>
+        {steps.map((st, i) => (
+          <li key={i}>
+            <b>{st.part}</b> · 걸린 것: {st.issues.map((x) => `${x.code}${x.where ? `(${x.where})` : ''} ${x.message}`).join(' / ')}
+            <ul>
+              {st.changes.map((ch) => (
+                <li key={ch.path}>
+                  <code>{ch.path}</code>: <s>{ch.before ?? '(없음)'}</s> → {ch.after ?? '(없음)'}
+                </li>
+              ))}
+            </ul>
+            {!st.passedAfter && <span className="muted">(다시 쓴 것도 또 걸려 다음 단계로)</span>}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 function SetView({ setId }: { setId: number }) {
   const [set, setSet] = useState<{
     coverImage: string | null;
@@ -174,6 +212,7 @@ function SetView({ setId }: { setId: number }) {
   return (
     <>
       <PremadeBadge createdAt={set.createdAt} />
+      <RewriteLine setId={setId} />
       {draftId === 'F' && (
         <div className="actions small">
           <label>

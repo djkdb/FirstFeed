@@ -15,34 +15,19 @@ import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
 import { FRAME_SIZE } from '../templates/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
-import { editSlot, generatePlan, latestPlan, type PlanSlot } from './plan.ts';
+import { editSlot, generatePlan, latestPlan } from './plan.ts';
+import { composeGrid } from './compose-grid.ts';
 import { PLAN_FILE, planCover, previewDir } from './covers.ts';
+import { shareImage } from './share-image.ts';
+import { RenderError } from '../render/browser.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
 
-export type GridCell =
-  | { kind: 'made'; setId: number; headline: string; createdAt: string }
-  | { kind: 'plan'; slot: number; title: string; pillarId: string; pillarName: string | null; locked: boolean; origin: PlanSlot['origin'] }
-  | { kind: 'empty' };
-
-/** 격자 칸: 만든 세트(최신순)를 먼저, 남은 칸은 계획을 차례로, 그래도 남으면 빈칸 */
-export function composeGrid(
-  made: Array<{ id: number; cover: string; createdAt: string }>,
-  plan: PlanSlot[],
-  pillarNames: Map<string, string>,
-  cells: number,
-): GridCell[] {
-  const out: GridCell[] = made.slice(0, cells).map((s) => ({ kind: 'made', setId: s.id, headline: s.cover, createdAt: s.createdAt }));
-  for (const [slot, p] of plan.entries()) {
-    if (out.length >= cells) break;
-    out.push({ kind: 'plan', slot, title: p.title, pillarId: p.pillarId, pillarName: pillarNames.get(p.pillarId) ?? null, locked: p.locked, origin: p.origin });
-  }
-  while (out.length < cells) out.push({ kind: 'empty' });
-  return out;
-}
+// 격자 구성은 공유 이미지(share-image.ts)도 같이 쓴다 — 서로 가져오는 고리를 피하려고 따로 둔 파일에서
+export { composeGrid, type GridCell } from './compose-grid.ts';
 
 export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir) {
   const db = ai.db;
@@ -90,6 +75,21 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
       const p = path.join(previewDir(dataDir), file);
       if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
       return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
+    })
+    // 공유 이미지(FR-BR-7): 스토리 크기 PNG. 계획 칸 배지는 그대로(결정 2026-10-24). 글이 넘치면 PNG 없이 이유
+    .get('/share.png', async (c) => {
+      try {
+        const r = await shareImage(db, dataDir, BRAND_ID);
+        if (!r.ok) return c.json(bad(`공유 이미지를 만들지 못했어요: ${r.reason} 「브랜드」에서 그 글(아이디 · 이름 · 바이오)을 줄인 뒤 다시 시도하세요.`), 400);
+        return c.body(new Uint8Array(r.png), 200, {
+          'content-type': 'image/png',
+          'cache-control': 'no-store',
+          'content-disposition': `attachment; filename="firstfeed-30days.png"; filename*=UTF-8''${encodeURIComponent('퍼스트피드-30일-미리보기.png')}`,
+        });
+      } catch (err) {
+        if (err instanceof RenderError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        throw err;
+      }
     })
     .post('/plan', (c) => c.json({ jobId: jobs.start('series_plan', (job) => generatePlan(ai, BRAND_ID, job)) }))
     .put(

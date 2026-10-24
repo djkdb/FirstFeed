@@ -32,6 +32,11 @@ export interface RenderInput {
   captureEvenIfBad?: boolean;
   /** 그림 위 글 칸([data-on-photo])의 글자 뒤 명암비를 잰다(그림 바탕 시안). 판정은 부르는 쪽이 한다 */
   measureContrast?: boolean;
+  /**
+   * true 면 대체 글꼴이 있어도 찍는다(문제 목록에는 그대로 남는다). 카드는 쓰지 않는다 — 공유 이미지(preview/share-image.ts)처럼
+   * 사용자가 쓴 기호를 앱 글꼴에 없어도 그대로 보여야 하는 그림만
+   */
+  allowFontFallback?: boolean;
 }
 
 export interface RenderResult {
@@ -147,7 +152,7 @@ export async function renderCard(db: Db | null, input: RenderInput): Promise<Ren
     }
     const fontBad = problems.some((p) => p.code === 'font_fallback');
     // 반쯤 만든 결과는 저장하지 않는다: 대체 글꼴이면 측정용으로도 찍지 않는다(줄바꿈 자체가 다른 글꼴 기준이라 의미가 없다)
-    const capture = !fontBad && (problems.length === 0 || input.captureEvenIfBad === true);
+    const capture = (!fontBad || input.allowFontFallback === true) && (problems.length === 0 || input.captureEvenIfBad === true);
     const png = capture ? await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: input.width, height: input.height } }) : null;
     return { ok: problems.length === 0, png, problems, measure, browser: info, fontsUsed, blockedRequests, ...(contrast ? { contrast } : {}) };
   });

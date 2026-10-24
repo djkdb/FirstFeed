@@ -23,6 +23,25 @@ export function PreviewPage() {
   const [jobId, setJobId] = useState<string | null>(null);
   /** 바뀌면 모션을 처음부터 다시 — 「다시 보기」 · 새 계획 */
   const [play, setPlay] = useState(0);
+  const [saving, setSaving] = useState(false);
+
+  // 공유 이미지(FR-BR-7): 서버가 스토리 크기 PNG 로 그린다. 계획 칸 배지는 그대로 남는다(결정 2026-10-24)
+  const saveImage = () => {
+    setSaving(true);
+    setError(null);
+    fetch('/api/preview/share.png')
+      .then(async (r) => {
+        if (!r.ok) throw new Error(((await r.json()) as { error?: string }).error ?? '이미지를 만들지 못했어요.');
+        const url = URL.createObjectURL(await r.blob());
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '퍼스트피드-30일-미리보기.png';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setSaving(false));
+  };
 
   // 계획 칸 표지를 차례로 물어 다 모이면 한꺼번에 보인다(그 뒤 모션). 이미 그린 칸은 서버가 바로 돌려준다
   const loadCovers = useCallback(async (v: View) => {
@@ -149,6 +168,9 @@ export function PreviewPage() {
         )}
         <button type="button" onClick={() => setPlay((n) => n + 1)}>
           다시 보기
+        </button>
+        <button type="button" disabled={saving || covers === null} onClick={saveImage} title="스토리 크기(1080×1920) PNG — 계획 칸의 「계획」 배지는 그대로 남아요">
+          {saving ? '이미지 만드는 중…' : '이미지로 저장'}
         </button>
         <label className="small">
           <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> 격자에서 가려지는 곳 보기

@@ -74,6 +74,7 @@ export function mobilePage(s: ShareSnapshot, base: string, nonce: string, closes
   const cards = names
     .map((n, i) => {
       const src = `${base}/img/${encodeURIComponent(n)}`;
+      // 번호는 그림 위가 아니라 그림 앞 줄에 — 카드 왼쪽 위의 칩을 가리지 않게(화면 확인에서 발견)
       return `<li><span class="no">${i + 1}</span><img src="${src}" alt="${i + 1}번 카드" loading="lazy"><a class="save" href="${src}?dl=1" download="${esc(n)}">${i + 1}번 저장</a></li>`;
     })
     .join('');
@@ -91,7 +92,7 @@ button.primary{background:#15161a;color:#fff;width:100%;margin:12px 0}
 ul.cards{list-style:none;margin:0;padding:0;display:grid;gap:16px}
 .cards li{position:relative;background:#fff;border-radius:12px;padding:8px;display:grid;gap:8px}
 .cards img{width:100%;height:auto;border-radius:6px;display:block}
-.no{position:absolute;left:14px;top:14px;background:#15161a;color:#fff;font-weight:700;border-radius:999px;min-width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.no{justify-self:start;background:#15161a;color:#fff;font-weight:700;border-radius:999px;min-width:32px;height:32px;display:flex;align-items:center;justify-content:center}
 pre{white-space:pre-wrap;word-break:break-word;background:#fff;border-radius:12px;padding:12px;font:inherit;font-size:14px}
 .muted{color:#5a5c63;font-size:13px}
 </style></head><body><main>

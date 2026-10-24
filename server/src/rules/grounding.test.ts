@@ -57,3 +57,24 @@ describe('숫자·영문 이름 대조 (허용 출처 4가지)', () => {
     expect(findUngrounded('다섯 가지 방법', { source: [source] }, [])).toEqual([]);
   });
 });
+
+describe('목록 번호는 구조에서 나온 숫자 (결정 2026-10-25)', () => {
+  const src = { source: ['에러 메시지의 첫 단어와 파일 이름, 줄 번호를 적는다'] };
+  it('줄 첫머리에서 1부터 차례로 이어지는 목록 번호는 대조하지 않는다 — 확인 실행에서 실제로 걸린 글', () => {
+    const text = '"안 돼요" 대신 이렇게 적었다.\n\n1. 에러 메시지의 첫 단어\n2. 파일 이름과 줄 번호\n3. 내가 하려던 일 한 줄';
+    expect(findUngrounded(text, src, [])).toEqual([]);
+    expect(findUngrounded('1) 첫째\n2) 둘째', src, [])).toEqual([]);
+  });
+  it('목록 줄 안의 숫자는 그대로 검사한다 — 「3. 팔로워 120명」의 120 은 걸림', () => {
+    expect(findUngrounded('1. 처음\n2. 다음\n3. 팔로워 120명', src, []).map((c) => c.value)).toEqual(['120']);
+  });
+  it('차례가 깨진 번호 · 1로 시작하지 않는 번호 · 문장 안의 「1. 2.」는 걸린다', () => {
+    expect(findUngrounded('1. 처음\n3. 건너뜀', src, []).map((c) => c.value)).toEqual(['3']);
+    expect(findUngrounded('5. 다섯째부터', src, []).map((c) => c.value)).toEqual(['5']);
+    expect(findUngrounded('순서는 1. 이것 2. 저것', src, []).map((c) => c.value)).toEqual(['1', '2']);
+  });
+  it('새 「1.」 은 새 목록 — 두 목록 모두 통과', () => {
+    expect(findUngrounded('1. 가\n2. 나\n\n문단\n\n1. 다\n2. 라', src, [])).toEqual([]);
+  });
+});
+

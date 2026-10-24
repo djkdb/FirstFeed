@@ -35,6 +35,28 @@ export function englishTermsIn(text: string): string[] {
   return (text.match(/[A-Za-z][A-Za-z0-9+#.-]*[A-Za-z0-9+#]/g) ?? []).map((t) => t.replace(/\.+$/, ''));
 }
 
+/**
+ * 목록 번호 빼기(결정 2026-10-25): 줄 첫머리의 목록 표시(「1.」 「2)」)가 1부터 차례로 이어지면 그 번호는 구조에서 나온 숫자(허용 출처 3번)라
+ * 근거 대조에서 뺀다 — 그 자리만 공백으로 바꿔 돌려준다. 차례가 깨진 번호(1 다음 3)와 문장 안의 숫자는 그대로 남아 검사된다.
+ * 새 「1.」 이 나오면 새 목록으로 본다. 목록 사이의 다른 줄(빈 줄 · 이어 쓴 줄)은 차례를 끊지 않는다.
+ * 「①」 같은 동그라미 숫자는 \d 가 아니라서 처음부터 숫자로 세지 않는다
+ */
+export function stripListMarkers(text: string): string {
+  let expected = 1;
+  return text
+    .split('\n')
+    .map((line) => {
+      const m = /^(\s*)(\d{1,2})([.)])(?=\s)/.exec(line);
+      if (!m) return line;
+      const n = Number(m[2]);
+      if (n === 1) expected = 1;
+      if (n !== expected) return line;
+      expected++;
+      return `${m[1]}${' '.repeat(m[2]!.length)}${m[3]}${line.slice(m[0].length)}`;
+    })
+    .join('\n');
+}
+
 export interface UngroundedClaim {
   kind: 'number' | 'english';
   value: string;
@@ -52,7 +74,7 @@ export function findUngrounded(text: string, sources: GroundingSources, commonTe
   const haystack = texts.join('\n').toLowerCase();
   const out: UngroundedClaim[] = [];
   const seen = new Set<string>();
-  for (const n of numbersIn(text)) {
+  for (const n of numbersIn(stripListMarkers(text))) {
     if (!allowedNumbers.has(n) && !seen.has(`n:${n}`)) {
       seen.add(`n:${n}`);
       out.push({ kind: 'number', value: n });

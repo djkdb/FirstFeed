@@ -6,7 +6,7 @@ import { createApp } from '../app.ts';
 import { AiService } from '../ai/adapter.ts';
 import type { JobState } from '../ai/jobs.ts';
 import { FakeProvider, type FakeStep } from '../ai/testing/fake-provider.ts';
-import { env } from '../config.ts';
+import { env, setSetting } from '../config.ts';
 import { openDb } from '../db/index.ts';
 import { text, type ProfileContent } from '../identity/model.ts';
 import { createSession, saveProfileVersion } from '../identity/store.ts';
@@ -22,7 +22,7 @@ const look: BrandLook = JSON.parse(fs.readFileSync(path.join(env.repoRoot, 'test
 /** 축을 돌아가며 9개 — 숫자 없이 */
 const nine = (prefix = '제목') => ({ titles: Array.from({ length: 9 }, (_, i) => ({ title: `${prefix} ${'가나다라마바사아자'[i]}`, pillar_id: PILLARS[i % 3]!.id })) });
 
-function setup(steps: FakeStep[], opts: { template?: boolean } = {}) {
+function setup(steps: FakeStep[], opts: { template?: boolean; made?: string[] } = {}) {
   const db = openDb(':memory:');
   const sid = createSession(db, 1, {});
   const content: ProfileContent = {
@@ -38,8 +38,16 @@ function setup(steps: FakeStep[], opts: { template?: boolean } = {}) {
     presence: null,
   };
   saveProfileVersion(db, 1, content, { reason: 'interview', sessionId: sid, basedOn: null, jobId: null, activate: true });
-  if (opts.template !== false) fixTemplate(db, 1, 'A', look, { cover: { headline: { charsPerLine: 9, maxLines: 2, maxChars: null } } }, 'playwright-chromium 156', null);
-  const app = createApp({ db, ai: new AiService({ db, provider: new FakeProvider(steps) }) });
+  const tv = opts.template !== false ? fixTemplate(db, 1, 'A', look, { cover: { headline: { charsPerLine: 9, maxLines: 2, maxChars: null } } }, 'playwright-chromium 156', null) : null;
+  // 이미 만든 카드 세트(표지만) — 계획이 같은 소재를 또 내지 않는지 보려고
+  for (const headline of opts.made ?? []) {
+    const src = Number(db.prepare("INSERT INTO sources (brand_id, body) VALUES (1, '원문')").run().lastInsertRowid);
+    const pid = Number((db.prepare('SELECT id FROM brand_profiles ORDER BY id DESC LIMIT 1').get() as { id: number }).id);
+    const set = Number(db.prepare('INSERT INTO card_sets (brand_id, source_id, profile_id, template_version_id, body_count) VALUES (1, ?, ?, ?, 1)').run(src, pid, tv).lastInsertRowid);
+    db.prepare("INSERT INTO cards (set_id, idx, kind, content_json, png_file, render_json) VALUES (?, 0, 'cover', ?, '01-cover.png', '{}')").run(set, JSON.stringify({ headline }));
+  }
+  const provider = new FakeProvider(steps);
+  const app = createApp({ db, ai: new AiService({ db, provider }) });
   const req = (method: string, p: string, body?: unknown) => app.request(`/api/preview${p}`, { method, headers: H, body: body === undefined ? undefined : JSON.stringify(body) });
   const job = async (jobId: string): Promise<JobState> => {
     for (let i = 0; i < 200; i++) {
@@ -59,7 +67,7 @@ function setup(steps: FakeStep[], opts: { template?: boolean } = {}) {
     const { jobId } = (await (await req('POST', '/plan')).json()) as { jobId: string };
     return job(jobId);
   };
-  return { db, req, view, makePlan };
+  return { db, req, view, makePlan, provider };
 }
 
 describe('격자 구성', () => {
@@ -113,6 +121,13 @@ describe('30일 뒤 미리보기 API', () => {
       { kind: 'generate', status: 'rule_error' },
       { kind: 'rewrite', status: 'ok' },
     ]);
+  });
+
+  it('이미 만든 카드 세트의 표지 제목을 계획 프롬프트(v4)에 넣는다 — 강조 표시·줄바꿈은 빼고', async () => {
+    const t = setup([{ structured: nine() }], { made: ['하얀 화면에서\n**이틀** 헤맨 이야기'] });
+    setSetting(t.db, 'prompts.activeVersions', { series_plan: 'v4' });
+    expect((await t.makePlan()).phase).toBe('done');
+    expect(t.provider.calls[0]!.prompt).toContain('## 이미 만든 게시물 (표지 제목, 최신순)\n- 하얀 화면에서 이틀 헤맨 이야기');
   });
 
   it('칸을 고치고 고정하면, 다시 만들어도 고정한 칸은 그대로다', async () => {

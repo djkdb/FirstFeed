@@ -8,6 +8,7 @@ import type { AiService, JobContext } from '../ai/adapter.ts';
 import { generateChecked } from '../ai/loop.ts';
 import { loadPrompt } from '../ai/prompts.ts';
 import { currentSelection } from '../brand/store.ts';
+import { listSets } from '../cards/store.ts';
 import { commonEnglishTerms, getSetting } from '../config.ts';
 import { FlowError } from '../identity/flow.ts';
 import { formatProfileForPrompt, profileForGeneration, profileGroundingTexts, type ProfileInput } from '../identity/for-generation.ts';
@@ -51,6 +52,8 @@ export interface PlanContext {
   pillarIds: string[];
   grounding: { source: string[]; brand: string[]; userInput: string[] };
   commonTerms: string[];
+  /** 이미 만든 카드 세트의 표지 제목(최신순, 강조 표시 · 줄바꿈 뺀 글) — 같은 소재를 계획으로 또 내지 않게 */
+  madeTitles: string[];
 }
 
 const issue = (i: number, code: string, message: string): Issue => ({ level: 'error', code, message, where: `titles.${i}.title`, from: 'rule' });
@@ -86,6 +89,9 @@ function groundingFor(db: Db, brandId: number, p: ProfileInput): PlanContext['gr
   return { source: [], brand: [...profileGroundingTexts(p), ...[sel.handle, sel.displayName, sel.bio].filter((x): x is string => !!x)], userInput: answers };
 }
 
+/** 표지 제목의 강조 표시(**)와 줄바꿈을 뺀 글 — 프롬프트에 보이고 겹침을 잴 때 쓴다 */
+const plainTitle = (t: string) => t.replace(/\*\*/g, '').replace(/\s*\n\s*/g, ' ').trim();
+
 export function planContext(db: Db, brandId: number, p: ProfileInput): PlanContext {
   return {
     count: getSetting(db, 'preview.gridCells'),
@@ -93,6 +99,7 @@ export function planContext(db: Db, brandId: number, p: ProfileInput): PlanConte
     pillarIds: p.pillars.map((x) => x.id),
     grounding: groundingFor(db, brandId, p),
     commonTerms: commonEnglishTerms(db),
+    madeTitles: listSets(db, brandId).map((s) => plainTitle(s.cover)).filter((t) => t.length > 0),
   };
 }
 
@@ -119,7 +126,8 @@ export async function generatePlan(ai: AiService, brandId: number, job?: JobCont
     profile: formatProfileForPrompt(profile),
     kit: [`아이디: ${sel.handle ?? '(정하지 않음)'}`, `이름: ${sel.displayName ?? '(정하지 않음)'}`, `바이오: ${sel.bio ?? '(정하지 않음)'}`].join('\n'),
     answers: c.grounding.userInput.length ? c.grounding.userInput.map((a) => `- ${a}`).join('\n') : '(없음)',
-  });
+    made: c.madeTitles.length ? c.madeTitles.map((t) => `- ${t}`).join('\n') : '(없음)',
+  }, undefined, ['made']); // made 는 v4 부터 — 그 전 판으로 비교 측정할 때도 같은 코드로 돌게
   const r = await generateChecked(ai, { task: 'series_plan', prompt: prompt.text, promptRef: prompt.ref, schema: PlanSchema, rules: planRules(c), selfReview: false, signal: job?.signal }, job);
   if (!r.ok) {
     throw new FlowError(

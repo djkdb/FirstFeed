@@ -44,12 +44,38 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState<string>('');
+  /** 칸마다 작은 표지 — 만든 칸은 세트 표지, 계획 칸은 미리보기와 같은 계획 칸 표지(AI 없음, 서버가 그린 것을 다시 씀) */
+  const [thumbs, setThumbs] = useState<Record<number, string | null>>({});
 
   useEffect(() => {
     call('GET', '/api/home')
       .then(setHome)
       .catch((e: Error) => setError(`불러오지 못했어요 (${e.message}). 서버가 켜져 있는지 확인하고 새로고침하세요.`));
   }, []);
+
+  // 표지는 차례로 묻는다 — 서버가 한 번에 하나씩 그리므로(계획 칸 표지 캐시가 있으면 바로 온다)
+  const slotKey = home?.slots.map((x) => `${x.idx}:${x.title}:${x.setId ?? ''}`).join('|') ?? '';
+  useEffect(() => {
+    if (!home?.ready) return;
+    let stop = false;
+    void (async () => {
+      const out: Record<number, string | null> = {};
+      for (const sl of home.slots) {
+        if (sl.setId !== null) out[sl.idx] = `/api/cards/sets/${sl.setId}/png/01-cover.png`;
+        else {
+          const r = (await fetch(`/api/preview/plan/${sl.idx}/cover`).then((x) => x.json()).catch(() => null)) as { ok?: boolean; file?: string } | null;
+          out[sl.idx] = r?.ok && r.file ? `/api/preview/png/${r.file}` : null;
+        }
+        if (stop) return;
+        setThumbs({ ...out });
+      }
+    })();
+    return () => {
+      stop = true;
+    };
+    // 칸 제목 · 이은 세트가 바뀔 때만 다시 — 상태(올림)만 바뀌면 그림은 같다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotKey]);
 
   const run = useCallback((method: string, url: string, body?: unknown) => {
     setBusy(true);
@@ -90,12 +116,27 @@ export function HomePage() {
           </select>
         </label>
       </div>
-      <p className="muted small">
-        30일 진행: 올림 {home.counts.posted} · 만듦 {home.counts.made} · 계획 {home.counts.plan} · 시작 {home.start ? day(home.start) : '—'} · 오늘 {day(home.today)}
-      </p>
+      <div className="home-progress">
+        <p className="home-progress-label">
+          <b>
+            {home.slots.length}칸 중 {home.counts.posted}칸 올림
+          </b>
+          <span className="muted small">
+            {' '}
+            · 만듦 {home.counts.made} · 계획 {home.counts.plan} · 시작 {home.start ? day(home.start) : '—'} · 오늘 {day(home.today)}
+          </span>
+        </p>
+        {/* 칸마다 한 조각 — 실제 칸 상태(진행 막대처럼 짐작하지 않는다) */}
+        <div className="home-bar" role="img" aria-label={`${home.slots.length}칸 중 올림 ${home.counts.posted} · 만듦 ${home.counts.made} · 계획 ${home.counts.plan}`}>
+          {home.slots.map((sl) => (
+            <span key={sl.idx} className={`home-bar-seg ${sl.state}${sl.idx === home.todayIdx ? ' today' : ''}`} title={`${sl.idx + 1}번 · ${STATE_LABEL[sl.state]}`} />
+          ))}
+        </div>
+      </div>
 
       {today ? (
         <div className="home-today">
+          {thumbs[today.idx] && <img className="home-today-thumb" src={thumbs[today.idx]!} alt={`${today.idx + 1}번 칸 표지`} />}
           <p className="eyebrow">
             오늘 할 칸 · {today.idx + 1}번 · {day(today.due)}
             {today.due < home.today ? ' (지난 날짜)' : ''}
@@ -153,7 +194,13 @@ export function HomePage() {
       <ol className="home-slots">
         {home.slots.map((s) => (
           <li key={s.idx} className={`home-slot ${s.state}${s.idx === home.todayIdx ? ' today' : ''}`}>
-            <span className="home-due small">{day(s.due)}</span>
+            <span className="home-thumb" aria-hidden="true">
+              {thumbs[s.idx] ? <img src={thumbs[s.idx]!} alt="" loading="lazy" /> : null}
+            </span>
+            <span className="home-due small">
+              {s.idx === home.todayIdx && <b className="home-today-tag">오늘 · </b>}
+              {day(s.due)}
+            </span>
             <span className="home-slot-title">
               {s.pillarName && <span className="qid">{s.pillarName}</span>}
               {s.title}

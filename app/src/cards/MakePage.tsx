@@ -257,8 +257,18 @@ function SetView({ setId }: { setId: number }) {
   );
 }
 
+/** 홈의 「이 칸으로 만들기」로 왔을 때(#/make?slot=N) 그 칸 번호 */
+const slotFromHash = (): number | null => {
+  const v = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('slot');
+  return v !== null && /^\d+$/.test(v) ? Number(v) : null;
+};
+
 export function MakePage() {
   const [state, setState] = useState<State | null>(null);
+  // 홈에서 고른 계획 칸 — 세트를 다 만들면 그 칸에 잇는다(FR-HM-2 · 결정 2026-10-24)
+  const [slot, setSlot] = useState<number | null>(slotFromHash);
+  const [slotTitle, setSlotTitle] = useState<string | null>(null);
+  const [slotNotice, setSlotNotice] = useState<string | null>(null);
   const [body, setBody] = useState('');
   const [memo, setMemo] = useState('');
   const [requested, setRequested] = useState<number | null>(null);
@@ -275,6 +285,32 @@ export function MakePage() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+  // 이미 「만들기」 탭에 있을 때 홈에서 다른 칸을 골라 와도 읽는다
+  useEffect(() => {
+    const onHash = () => setSlot(slotFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    if (slot === null) return;
+    fetch('/api/home')
+      .then((r) => r.json() as Promise<{ slots?: Array<{ title: string }> }>)
+      .then((h) => setSlotTitle(h.slots?.[slot]?.title ?? null))
+      .catch(() => setSlotTitle(null));
+  }, [slot]);
+  /** 다 만든 세트를 홈의 그 칸에 잇는다. 실패해도 세트는 그대로 — 홈에서 다시 이을 수 있다고 알린다 */
+  const linkToSlot = (setId: number) => {
+    if (slot === null) return;
+    const n = slot;
+    fetch(`/api/home/slots/${n}/set`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ setId }) })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(((await r.json()) as { error?: string }).error ?? '잇지 못했어요.');
+        setSlotNotice(`홈의 ${n + 1}번 칸에 이었어요. 업로드 준비를 마치고 홈에서 「올렸어요」를 누르세요.`);
+        setSlot(null);
+        window.history.replaceState(null, '', '#/make');
+      })
+      .catch((e: Error) => setSlotNotice(`세트는 만들었지만 ${n + 1}번 칸에 잇지 못했어요(${e.message}). 홈에서 「이 칸에 잇기」로 이으세요.`));
+  };
 
   const coverJob = useJob(coverJobId, (j) => {
     if (j.phase === 'done') setCovers(j.result as unknown as CoversResult);
@@ -293,6 +329,7 @@ export function MakePage() {
       setBodyResult(r);
       if (r.status === 'saved') {
         setViewSet(r.setId);
+        linkToSlot(r.setId);
         void refresh();
       }
     } else {
@@ -347,6 +384,7 @@ export function MakePage() {
       if (b.error) return setError(b.error);
       if (b.status === 'saved' && b.setId) {
         setViewSet(b.setId);
+        linkToSlot(b.setId);
         setBodyResult(null);
         void refresh();
       } else setError(['아직 넘칩니다:', ...(b.overflows ?? []).map((o) => `${o.where} — ${o.message}`), ...(b.problems ?? [])].join(' '));
@@ -371,6 +409,22 @@ export function MakePage() {
             고정한 틀: 시안 {state.ready.template!.draftId} · v{state.ready.template!.version}. 소재를 붙여 넣으면 표지 제목 후보를 그 틀로 그려 보여 드려요.
           </p>
         )}
+        {slot !== null && (
+          <p className="note small">
+            홈의 {slot + 1}번 칸{slotTitle ? ` 「${slotTitle}」` : ''}으로 만들어요. 이 칸에 맞는 소재를 붙여 넣으세요 — 표지 제목은 소재에서 다시 만들어요(칸 제목을 그대로 쓰지 않아요). 다 만들면 그 칸에 저절로 이어요.{' '}
+            <button
+              type="button"
+              className="link"
+              onClick={() => {
+                setSlot(null);
+                window.history.replaceState(null, '', '#/make');
+              }}
+            >
+              칸에 잇지 않기
+            </button>
+          </p>
+        )}
+        {slotNotice && <p className="status ok small">{slotNotice}</p>}
         <label className="block small">
           소재 원문 (메모·공식 문서·릴리스 노트 등 — 숫자·이름은 여기 있는 것만 카드에 들어가요)
           <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} />

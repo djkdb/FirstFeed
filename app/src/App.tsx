@@ -8,15 +8,17 @@ import { BrandPage } from './brand/BrandPage.tsx';
 import { TemplatePage } from './templates/TemplatePage.tsx';
 import { MakePage } from './cards/MakePage.tsx';
 import { PreviewPage } from './preview/PreviewPage.tsx';
+import { HomePage } from './home/HomePage.tsx';
 
 type ServerState =
   | { kind: 'checking' }
   | { kind: 'ok'; brandName: string | null }
   | { kind: 'error'; message: string };
 
-type Tab = 'identity' | 'brand' | 'template' | 'make' | 'preview' | 'check';
-const TABS: Tab[] = ['identity', 'brand', 'template', 'make', 'preview', 'check'];
-const tabFromHash = (): Tab => TABS.find((t) => window.location.hash === `#/${t}`) ?? 'identity';
+type Tab = 'home' | 'identity' | 'brand' | 'template' | 'make' | 'preview' | 'check';
+const TABS: Tab[] = ['home', 'identity', 'brand', 'template', 'make', 'preview', 'check'];
+// 「#/make?slot=3」처럼 뒤에 값이 붙어도 그 탭으로. 첫 화면은 「오늘 올릴 것」(설계서 1장 — 계획이 없으면 그 화면이 할 일을 안내)
+const tabFromHash = (): Tab => TABS.find((t) => window.location.hash.split('?')[0] === `#/${t}`) ?? 'home';
 
 export function App() {
   const [server, setServer] = useState<ServerState>({ kind: 'checking' });
@@ -47,6 +49,9 @@ export function App() {
         <h1>퍼스트피드</h1>
         <p className="tagline">"나는 누구인가"에서 "무엇이 먹혔나"까지</p>
         <nav className="tabs">
+          <a href="#/home" className={tab === 'home' ? 'on' : ''}>
+            오늘 올릴 것
+          </a>
           <a href="#/identity" className={tab === 'identity' ? 'on' : ''}>
             정체성
           </a>
@@ -72,6 +77,7 @@ export function App() {
           서버에 연결하지 못했습니다 ({server.message}). 터미널에서 <code>npm run dev</code> 가 실행 중인지 확인한 뒤 새로고침하세요.
         </p>
       )}
+      {tab === 'home' && <HomePage />}
       {tab === 'identity' && <IdentityPage />}
       {tab === 'brand' && <BrandPage />}
       {tab === 'template' && <TemplatePage />}

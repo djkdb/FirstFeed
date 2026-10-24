@@ -225,7 +225,9 @@ export const DEFAULTS = {
     caption_min_review: 'v2',
     // series_plan v1 → v3(사용자 결정 2026-10-22): v2 가 표지 제목답게 끌었지만 프로필에 없는 「자격증」이 나와, v3 에 근거 없는 사실(자격·경력·경험·성과) 금지 한 줄.
     // 같은 공개 fixture(me) 1회씩 — 규칙 첫 통과, v3 제목 9개에 지어낸 사실 없음(사람이 읽고 판정, devlog 2026-10-22-04)
-    series_plan: 'v3',
+    // ~~v3~~ → v4(사용자 결정 2026-10-24): 이미 만든 세트의 표지 제목을 넣고 같은 소재·표현 반복 금지. 데모 브랜드 v3 · v4 1회씩 — 겹침 규칙
+    // (preview.titleOverlapThreshold) 위반 둘 다 0, 사람이 읽고 만든 카드 소재 반복 v3 1 → v4 0 (devlog 2026-10-24-01)
+    series_plan: 'v4',
   } as Record<string, string>,
 };
 

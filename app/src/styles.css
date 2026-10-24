@@ -11,6 +11,14 @@
   --accent-soft: #eef1fd;
   --accent-ink: #1f2a6b;
   --line: #c9c4b8;
+  /* 폰 틀 — 소개 페이지의 폰 프로필 그대로 */
+  --phone: #0e1116;
+  --phone-ink: #f2f3f5;
+  --phone-muted: #9ea3ab;
+  --phone-line: #22262d;
+  --phone-ring: #3a3f48;
+  --phone-edge: #1c1f25;
+  --phone-cell: #171a20;
   /* 소개 페이지에는 카드 면이 없어 바탕에서 한 단계씩 밝게 · 어둡게만 더함 */
   --surface: #fbfaf6;
   --surface-2: #ece8de;
@@ -67,7 +75,7 @@ h1 { margin: 0; font-size: 28px; letter-spacing: -0.03em; line-height: 1.2; }
 button { font: inherit; font-weight: 600; min-height: var(--tap); padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
 button:hover:not(:disabled) { border-color: var(--ink); }
 /* 칸 안 · 목록 안의 작은 버튼 */
-button.small, .history button, .ig-plan-actions button, .ig-plan-edit button { min-height: 28px; padding: 0 var(--s-3); }
+button.small, .history button { min-height: 28px; padding: 0 var(--s-3); }
 button:disabled { opacity: 0.6; cursor: default; }
 .providers { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
 .providers th, .providers td { text-align: left; padding: var(--s-2) 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -199,7 +207,38 @@ button.link{background:none;border:none;color:var(--accent);text-decoration:unde
 .premade{display:inline-block;margin-left:6px;font-size:12px;font-weight:700;color:var(--premade-ink);background:var(--premade-soft);border:1px solid var(--premade-line);border-radius:4px;padding:1px 6px;vertical-align:middle}
 
 /* 30일 뒤 내 계정 미리보기 (FR-BR-6) — 인스타 프로필 화면 모양. 계획 칸은 점선으로 만든 카드와 구분한다 */
-.preview .ig-profile { max-width: 480px; margin: 12px 0; }
+.preview-layout { display: flex; gap: var(--s-5); align-items: flex-start; flex-wrap: wrap; margin-top: var(--s-3); }
+.preview-controls { flex: 1 1 220px; min-width: 0; }
+.preview-controls .actions { margin-top: 0; }
+/* 폰 틀(소개 페이지 .phone) — 안쪽은 인스타 프로필처럼, 조작은 바깥 */
+.phone { width: 390px; max-width: 100%; flex: none; background: var(--phone); color: var(--phone-ink); border-radius: 40px; border: 8px solid var(--phone-edge); box-shadow: 0 30px 70px rgb(21 22 26 / 28%); overflow: hidden; }
+.phone-top { display: flex; align-items: center; justify-content: space-between; padding: 22px 18px 10px; }
+.phone-handle { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 19px; }
+.phone-missing { padding: 0 18px; font-size: 12px; color: var(--phone-muted); }
+.phone-muted { color: var(--phone-muted); }
+.phone .ig-head { padding: 8px 18px 0; gap: 22px; }
+.phone-ring { width: 88px; height: 88px; border-radius: 50%; border: 2px solid var(--phone-ring); padding: 3px; flex: none; display: block; box-sizing: border-box; }
+.phone-ring .ig-avatar { width: 100%; height: 100%; display: block; }
+.phone-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.phone .ig-name { margin-top: 0; font-size: 15px; }
+.phone-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.phone-stats b { display: block; font-size: 17px; }
+.phone-stats span { font-size: 13px; color: #c9ccd2; }
+.phone .ig-counts { margin-top: 0; }
+.phone .ig-bio { padding: 12px 18px 0; font-size: 14px; line-height: 1.55; }
+.phone-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 12px 18px 0; }
+.phone-btns span { background: var(--phone-line); border-radius: 9px; text-align: center; font-weight: 600; font-size: 14px; padding: 9px 0; }
+.phone .ig-highlights { padding: 14px 18px 0; margin-top: 0; gap: 16px; flex-wrap: nowrap; overflow: hidden; }
+.phone .ig-hl-circle { border: 1px dashed var(--phone-ring); width: 60px; height: 60px; }
+.phone-tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; border-bottom: 1px solid var(--phone-line); color: var(--phone-muted); }
+.phone-tabs span { display: grid; place-items: center; padding: 10px 0; }
+.phone-tabs span.on { color: var(--phone-ink); border-bottom: 2px solid var(--phone-ink); }
+.phone-wait { padding: 18px; }
+/* 고른 계획 칸 고치기 · 고정 */
+.slot-editor { margin-top: var(--s-4); padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.slot-editor p { margin: 0 0 var(--s-2); }
+.slot-editor-title { font-size: 17px; font-weight: 700; }
+.slot-editor input { margin-top: 0; flex: 1 1 160px; }
 .ig-head { display: flex; gap: 16px; align-items: center; }
 .ig-avatar { width: 77px; height: 77px; border-radius: 50%; object-fit: cover; flex: none; }
 .ig-empty { border: 2px dashed var(--line); box-sizing: border-box; }
@@ -210,18 +249,18 @@ button.link{background:none;border:none;color:var(--accent);text-decoration:unde
 .ig-highlights { display: flex; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
 .ig-hl { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; text-align: center; }
 .ig-hl-circle { width: 56px; height: 56px; border-radius: 50%; border: 2px dashed var(--line); box-sizing: border-box; }
-.ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; max-width: 480px; margin-top: 12px; }
-.ig-cell { position: relative; overflow: hidden; background: var(--surface-2); }
+.ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 0; padding-bottom: 18px; }
+.ig-cell { position: relative; overflow: hidden; background: var(--phone-cell); }
+/* 계획 칸은 눌러서 고르는 버튼 — 버튼 모양(알약 · 44px)은 빼고 칸 모양 그대로 */
+button.ig-cell { display: block; width: 100%; min-height: 0; padding: 0; border-radius: 0; border: 0; font: inherit; font-weight: inherit; text-align: left; color: inherit; cursor: pointer; }
+button.ig-cell.ig-plan { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 10px; border: 2px dashed; }
+button.ig-cell:hover:not(:disabled) { border-color: inherit; }
+.ig-selected { outline: 3px solid var(--accent); outline-offset: -3px; z-index: 1; }
 .ig-made img { position: absolute; top: 0; height: 100%; max-width: none; }
 .ig-plan { border: 2px dashed; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; padding: 10px; gap: 6px; }
 .ig-plan-title { font-size: 15px; line-height: 1.25; word-break: keep-all; }
-.ig-empty-cell { background: repeating-linear-gradient(45deg, var(--surface-2) 0 8px, var(--surface-3) 8px 16px); }
+.ig-empty-cell { background: var(--phone-cell); }
 .ig-cell .premade { position: absolute; left: 4px; bottom: 4px; font-size: 10px; }
-.ig-plan-actions, .ig-plan-edit { position: absolute; right: 4px; bottom: 4px; display: flex; gap: 2px; }
-/* 고치기 · 고정 버튼은 칸에 마우스를 올렸을 때만 — 격자가 완성된 계정처럼 보이게 */
-.ig-plan-actions { opacity: 0; transition: opacity 0.15s; }
-.ig-cell:hover .ig-plan-actions, .ig-cell:focus-within .ig-plan-actions { opacity: 1; }
-.ig-plan-edit input { width: 90px; font-size: 11px; }
 .ig-hidden { position: absolute; top: 0; bottom: 0; background: rgb(220 40 40 / 35%); }
 .preview .actions label { display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; flex: none; }
 

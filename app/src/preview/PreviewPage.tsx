@@ -25,6 +25,8 @@ export function PreviewPage() {
   /** 바뀌면 모션을 처음부터 다시 — 「다시 보기」 · 새 계획 */
   const [play, setPlay] = useState(0);
   const [saving, setSaving] = useState(false);
+  /** 고친다고 고른 계획 칸 번호 — 고치기 · 고정은 폰 틀 밖에서 */
+  const [selected, setSelected] = useState<number | null>(null);
 
   // 공유 이미지(FR-BR-7): 서버가 스토리 크기 PNG 로 그린다. 계획 칸 배지는 그대로 남는다(결정 2026-10-24)
   const saveImage = () => {
@@ -107,6 +109,8 @@ export function PreviewPage() {
 
   const p = view.profile;
   const bioLines = (p.bio ?? '').split('\n');
+  const picked = selected !== null ? view.cells.find((c) => c.kind === 'plan' && c.slot === selected) : undefined;
+  const pickedPlan = picked && picked.kind === 'plan' ? picked : null;
   return (
     <section className="card preview">
       <h2>30일 뒤 내 계정 미리보기</h2>
@@ -114,85 +118,177 @@ export function PreviewPage() {
         게시물을 올리기 전에, 지금 정한 프로필과 첫 {view.cells.length}개 게시물이 인스타 프로필에서 어떻게 보일지 먼저 봅니다. <b>「계획」 배지 = 아직 만들지 않은 칸</b>(제목을 고정 템플릿 표지로 그려 본 것).
       </p>
 
-      <div className="ig-profile" key={`p${play}`}>
-        <div className="ig-head">
-          <Avatar image={p.profileImage} />
-          <div>
-            <div className="ig-handle">{p.handle ?? <span className="muted">(아이디 미정 — 「브랜드」에서 고르세요)</span>}</div>
-            <div className="ig-counts">
-              게시물 <b>{view.counts.madeShown + view.counts.plan}</b>
-              <span className="muted small">
-                {' '}
-                (만든 카드 {view.counts.madeShown} · 계획 {view.counts.plan})
-              </span>
+      <div className="preview-layout">
+        {/* 소개 페이지(site/)의 폰 프로필 모양 — 인스타 로고 · 인증 배지 · 무지개 테두리 · 고유 아이콘 없음, 팔로워 · 팔로잉은 「–」 */}
+        <div className="phone" key={`p${play}`}>
+          <div className="phone-top" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            <span className="phone-handle">
+              {p.handle ?? '(아이디 미정)'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+            </span>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </div>
+          {!p.handle && <div className="phone-missing">(아이디 미정 — 「브랜드」에서 고르세요)</div>}
+          <div className="ig-head">
+            <span className="phone-ring">
+              <Avatar image={p.profileImage} />
+            </span>
+            <div className="phone-who">
+              <div className="ig-name">{p.displayName ?? <span className="phone-muted">(이름 미정)</span>}</div>
+              <div className="phone-stats">
+                <div>
+                  <b>{view.counts.madeShown + view.counts.plan}</b>
+                  <span>게시물</span>
+                </div>
+                <div>
+                  <b>–</b>
+                  <span>팔로워</span>
+                </div>
+                <div>
+                  <b>–</b>
+                  <span>팔로잉</span>
+                </div>
+              </div>
+              <div className="ig-counts phone-muted small">
+                (만든 카드 {view.counts.madeShown} · 계획 {view.counts.plan}
+                {view.counts.posted ? ` · 올림 ${view.counts.posted}` : ''})
+              </div>
             </div>
           </div>
-        </div>
-        <div className="ig-name">{p.displayName ?? <span className="muted">(이름 미정)</span>}</div>
-        <div className="ig-bio">
-          {p.bio
-            ? bioLines.map((line, i) => (
-                <span
-                  key={i}
-                  className="ig-type"
-                  style={{ ['--n' as string]: Math.max(1, [...line].length), ['--d' as string]: `${bioLines.slice(0, i).reduce((s, l) => s + [...l].length, 0) * 0.02}s` }}
-                >
-                  {line || ' '}
-                </span>
-              ))
-            : <span className="muted">(바이오 미정)</span>}
-        </div>
-        {view.highlights.length > 0 && (
-          <div className="ig-highlights">
-            {view.highlights.map((h) => (
-              <div key={h} className="ig-hl">
-                <span className="ig-hl-circle" title="하이라이트 커버 그림은 아직 올리지 않았어요(FR-BR-4)" />
-                <span className="small">{h}</span>
-              </div>
-            ))}
+          <div className="ig-bio">
+            {p.bio
+              ? bioLines.map((line, i) => (
+                  <span
+                    key={i}
+                    className="ig-type"
+                    style={{ ['--n' as string]: Math.max(1, [...line].length), ['--d' as string]: `${bioLines.slice(0, i).reduce((s, l) => s + [...l].length, 0) * 0.02}s` }}
+                  >
+                    {line || ' '}
+                  </span>
+                ))
+              : <span className="phone-muted">(바이오 미정)</span>}
           </div>
-        )}
-      </div>
+          <div className="phone-btns" aria-hidden="true">
+            <span>프로필 편집</span>
+            <span>프로필 공유</span>
+          </div>
+          {view.highlights.length > 0 && (
+            <div className="ig-highlights">
+              {view.highlights.map((h) => (
+                <div key={h} className="ig-hl">
+                  <span className="ig-hl-circle" title="하이라이트 커버 그림은 아직 올리지 않았어요(FR-BR-4)" />
+                  <span className="small">{h}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="phone-tabs" aria-hidden="true">
+            <span className="on">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="5" height="5" rx="1" /><rect x="9.5" y="3" width="5" height="5" rx="1" /><rect x="16" y="3" width="5" height="5" rx="1" /><rect x="3" y="9.5" width="5" height="5" rx="1" /><rect x="9.5" y="9.5" width="5" height="5" rx="1" /><rect x="16" y="9.5" width="5" height="5" rx="1" /><rect x="3" y="16" width="5" height="5" rx="1" /><rect x="9.5" y="16" width="5" height="5" rx="1" /><rect x="16" y="16" width="5" height="5" rx="1" /></svg>
+            </span>
+            <span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="5" /><path d="M10 8.5l5 3.5-5 3.5z" /></svg>
+            </span>
+            <span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="4" width="18" height="16" rx="4" /><circle cx="12" cy="10.5" r="3" /><path d="M7 18c1.2-2.2 3-3 5-3s3.8.8 5 3" /></svg>
+            </span>
+          </div>
+          {covers === null ? (
+            <p className="phone-muted small phone-wait">계획 칸 표지를 그리는 중… (처음엔 칸마다 1초 안팎)</p>
+          ) : (
+            <div className="ig-grid ig-anim" key={`g${play}`}>
+              {view.cells.map((c, i) => (
+                <GridCell key={i} i={i} c={c} cover={c.kind === 'plan' ? (covers[c.slot] ?? null) : null} view={view} showHidden={showHidden} selected={c.kind === 'plan' && c.slot === selected} onSelect={setSelected} />
+              ))}
+            </div>
+          )}
+        </div>
 
-      <div className="actions">
-        {!jobId ? (
-          <button type="button" className="primary" disabled={!view.ready.template} onClick={() => void plan()}>
-            {view.plan ? '계획 다시 만들기(고정한 칸은 그대로)' : '첫 9개 게시물 계획 만들기'}
-          </button>
-        ) : (
-          <span>
-            계획 만드는 중… {job?.runs.length ? `(${job.runs.length}번째 호출)` : ''}{' '}
-            <button type="button" onClick={() => void cancel()}>
-              취소
+        {/* 조작은 폰 틀 밖에 — 폰 안은 인스타 화면처럼 보이게 */}
+        <div className="preview-controls">
+          <div className="actions">
+            {!jobId ? (
+              <button type="button" className="primary" disabled={!view.ready.template} onClick={() => void plan()}>
+                {view.plan ? '계획 다시 만들기(고정한 칸은 그대로)' : '첫 9개 게시물 계획 만들기'}
+              </button>
+            ) : (
+              <span>
+                계획 만드는 중… {job?.runs.length ? `(${job.runs.length}번째 호출)` : ''}{' '}
+                <button type="button" onClick={() => void cancel()}>
+                  취소
+                </button>
+              </span>
+            )}
+            <button type="button" onClick={() => setPlay((n) => n + 1)}>
+              다시 보기
             </button>
-          </span>
-        )}
-        <button type="button" onClick={() => setPlay((n) => n + 1)}>
-          다시 보기
-        </button>
-        <button type="button" disabled={saving || covers === null} onClick={saveImage} title="스토리 크기(1080×1920) PNG — 계획 칸의 「계획」 배지는 그대로 남아요">
-          {saving ? '이미지 만드는 중…' : '이미지로 저장'}
-        </button>
-        <label className="small">
-          <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> 격자에서 가려지는 곳 보기
-        </label>
+            <button type="button" disabled={saving || covers === null} onClick={saveImage} title="스토리 크기(1080×1920) PNG — 계획 칸의 「계획」 배지는 그대로 남아요">
+              {saving ? '이미지 만드는 중…' : '이미지로 저장'}
+            </button>
+            <label className="small">
+              <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> 격자에서 가려지는 곳 보기
+            </label>
+          </div>
+          {jobId && <StageLine stage={job?.stage} />}
+          <p className="muted small">계획 AI 호출 1번(규칙에 걸리면 다시 쓰기 · 숫자·영문 이름은 프로필·답에 있는 것만) · 표지 그리기는 AI 를 부르지 않아요</p>
+          {!view.ready.template && <p className="note small">「템플릿」에서 시안을 고정해야 계획 칸을 그 틀의 표지로 그릴 수 있어요.</p>}
+          {view.plan?.stale && <p className="note small">계획을 만든 뒤 프로필이 바뀌었어요. 다시 만들면 바뀐 축으로 계획합니다.</p>}
+          {error && <p className="status error">{error}</p>}
+          <SlotEditor key={pickedPlan ? `${pickedPlan.slot}:${pickedPlan.title}` : 'none'} cell={pickedPlan} edit={edit} onClose={() => setSelected(null)} />
+        </div>
       </div>
-      {jobId && <StageLine stage={job?.stage} />}
-      <p className="muted small">계획 AI 호출 1번(규칙에 걸리면 다시 쓰기 · 숫자·영문 이름은 프로필·답에 있는 것만) · 표지 그리기는 AI 를 부르지 않아요</p>
-      {!view.ready.template && <p className="note small">「템플릿」에서 시안을 고정해야 계획 칸을 그 틀의 표지로 그릴 수 있어요.</p>}
-      {view.plan?.stale && <p className="note small">계획을 만든 뒤 프로필이 바뀌었어요. 다시 만들면 바뀐 축으로 계획합니다.</p>}
-      {error && <p className="status error">{error}</p>}
+    </section>
+  );
+}
 
-      {covers === null ? (
-        <p className="muted small">계획 칸 표지를 그리는 중… (처음엔 칸마다 1초 안팎)</p>
+/** 고른 계획 칸 고치기 · 고정 — 폰 틀 밖(결정 2026-10-25 · 화면 다듬기 A). 칸을 누르면 여기에 열린다 */
+function SlotEditor({
+  cell,
+  edit,
+  onClose,
+}: {
+  cell: Extract<Cell, { kind: 'plan' }> | null;
+  edit: (i: number, p: { title?: string; locked?: boolean }) => Promise<boolean>;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  if (!cell) return <p className="muted small">계획 칸을 누르면 여기서 제목을 고치거나 고정할 수 있어요.</p>;
+  return (
+    <div className="slot-editor">
+      <p className="small">
+        <b>{cell.slot + 1}번 칸</b> · {cell.pillarName ?? '(없는 축)'}
+        {cell.locked ? ' · 고정' : ''}
+        {cell.origin === 'edit' ? ' · 직접 고침' : ''}
+        {cell.state === 'posted' ? ' · 올림(내가 표시)' : ''}
+      </p>
+      {draft === null ? (
+        <>
+          <p className="slot-editor-title">{cell.title}</p>
+          <div className="actions">
+            <button type="button" className="small" onClick={() => setDraft(cell.title)}>
+              고치기
+            </button>
+            <button type="button" className="small" onClick={() => void edit(cell.slot, { locked: !cell.locked })}>
+              {cell.locked ? '고정 풀기' : '고정'}
+            </button>
+            <button type="button" className="small" onClick={onClose}>
+              닫기
+            </button>
+          </div>
+        </>
       ) : (
-        <div className="ig-grid ig-anim" key={`g${play}`}>
-          {view.cells.map((c, i) => (
-            <GridCell key={i} i={i} c={c} cover={c.kind === 'plan' ? (covers[c.slot] ?? null) : null} view={view} showHidden={showHidden} edit={edit} />
-          ))}
+        <div className="actions">
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={`${cell.slot + 1}번 칸 제목`} />
+          <button type="button" className="small primary" onClick={() => void edit(cell.slot, { title: draft }).then((ok) => ok && setDraft(null))}>
+            저장
+          </button>
+          <button type="button" className="small" onClick={() => setDraft(null)}>
+            그만두기
+          </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -208,17 +304,18 @@ function GridCell({
   cover,
   view,
   showHidden,
-  edit,
+  selected,
+  onSelect,
 }: {
   i: number;
   c: Cell;
   cover: Cover | null;
   view: View;
   showHidden: boolean;
-  edit: (i: number, p: { title?: string; locked?: boolean }) => Promise<boolean>;
+  selected: boolean;
+  onSelect: (slot: number) => void;
 }) {
   const box = cellBox(view.grid, showHidden);
-  const [draft, setDraft] = useState<string | null>(null);
   const anim = { animationDelay: `${flipDelay(i)}s`, animationDuration: `${FLIP_DURATION_S}s` };
   const badge = badgeFor(c);
   if (c.kind === 'empty') return <div className="ig-cell ig-empty-cell" style={{ aspectRatio: box.aspect, ...anim }} />;
@@ -241,21 +338,25 @@ function GridCell({
   const look = view.look;
   const drawn = cover?.ok ? cover.file : null;
   return (
-    <div
-      className={drawn ? 'ig-cell ig-made ig-planned' : 'ig-cell ig-plan'}
+    <button
+      type="button"
+      className={`${drawn ? 'ig-cell ig-made ig-planned' : 'ig-cell ig-plan'}${selected ? ' ig-selected' : ''}`}
+      aria-pressed={selected}
+      aria-label={`${c.slot + 1}번 계획 칸 「${c.title}」 — 고치기 · 고정`}
+      onClick={() => onSelect(c.slot)}
       style={{ aspectRatio: box.aspect, ...anim, ...(drawn ? {} : { background: look?.background ?? '#eee', color: look?.text ?? '#222', borderColor: look?.accent ?? '#999' }) }}
     >
       {drawn ? (
         img(`/api/preview/png/${drawn}`, c.title)
       ) : (
         <>
-          <div className="ig-plan-title" style={{ fontFamily: view.titleFont?.family, fontWeight: view.titleFont?.weight }}>
+          <span className="ig-plan-title" style={{ fontFamily: view.titleFont?.family, fontWeight: view.titleFont?.weight }}>
             {c.title}
-          </div>
-          <div className="ig-plan-pillar small" style={{ color: look?.primary }}>
+          </span>
+          <span className="ig-plan-pillar small" style={{ color: look?.primary }}>
             {c.pillarName ?? '(없는 축)'}
-          </div>
-          {cover && !cover.ok && <div className="ig-plan-reason">표지로 못 그림: {cover.reason}</div>}
+          </span>
+          {cover && !cover.ok && <span className="ig-plan-reason">표지로 못 그림: {cover.reason}</span>}
         </>
       )}
       {showHidden && <Hidden box={box} />}
@@ -265,27 +366,7 @@ function GridCell({
           {c.locked ? ' · 고정' : ''}
         </span>
       )}
-      {draft === null ? (
-        <span className="ig-plan-actions">
-          <button type="button" className="small" onClick={() => setDraft(c.title)}>
-            고치기
-          </button>
-          <button type="button" className="small" onClick={() => void edit(c.slot, { locked: !c.locked })}>
-            {c.locked ? '고정 풀기' : '고정'}
-          </button>
-        </span>
-      ) : (
-        <span className="ig-plan-edit">
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} />
-          <button type="button" className="small primary" onClick={() => void edit(c.slot, { title: draft }).then((ok) => ok && setDraft(null))}>
-            저장
-          </button>
-          <button type="button" className="small" onClick={() => setDraft(null)}>
-            그만두기
-          </button>
-        </span>
-      )}
-    </div>
+    </button>
   );
 }
 

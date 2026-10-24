@@ -1,6 +1,7 @@
 // 30일 뒤 내 계정 미리보기의 시리즈 계획 (FR-BR-6 · 결정 2026-10-21).
 // 확정 프로필의 축을 돌아가며 첫 9개 게시물 제목을 AI 1회로 받는다. 자기 평가는 하지 않는다 — 게시 전 계획이고
-// 수용 기준(개수 · 축 · 길이 · 근거)을 코드가 잰다(브랜딩 시각과 같은 이유, 결정 2026-10-14). 제목 속 숫자·영문은 근거 대조.
+// 수용 기준(개수 · 축 · 길이 · 근거)을 코드가 잰다(브랜딩 시각과 같은 이유, 결정 2026-10-14). 제목 속 숫자·영문은 근거 대조,
+// 이미 만든 카드 표지나 다른 계획 제목과 거의 같은 제목도 재작성(결정 2026-10-24).
 // 칸마다 사용자가 고치거나 고정할 수 있고, 다시 만들면 고정한 칸은 그대로 둔다. SQL 은 이 파일에만.
 import { z } from 'zod';
 import type { DatabaseSync } from 'node:sqlite';
@@ -14,6 +15,7 @@ import { FlowError } from '../identity/flow.ts';
 import { formatProfileForPrompt, profileForGeneration, profileGroundingTexts, type ProfileInput } from '../identity/for-generation.ts';
 import { activeProfile, listTurns } from '../identity/store.ts';
 import { findUngrounded } from '../rules/grounding.ts';
+import { similarity } from '../rules/similarity.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
 
@@ -54,6 +56,10 @@ export interface PlanContext {
   commonTerms: string[];
   /** 이미 만든 카드 세트의 표지 제목(최신순, 강조 표시 · 줄바꿈 뺀 글) — 같은 소재를 계획으로 또 내지 않게 */
   madeTitles: string[];
+  /** 거의 같은 제목 기준(설정 preview.titleOverlapThreshold) */
+  overlapThreshold: number;
+  /** 사용자가 고정한 칸 번호 — 사용자 글이라 겹침 규칙은 그 칸을 고치라고 하지 않는다 */
+  lockedIdx: number[];
 }
 
 const issue = (i: number, code: string, message: string): Issue => ({ level: 'error', code, message, where: `titles.${i}.title`, from: 'rule' });
@@ -70,6 +76,17 @@ export function planRules(c: PlanContext): Rule<PlanOut>[] {
         if (t.title.includes('\n')) out.push(issue(i, 'title_newline', '한 줄로 씁니다'));
         for (const u of findUngrounded(t.title, c.grounding, c.commonTerms))
           out.push(issue(i, u.kind === 'number' ? 'number_not_in_source' : 'english_not_in_source', `프로필·브랜딩·사용자 답에 없는 ${u.kind === 'number' ? '숫자' : '영문 이름'} "${u.value}"`));
+        return out;
+      }),
+    // 거의 같은 제목: 이미 만든 카드 표지와, 그리고 계획 제목끼리(뒤 칸을 고치게). 고정한 칸은 사용자 것이라 건드리지 않는다
+    (d) =>
+      d.titles.flatMap((t, i) => {
+        if (c.lockedIdx.includes(i)) return [];
+        const out: Issue[] = [];
+        const made = c.madeTitles.map((m) => ({ m, s: similarity(t.title, m) })).find((x) => x.s >= c.overlapThreshold);
+        if (made) out.push(issue(i, 'title_like_made', `이미 만든 게시물 「${made.m}」와 거의 같습니다(겹침 ${made.s.toFixed(2)}) — 다른 소재·표현으로`));
+        const j = d.titles.findIndex((u, k) => k !== i && (k < i || c.lockedIdx.includes(k)) && similarity(t.title, u.title) >= c.overlapThreshold);
+        if (j >= 0) out.push(issue(i, 'title_like_other', `${j + 1}번 「${d.titles[j]!.title}」와 거의 같습니다(겹침 ${similarity(t.title, d.titles[j]!.title).toFixed(2)}) — 다른 소재·표현으로`));
         return out;
       }),
     (d) => {
@@ -92,7 +109,7 @@ function groundingFor(db: Db, brandId: number, p: ProfileInput): PlanContext['gr
 /** 표지 제목의 강조 표시(**)와 줄바꿈을 뺀 글 — 프롬프트에 보이고 겹침을 잴 때 쓴다 */
 const plainTitle = (t: string) => t.replace(/\*\*/g, '').replace(/\s*\n\s*/g, ' ').trim();
 
-export function planContext(db: Db, brandId: number, p: ProfileInput): PlanContext {
+export function planContext(db: Db, brandId: number, p: ProfileInput, lockedIdx: number[] = []): PlanContext {
   return {
     count: getSetting(db, 'preview.gridCells'),
     maxChars: titleMax(db, brandId),
@@ -100,6 +117,8 @@ export function planContext(db: Db, brandId: number, p: ProfileInput): PlanConte
     grounding: groundingFor(db, brandId, p),
     commonTerms: commonEnglishTerms(db),
     madeTitles: listSets(db, brandId).map((s) => plainTitle(s.cover)).filter((t) => t.length > 0),
+    overlapThreshold: getSetting(db, 'preview.titleOverlapThreshold'),
+    lockedIdx,
   };
 }
 
@@ -113,9 +132,9 @@ export interface PlanResult {
 export async function generatePlan(ai: AiService, brandId: number, job?: JobContext): Promise<PlanResult> {
   const db = ai.db;
   const profile = profileForGeneration(db, brandId);
-  const c = planContext(db, brandId, profile);
   const prev = latestPlan(db, brandId);
   const locked = prev && prev.profileId === profile.profileId ? prev.slots.map((s, i) => ({ s, i })).filter((x) => x.s.locked) : [];
+  const c = planContext(db, brandId, profile, locked.map((x) => x.i));
   const sel = currentSelection(db, brandId);
   const prompt = loadPrompt(db, 'series_plan', {
     count: String(c.count),

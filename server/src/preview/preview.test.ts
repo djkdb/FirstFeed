@@ -12,6 +12,7 @@ import { text, type ProfileContent } from '../identity/model.ts';
 import { createSession, saveProfileVersion } from '../identity/store.ts';
 import { fixTemplate } from '../templates/store.ts';
 import type { BrandLook } from '../templates/types.ts';
+import { planRules, type PlanContext } from './plan.ts';
 import { composeGrid } from './routes.ts';
 
 const H = { host: 'localhost:4317', 'content-type': 'application/json' };
@@ -91,6 +92,38 @@ describe('격자 구성', () => {
   });
 });
 
+describe('거의 같은 제목 규칙 (결정 2026-10-24)', () => {
+  // 데모 격자(site/data/demo.json 2026-10-22)의 실제 제목 — 1번은 만든 카드, 2~9번은 계획
+  const DEMO = ['하얀 화면에서 이틀 헤맨 이야기', '하얀 화면에서 이틀 헤맨 순서', '에러 메시지, 내 말로 풀면', '수업 과제로 만든 첫 웹페이지', '에러를 그대로 AI에 붙여 넣기까지', '비전공자가 막힌 단어, 내 말로', '회비를 정리하려고 만든 페이지', '막힌 데서 AI한테 묻는 순서', '용어부터 막힐 때 내가 푸는 법'];
+  const ctx = (o: Partial<PlanContext> = {}): PlanContext => ({
+    count: 0, maxChars: 99, pillarIds: ['x'], grounding: { source: [], brand: [], userInput: [] }, commonTerms: [], madeTitles: [], overlapThreshold: 0.4, lockedIdx: [], ...o,
+  });
+  const codes = (titles: string[], o: Partial<PlanContext> = {}) => {
+    const d = { titles: titles.map((title) => ({ title, pillar_id: 'x' })) };
+    return planRules(ctx({ count: titles.length, ...o })).flatMap((r) => r(d)).filter((i) => i.code.startsWith('title_like')).map((i) => `${i.code} ${i.where}`);
+  };
+
+  it('이미 만든 카드와 거의 같은 계획 제목(데모 1·2번)은 걸린다', () => {
+    expect(codes(DEMO.slice(1), { madeTitles: [DEMO[0]!] })).toEqual(['title_like_made titles.0.title']);
+  });
+
+  it('계획 제목끼리 거의 같으면 뒤 칸이 걸린다', () => {
+    expect(codes(['막힌 데서 AI한테 묻는 순서', '하얀 화면에서 이틀 헤맨 이야기', '하얀 화면에서 이틀 헤맨 순서'])).toEqual(['title_like_other titles.2.title']);
+  });
+
+  it('서로 다른 제목은 통과한다 — 낱말 하나(「내 말로」「만든 페이지」)만 겹친 쌍도 코드는 막지 않는다(프롬프트 v4 몫)', () => {
+    expect(codes(DEMO.slice(2), { madeTitles: [DEMO[0]!] })).toEqual([]);
+    // 공개 fixture me 의 v3 계획 9개(devlog 2026-10-22-04)
+    const me = ['AI 도구, 설치만 하고 멈췄다면', '설명 말고 직접 만든 걸로', '계정이 대외활동으로 이어질 때', '새 도구 첫날, 다들 하는 실수', '바이브코딩, 첫 화면은 뭐부터?', '소문 말고 공식 문서로 확인한 것', '협업은 어디서 시작됐을까', '완성 화면 뒤에 숨은 과정', '업데이트 떴는데 뭐가 바뀐 거지?'];
+    expect(codes(me)).toEqual([]);
+  });
+
+  it('사용자가 고정한 칸은 고치라고 하지 않는다 — 고정한 칸과 겹치는 AI 칸이 걸린다', () => {
+    expect(codes(['하얀 화면에서 이틀 헤맨 이야기', '하얀 화면에서 이틀 헤맨 순서'], { lockedIdx: [1] })).toEqual(['title_like_other titles.0.title']);
+    expect(codes(['하얀 화면에서 이틀 헤맨 이야기', '하얀 화면에서 이틀 헤맨 순서'], { lockedIdx: [0, 1] })).toEqual([]);
+  });
+});
+
 describe('30일 뒤 미리보기 API', () => {
   it('프로필 사진·만든 세트·계획이 없어도 열린다 — 사진은 null, 9칸 모두 빈칸', async () => {
     const t = setup([]);
@@ -128,6 +161,16 @@ describe('30일 뒤 미리보기 API', () => {
     setSetting(t.db, 'prompts.activeVersions', { series_plan: 'v4' });
     expect((await t.makePlan()).phase).toBe('done');
     expect(t.provider.calls[0]!.prompt).toContain('## 이미 만든 게시물 (표지 제목, 최신순)\n- 하얀 화면에서 이틀 헤맨 이야기');
+  });
+
+  it('이미 만든 카드와 거의 같은 계획 제목이 나오면 재작성한다', async () => {
+    const bad = nine();
+    bad.titles[0]!.title = '하얀 화면에서 이틀 헤맨 순서';
+    const t = setup([{ structured: bad }, { structured: nine() }], { made: ['하얀 화면에서\n**이틀** 헤맨 이야기'] });
+    expect((await t.makePlan()).phase).toBe('done');
+    const runs = t.db.prepare("SELECT kind, status, issues_json FROM ai_runs WHERE task = 'series_plan' ORDER BY attempt").all() as Array<{ kind: string; status: string; issues_json: string }>;
+    expect(runs.map((r) => [r.kind, r.status])).toEqual([['generate', 'rule_error'], ['rewrite', 'ok']]);
+    expect(JSON.parse(runs[0]!.issues_json)).toMatchObject([{ code: 'title_like_made', where: 'titles.0.title' }]);
   });
 
   it('칸을 고치고 고정하면, 다시 만들어도 고정한 칸은 그대로다', async () => {

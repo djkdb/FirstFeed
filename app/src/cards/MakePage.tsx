@@ -9,6 +9,7 @@ import { PublishPanel } from './PublishPanel.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { useJob, type JobView } from '../useJob.ts';
 import { StageLine } from '../StageLine.tsx';
+import { fieldOf, reasonLines, wordDiff } from './rewriteText.ts';
 
 type State = InferResponseType<typeof api.api.cards.$get>;
 interface Candidate {
@@ -146,18 +147,31 @@ function RewriteLine({ setId }: { setId: number }) {
       .catch(() => setR(null));
   }, [setId]);
   if (!r) return null;
-  const steps = [...r.cover.map((x) => ({ ...x, part: '표지 후보' })), ...r.body.map((x) => ({ ...x, part: '본문' }))];
+  // 사람 말로(결정 2026-10-25): 규칙 코드 · 칸 경로 · 마크다운 기호를 보이지 않는다 — 문장은 rewriteText.ts 한 곳
+  const steps = [...r.cover.map((x) => ({ ...x, part: 'cover' as const })), ...r.body.map((x) => ({ ...x, part: 'body' as const }))];
   return (
     <details className="small rewrites">
       <summary>AI 가 고친 곳 {steps.length}개{steps.length === 0 ? ' (한 번에 규칙 통과, 또는 기록 기능 전에 만든 세트)' : ''}</summary>
       <ul>
         {steps.map((st, i) => (
           <li key={i}>
-            <b>{st.part}</b> · 걸린 것: {st.issues.map((x) => `${x.code}${x.where ? `(${x.where})` : ''} ${x.message}`).join(' / ')}
-            <ul>
+            <b>{st.part === 'cover' ? '표지 후보' : '본문'}</b>
+            <ul className="rewrite-reasons">
+              {reasonLines(st.issues, st.part).map((l) => (
+                <li key={`${l.place}${l.reason}`}>
+                  <b>{l.place}</b> · {l.reason}
+                </li>
+              ))}
+            </ul>
+            <ul className="rewrite-changes">
               {st.changes.map((ch) => (
                 <li key={ch.path}>
-                  <code>{ch.path}</code>: <s>{ch.before ?? '(없음)'}</s> → {ch.after ?? '(없음)'}
+                  <span className="muted">{fieldOf(ch.path, st.part)}</span>
+                  <span className="rewrite-diff">
+                    {wordDiff(ch.before, ch.after).map((sg, k) =>
+                      sg.kind === 'del' ? <del key={k}>{sg.text}</del> : sg.kind === 'add' ? <ins key={k}>{sg.text}</ins> : <span key={k}>{sg.text}</span>,
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -165,6 +179,7 @@ function RewriteLine({ setId }: { setId: number }) {
           </li>
         ))}
       </ul>
+      <p className="muted">지운 것은 취소선, 더한 것은 밑줄이에요.</p>
     </details>
   );
 }

@@ -328,3 +328,11 @@ a.button.primary:hover { background: var(--accent); border-color: var(--accent);
   .home-slot-actions { grid-column: 1 / -1; }
   .home-today-thumb { width: 96px; }
 }
+
+/* 「AI 가 고친 곳」 (결정 2026-10-25) — 카드 번호 · 이유 한 줄, 바뀐 낱말만 지움(취소선) · 더함(밑줄) */
+.rewrite-reasons { margin: 4px 0; padding-left: 18px; }
+.rewrite-changes { list-style: none; margin: 6px 0 10px; padding: 0; display: grid; gap: 6px; }
+.rewrite-changes li { display: grid; gap: 2px; padding: 8px 10px; background: var(--surface-2); border-radius: var(--r-sm); }
+.rewrite-diff { line-height: 1.7; }
+.rewrite-diff del { color: var(--error); text-decoration: line-through; text-decoration-thickness: 1.5px; background: var(--error-soft); }
+.rewrite-diff ins { color: var(--ok); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; background: var(--ok-soft); }

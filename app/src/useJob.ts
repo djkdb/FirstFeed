@@ -40,6 +40,7 @@ export function useJob(jobId: string | null, onFinish: (job: JobView) => void, o
             finishedAt: null,
             result: null,
             runs: [],
+            stage: null,
             error: { message: '진행 중이던 작업을 찾지 못했습니다(서버가 다시 시작된 것 같습니다).', hint: '버튼을 눌러 다시 실행하세요.' },
           });
           return;

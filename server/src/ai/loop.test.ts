@@ -145,3 +145,65 @@ describe('생성 → 규칙 → 자기 평가 → 재작성 루프', () => {
     expect(provider.calls).toHaveLength(3);
   });
 });
+
+describe('대기 단계 표시 (결정 2026-10-24) — 루프가 실제로 들어선 단계만 적는다', () => {
+  /** 호출마다 · 규칙이 돌 때마다 그 순간의 job.stage 를 찍는다 */
+  function recorded(steps: FakeStep[], extra: Partial<typeof req> = {}) {
+    const { ai, provider } = setup(steps);
+    const job = ai.startJob();
+    const seen: string[] = [];
+    const snap = () => {
+      const s = job.stage!;
+      seen.push(`${s.step}:${s.task}:${s.call}${s.reasons.length ? `:${s.reasons.join('/')}` : ''}`);
+    };
+    const run = provider.run.bind(provider);
+    provider.run = async (input) => {
+      snap();
+      return run(input);
+    };
+    const rule: Rule<Out> = (d) => {
+      snap();
+      return quoteRule(d);
+    };
+    return { seen, done: generateChecked(ai, { ...req, ...extra, rules: [rule] }, job) };
+  }
+
+  it('생성 → 규칙 → 자기 평가, 자기 평가 중에도 과제는 평가받는 과제', async () => {
+    const { seen, done } = recorded([good, noIssues]);
+    await done;
+    expect(seen).toEqual(['generate:smoke_extract:1', 'rules:smoke_extract:1', 'review:smoke_extract:2']);
+  });
+
+  it('규칙에 걸리면 다시 쓰는 단계에 걸린 이유가 같이 남는다', async () => {
+    const { seen, done } = recorded([bad, good, noIssues]);
+    await done;
+    expect(seen).toEqual(['generate:smoke_extract:1', 'rules:smoke_extract:1', 'rewrite:smoke_extract:2:인용이 원문에 없음', 'rules:smoke_extract:2', 'review:smoke_extract:3']);
+  });
+
+  it('JSON 이 깨져 다시 요청하면 json_retry 로, 이유는 깨진 까닭', async () => {
+    const { seen, done } = recorded([{ text: '이건 JSON 이 아님' }, good, noIssues]);
+    await done;
+    expect(seen[0]).toBe('generate:smoke_extract:1');
+    expect(seen[1]).toMatch(/^json_retry:smoke_extract:2:./);
+  });
+
+  it('진행 상태 조회는 진행 중인 단계를 돌려주고, 루프를 나온 뒤(저장 등)와 끝난 뒤에는 null — 지난 단계를 남기지 않는다', async () => {
+    const { ai } = setup([{ waitMs: 60, structured: good.structured }, noIssues]);
+    const { JobStore } = await import('./jobs.ts');
+    const store = new JobStore(ai);
+    let resolveGate: () => void = () => {};
+    const gate = new Promise<void>((r) => (resolveGate = r));
+    const id = store.start('smoke_extract', async (job) => {
+      const r = await generateChecked(ai, req, job);
+      await gate; // 루프 뒤의 다른 일
+      return r;
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(store.get(id)?.stage).toMatchObject({ step: 'generate', task: 'smoke_extract', call: 1 });
+    await new Promise((r) => setTimeout(r, 80));
+    expect(store.get(id)).toMatchObject({ phase: 'running', stage: null });
+    resolveGate();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(store.get(id)).toMatchObject({ phase: 'done', stage: null });
+  });
+});

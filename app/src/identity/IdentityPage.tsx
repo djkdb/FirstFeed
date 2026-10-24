@@ -9,6 +9,7 @@ import { ProfileHistory } from './ProfileHistory.tsx';
 import { Alternatives } from './Alternatives.tsx';
 import { clearSurveyDraft, SurveyForm } from './SurveyForm.tsx';
 import type { Current, SurveyAnswers } from './types.ts';
+import { StageLine } from '../StageLine.tsx';
 
 type JobKind = 'next' | 'profile';
 const RUN_LABEL: Record<string, string> = { generate: '생성', json_retry: 'JSON 재요청', rewrite: '재작성', review: '자기 평가' };
@@ -156,6 +157,7 @@ export function IdentityPage() {
               취소
             </button>
           </p>
+          <StageLine stage={job.stage} />
           {job.runs.length > 0 && (
             <ol className="runs muted small">
               {job.runs.map((r) => (

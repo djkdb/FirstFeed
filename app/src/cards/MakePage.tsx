@@ -8,6 +8,7 @@ import { localTime } from '../time.ts';
 import { PublishPanel } from './PublishPanel.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { useJob, type JobView } from '../useJob.ts';
+import { StageLine } from '../StageLine.tsx';
 
 type State = InferResponseType<typeof api.api.cards.$get>;
 interface Candidate {
@@ -65,6 +66,7 @@ function Progress({ job, onCancel, label }: { job: JobView | null; onCancel: () 
           취소
         </button>
       </p>
+      <StageLine stage={job?.stage} />
       {job && job.runs.length > 0 && (
         <ol className="runs muted small">
           {job.runs.map((r) => (

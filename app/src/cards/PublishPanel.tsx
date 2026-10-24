@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
 import { PhoneShare } from './PhoneShare.tsx';
+import { StageLine } from '../StageLine.tsx';
 
 interface Gloss {
   sentence: string;
@@ -89,12 +90,15 @@ export function PublishPanel({ setId, cardUnchecked, onChanged }: { setId: numbe
         <strong>1. 캡션</strong>{' '}
         <span className="muted small">첫 줄 + 핵심 몇 줄 + 해시태그 {settings.maxHashtags}개 이내(중간 발표용 최소 캡션 · AI 호출 2번)</span>
         {jobId ? (
-          <p className="small">
-            캡션을 만드는 중… {job.job?.runs.length ? `(${job.job.runs.length}번째 호출)` : ''}{' '}
-            <button type="button" onClick={() => void job.cancel()}>
-              취소
-            </button>
-          </p>
+          <>
+            <p className="small">
+              캡션을 만드는 중… {job.job?.runs.length ? `(${job.job.runs.length}번째 호출)` : ''}{' '}
+              <button type="button" onClick={() => void job.cancel()}>
+                취소
+              </button>
+            </p>
+            <StageLine stage={job.job?.stage} />
+          </>
         ) : !cap ? (
           <p>
             <button type="button" className="primary" disabled={busy} onClick={() => void run(async () => setJobId(String((await post(`/api/publish/sets/${setId}/caption`, {})).jobId)))}>

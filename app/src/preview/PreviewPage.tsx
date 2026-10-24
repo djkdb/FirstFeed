@@ -10,6 +10,7 @@ import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from '../brand/loadFonts.ts';
 import { PremadeBadge } from '../premade.tsx';
 import { badgeFor, cellBox, FLIP_DURATION_S, flipDelay } from './grid.ts';
+import { StageLine } from '../StageLine.tsx';
 
 type View = Extract<InferResponseType<typeof api.api.preview.$get>, { cells: unknown }>;
 type Cell = View['cells'][number];
@@ -176,6 +177,7 @@ export function PreviewPage() {
           <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} /> 격자에서 가려지는 곳 보기
         </label>
       </div>
+      {jobId && <StageLine stage={job?.stage} />}
       <p className="muted small">계획 AI 호출 1번(규칙에 걸리면 다시 쓰기 · 숫자·영문 이름은 프로필·답에 있는 것만) · 표지 그리기는 AI 를 부르지 않아요</p>
       {!view.ready.template && <p className="note small">「템플릿」에서 시안을 고정해야 계획 칸을 그 틀의 표지로 그릴 수 있어요.</p>}
       {view.plan?.stale && <p className="note small">계획을 만든 뒤 프로필이 바뀌었어요. 다시 만들면 바뀐 축으로 계획합니다.</p>}

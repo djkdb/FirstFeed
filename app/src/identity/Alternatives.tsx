@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
+import { StageLine } from '../StageLine.tsx';
 
 const KEY = 'firstfeed.alternativesJob';
 const RUN_LABEL: Record<string, string> = { generate: '두 방향 생성', json_retry: 'JSON 재요청', rewrite: '재작성', review: '자기 평가' };
@@ -98,6 +99,7 @@ export function Alternatives({ baseId, onChosen }: { baseId: number; onChosen: (
               취소
             </button>
           </p>
+          <StageLine stage={job?.stage} />
           {job && job.runs.length > 0 && (
             <ol className="runs muted small">
               {job.runs.map((r) => (

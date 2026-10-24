@@ -9,6 +9,7 @@ import { loadBrandFonts } from './loadFonts.ts';
 import { ProfileImage } from './ProfileImage.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { countNote } from './countNote.ts';
+import { StageLine } from '../StageLine.tsx';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -86,6 +87,7 @@ function KitJob({ kind, label, onDone }: { kind: Kind; label: string; onDone: ()
               취소
             </button>
           </p>
+          <StageLine stage={job?.stage} />
           {job && job.runs.length > 0 && (
             <ol className="runs muted small">
               {job.runs.map((r) => (

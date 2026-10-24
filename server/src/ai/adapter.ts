@@ -13,11 +13,34 @@ import { sleptNote, startStopwatch } from '../lib/sleep-clock.ts';
 export type RunKind = 'generate' | 'json_retry' | 'rewrite' | 'review';
 export type RunStatus = 'ok' | 'invalid_json' | 'schema_error' | 'rule_error' | 'failed' | 'timeout' | 'cancelled' | 'blocked';
 
+/**
+ * 작업이 지금 실제로 하고 있는 단계(결정 2026-10-24 · AI 대기 단계 표시). 루프(loop.ts)와 이 파일이 **그 단계에 들어설 때** 적는다 —
+ * 화면은 이것만 사람 말로 옮긴다(가짜 진행 막대 · 남은 시간 짐작 없음)
+ */
+export interface JobStage {
+  /** queued 차례 기다림 · generate 처음 쓰기 · rules 코드 규칙 검사 · late 그려 보고 넘침 검사 · review 자기 평가 · rewrite 다시 쓰기 · json_retry 형식이 깨져 다시 요청 */
+  step: 'queued' | 'generate' | 'rules' | 'late' | 'review' | 'rewrite' | 'json_retry';
+  /** 그 작업의 과제 — 자기 평가 중에도 평가받는 과제(예: identity_profile) */
+  task: string;
+  /** 이 작업의 몇 번째 AI 호출인가(ai_runs.attempt). 코드 단계는 바로 앞 호출 번호 */
+  call: number;
+  since: string;
+  /** rewrite · json_retry: 다시 하는 이유(규칙 · 자기 평가가 걸린 문장, 앞의 몇 개) */
+  reasons: string[];
+}
+
 /** 한 작업(생성 → 검증 → 재작성 묶음) 안에서 호출 순번을 이어 가기 위한 문맥 */
 export interface JobContext {
   jobId: string;
   signal: AbortSignal;
   attempt: number;
+  /** 지금 단계 — 진행 상태 조회(jobs.ts)가 읽는다 */
+  stage?: JobStage;
+}
+
+/** 단계에 들어설 때 부른다. 과제를 안 주면 앞 단계의 과제를 잇는다 */
+export function enterStage(job: JobContext, step: JobStage['step'], o: { task?: string; reasons?: string[] } = {}): void {
+  job.stage = { step, task: o.task ?? job.stage?.task ?? '', call: job.attempt, since: new Date().toISOString(), reasons: o.reasons ?? [] };
 }
 
 export interface AiCallResult<T> {
@@ -173,9 +196,15 @@ export class AiService {
         const startedAt = new Date().toISOString();
         const sw = startStopwatch();
         const base = { job: ctx, task: req.task, model, kind: runKind, startedAt, promptRef: req.promptRef };
+        // 루프 밖에서 바로 부른 호출은 과제가 없으니 이 호출의 과제로. 루프가 정한 단계(이유 포함)는 그대로 이어 간다
+        const stageTask = ctx.stage?.task || req.task;
+        const stageReasons = retry === 0 ? (ctx.stage?.reasons ?? []) : [lastError];
+        const callStep: JobStage['step'] = retry === 0 ? kind : 'json_retry';
+        if (this.limiter.stats.running >= getSetting(this.db, 'ai.concurrency')) enterStage(ctx, 'queued', { task: stageTask, reasons: stageReasons });
 
         try {
           await this.limiter.acquire(ctx.signal);
+          enterStage(ctx, callStep, { task: stageTask, reasons: stageReasons });
         } catch (err) {
           this.log({ ...base, status: 'cancelled', error: '차례를 기다리는 중에 취소됨', durationMs: 0 });
           throw err;

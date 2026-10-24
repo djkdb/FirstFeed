@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import { getSetting } from '../config.ts';
 import type { Issue, Rule } from '../rules/types.ts';
-import type { AiService, JobContext } from './adapter.ts';
+import { enterStage, type AiService, type JobContext } from './adapter.ts';
 import { loadPrompt } from './prompts.ts';
 import { AiError, type AiRequest } from './types.ts';
 
@@ -83,12 +83,18 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
   const maxRewrites = getSetting(ai.db, 'ai.maxRewrites');
   let rewrites = 0;
   let prompt = req.prompt;
+  /** 다음 재작성의 이유 — 단계 표시용(규칙 · 자기 평가가 걸린 문장 앞 몇 개) */
+  let reasons: string[] = [];
   try {
     for (;;) {
+      // 단계 표시(결정 2026-10-24): 들어서는 단계만 적는다. 다시 쓸 때는 걸린 이유를 같이
+      enterStage(job, rewrites === 0 ? 'generate' : 'rewrite', { task: req.task, reasons: rewrites === 0 ? [] : reasons });
       const gen = await ai.call({ ...req, prompt }, job, rewrites === 0 ? 'generate' : 'rewrite');
+      enterStage(job, 'rules', { task: req.task });
       const issues: Issue[] = req.rules.flatMap((rule) => rule(gen.data));
       const earlyErrors = issues.filter((i) => i.level === 'error');
       if (req.lateRules?.length && (earlyErrors.length === 0 || (req.acceptByDropping?.(earlyErrors, gen.data) ?? false))) {
+        enterStage(job, 'late', { task: req.task });
         for (const late of req.lateRules) issues.push(...(await late(gen.data, earlyErrors)));
       }
 
@@ -105,6 +111,7 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
           undefined,
           ['criteria'],
         );
+        enterStage(job, 'review', { task: req.task });
         try {
           const r = await ai.call({ task: 'self_review', prompt: review.text, schema: ReviewSchema, promptRef: review.ref, signal: req.signal }, job, 'review');
           const reviewIssues = reviewToIssues(r.data);
@@ -138,11 +145,14 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
         return { ok: false, errors, rejected: gen.data, jobId: job.jobId, calls: job.attempt, rewrites, warnings };
       }
       rewrites++;
+      reasons = errors.slice(0, 3).map((e) => e.message);
       prompt = `${req.prompt}\n\n${
         loadPrompt(ai.db, '_system/rewrite', { previous: JSON.stringify(gen.data, null, 2), issues: formatIssues(errors) }).text
       }`;
     }
   } finally {
+    // 루프를 나오면 단계를 지운다 — 바깥 작업이 저장 등 다른 일을 하는 동안 「자기 평가 중」 같은 지난 단계가 남아 보이지 않게
+    job.stage = undefined;
     if (!outer) ai.endJob(job);
   }
 }

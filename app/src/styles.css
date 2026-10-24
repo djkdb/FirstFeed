@@ -190,3 +190,10 @@ button.link{background:none;border:none;color:#1d4ed8;text-decoration:underline;
 .phone-share { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin: 8px 0; padding: 12px; border: 1px solid var(--line, #ddd); border-radius: 12px; }
 .phone-share p { margin: 4px 0; }
 .phone-qr { width: 200px; height: 200px; background: #fff; image-rendering: pixelated; }
+
+/* AI 대기 단계 (결정 2026-10-24) — 서버가 알려 준 지금 단계 한 줄 */
+.stage { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; margin: 6px 0; font-size: 14px; }
+.stage-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.6; flex: none; align-self: center; animation: stage-pulse 1.2s ease-in-out infinite; }
+.stage-reasons { flex-basis: 100%; margin: 2px 0 0; padding-left: 22px; font-size: 13px; color: var(--muted); }
+@keyframes stage-pulse { 50% { opacity: 0.15; } }
+@media (prefers-reduced-motion: reduce) { .stage-dot { animation: none; } }

@@ -1,6 +1,6 @@
 // 화면에서 시작한 AI 작업의 진행 상태. AI 호출은 수십 초~분이 걸리므로 요청 하나로 기다리지 않고,
 // 작업 ID 를 먼저 돌려준 뒤 화면이 상태를 물어보게 한다(취소 버튼도 이 ID 로).
-import type { AiService, JobContext } from './adapter.ts';
+import type { AiService, JobContext, JobStage } from './adapter.ts';
 import { AiError } from './types.ts';
 import { FlowError } from '../identity/flow.ts';
 
@@ -32,6 +32,8 @@ const KEEP_FINISHED = 50;
 
 export class JobStore {
   private readonly jobs = new Map<string, JobState>();
+  /** 진행 중인 작업의 문맥 — 지금 단계(stage)를 읽으려고 */
+  private readonly contexts = new Map<string, JobContext>();
   private readonly ai: AiService;
   constructor(ai: AiService) {
     this.ai = ai;
@@ -41,6 +43,7 @@ export class JobStore {
     const job = this.ai.startJob();
     const state: JobState = { jobId: job.jobId, task, phase: 'running', startedAt: new Date().toISOString(), finishedAt: null, result: null, error: null };
     this.jobs.set(job.jobId, state);
+    this.contexts.set(job.jobId, job);
     fn(job)
       .then((result) => {
         state.phase = 'done';
@@ -53,19 +56,21 @@ export class JobStore {
       })
       .finally(() => {
         state.finishedAt = new Date().toISOString();
+        this.contexts.delete(job.jobId);
         this.ai.endJob(job);
         this.prune();
       });
     return job.jobId;
   }
 
-  get(jobId: string): (JobState & { runs: RunRow[] }) | null {
+  /** stage: 진행 중일 때만 지금 단계(실제 루프가 들어선 단계), 끝났으면 null */
+  get(jobId: string): (JobState & { runs: RunRow[]; stage: JobStage | null }) | null {
     const state = this.jobs.get(jobId);
     if (!state) return null;
     const runs = this.ai.db
       .prepare('SELECT attempt, task, kind, status, model, duration_ms, error, issues_json FROM ai_runs WHERE job_id = ? ORDER BY id')
       .all(jobId) as unknown as RunRow[];
-    return { ...state, runs };
+    return { ...state, runs, stage: state.phase === 'running' ? (this.contexts.get(jobId)?.stage ?? null) : null };
   }
 
   cancel(jobId: string): boolean {

@@ -44,42 +44,42 @@
     },
     {
       "src": "img/tile-2.png",
-      "title": "하얀 화면에서 이틀 헤맨 순서",
+      "title": "AI한테 뭐라고 물어야 할지 모를 때",
       "planned": true
     },
     {
       "src": "img/tile-3.png",
-      "title": "에러 메시지, 내 말로 풀면",
+      "title": "사전 뜻 말고 내 말로 바꾼 뜻",
       "planned": true
     },
     {
       "src": "img/tile-4.png",
-      "title": "수업 과제로 만든 첫 웹페이지",
+      "title": "동아리 회비를 왜 웹페이지로 만들었나",
       "planned": true
     },
     {
       "src": "img/tile-5.png",
-      "title": "에러를 그대로 AI에 붙여 넣기까지",
+      "title": "풀었는데 어떻게 풀었는지 까먹었다",
       "planned": true
     },
     {
       "src": "img/tile-6.png",
-      "title": "비전공자가 막힌 단어, 내 말로",
+      "title": "'에러 메시지'는 결국 무슨 말일까",
       "planned": true
     },
     {
       "src": "img/tile-7.png",
-      "title": "회비를 정리하려고 만든 페이지",
+      "title": "완성본보다 맨 처음 버전부터",
       "planned": true
     },
     {
       "src": "img/tile-8.png",
-      "title": "막힌 데서 AI한테 묻는 순서",
+      "title": "정답 대신 막힌 지점부터 적는 이유",
       "planned": true
     },
     {
       "src": "img/tile-9.png",
-      "title": "용어부터 막힐 때 내가 푸는 법",
+      "title": "용어 뜻을 찾을수록 더 헷갈릴 때",
       "planned": true
     }
   ],

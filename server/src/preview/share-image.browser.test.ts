@@ -91,6 +91,13 @@ describe('공유 이미지', () => {
     expect(html).toContain('올림 <b>1</b>');
   });
 
+  it('바이오 5줄(글자 수 상한 가까이)까지는 그린다 — 다크 폰 모양으로 머리 줄을 늘린 뒤에도(2026-10-25)', async () => {
+    const t = setup(['코딩 처음인 비전공자가 막혔다 풀린 기록을 남겨요', '▸ 막힘→풀림 순서대로', '▸ 내 말로 푼 개발 용어', '▸ 처음 만든 것들 포트폴리오', '▸ 질문은 댓글로 남겨 주세요'].join('\n'));
+    const r = await shareImage(t.db, t.dataDir, 1);
+    if (!r.ok) throw new Error(r.reason);
+    expect(pngSize(r.png)).toEqual({ width: 1080, height: 1920 });
+  });
+
   it('바이오가 머리 칸(5줄)을 넘치면 PNG 를 만들지 않고 이유를 알린다', async () => {
     const t = setup(Array.from({ length: 8 }, (_, i) => `${i + 1}번째 줄 바이오`).join('\n'));
     const r = await shareImage(t.db, t.dataDir, 1);

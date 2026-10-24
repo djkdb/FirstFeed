@@ -17,7 +17,8 @@ import { findSensitive } from '../server/src/lib/redact.ts';
 import { closeBrowser, getBrowser } from '../server/src/render/browser.ts';
 import { planCover, previewDir } from '../server/src/preview/covers.ts';
 import { latestPlan } from '../server/src/preview/plan.ts';
-import { composeGrid } from '../server/src/preview/routes.ts';
+import { composeGrid } from '../server/src/preview/compose-grid.ts';
+import { homeMarks } from '../server/src/home/marks.ts';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const SITE = path.join(root, 'site');
@@ -37,7 +38,7 @@ const colors = sel.palette!.colors;
 
 // 격자: 앱 미리보기와 같은 구성(만든 표지 최신순 → 계획 칸 → 빈칸)
 const plan = latestPlan(db, 1);
-const cells = composeGrid(listSets(db, 1), plan?.slots ?? [], new Map(profile.pillars.map((p) => [p.id, p.name])), getSetting(db, 'preview.gridCells'));
+const cells = composeGrid(listSets(db, 1), plan?.slots ?? [], new Map(profile.pillars.map((p) => [p.id, p.name])), getSetting(db, 'preview.gridCells'), homeMarks(db, 1));
 const safe = getSetting(db, 'render.safeArea').feed;
 
 const { browser } = await getBrowser(db);
@@ -56,7 +57,8 @@ async function crop(png: Buffer): Promise<Buffer> {
 }
 
 const imgDir = path.join(SITE, 'img');
-const tiles: Array<{ src?: string; title: string; planned: boolean }> = [];
+// planned: 앱이 만든 그림이 없는 계획 칸(올렸다고 표시해도 「계획」 배지 — 만든 것처럼 보이지 않게), posted: 사용자가 「올렸어요」로 표시(FR-HM-4)
+const tiles: Array<{ src?: string; title: string; planned: boolean; posted: boolean }> = [];
 const files: Array<[string, Buffer]> = [];
 for (const [i, c] of cells.entries()) {
   if (c.kind === 'empty') continue;
@@ -76,8 +78,8 @@ for (const [i, c] of cells.entries()) {
   if (png) {
     const name = `tile-${tiles.length + 1}.png`;
     files.push([name, await crop(png)]);
-    tiles.push({ src: `img/${name}`, title: plain, planned: c.kind === 'plan' });
-  } else tiles.push({ title: plain, planned: c.kind === 'plan' });
+    tiles.push({ src: `img/${name}`, title: plain, planned: c.kind === 'plan', posted: c.state === 'posted' });
+  } else tiles.push({ title: plain, planned: c.kind === 'plan', posted: c.state === 'posted' });
 }
 
 // 프로필 사진: 올린 파일이 있으면 그대로, 없으면 이름 첫 글자 + 주색(둘 다 DB 값)

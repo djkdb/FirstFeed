@@ -17,6 +17,7 @@ import { FRAME_SIZE } from '../templates/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { editSlot, generatePlan, latestPlan } from './plan.ts';
 import { composeGrid } from './compose-grid.ts';
+import { homeMarks } from '../home/marks.ts';
 import { PLAN_FILE, planCover, previewDir } from './covers.ts';
 import { shareImage } from './share-image.ts';
 import { RenderError } from '../render/browser.ts';
@@ -41,7 +42,7 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
       const made = listSets(db, BRAND_ID);
       const cellsN = getSetting(db, 'preview.gridCells');
       const names = new Map((profile?.pillars ?? []).map((p) => [p.id, p.name]));
-      const cells = composeGrid(made, plan?.slots ?? [], names, cellsN);
+      const cells = composeGrid(made, plan?.slots ?? [], names, cellsN, homeMarks(db, BRAND_ID));
       return c.json({
         ready: { profile: profile !== null, template: fixed !== null },
         profile: {
@@ -61,7 +62,7 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
         /** 격자에서 가려지는 영역(결정 2026-10-18 확인값) — 카드 크기와 함께 넘겨 화면이 같은 비율로 자른다 */
         grid: { card: { width: FRAME_SIZE.cover.width, height: FRAME_SIZE.cover.height }, safe: getSetting(db, 'render.safeArea').feed },
         cells,
-        counts: { made: made.length, madeShown: cells.filter((x) => x.kind === 'made').length, plan: cells.filter((x) => x.kind === 'plan').length },
+        counts: { made: made.length, madeShown: cells.filter((x) => x.kind === 'made').length, plan: cells.filter((x) => x.kind === 'plan').length, posted: cells.filter((x) => x.kind !== 'empty' && x.state === 'posted').length },
         plan: plan ? { id: plan.id, createdAt: plan.createdAt, stale: profile !== null && plan.profileId !== profile.id, slots: plan.slots } : null,
         pillars: (profile?.pillars ?? []).map((p) => ({ id: p.id, name: p.name })),
         premadeBefore: getSetting(db, 'demo.premadeBefore'),

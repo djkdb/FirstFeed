@@ -18,6 +18,7 @@ import { findUngrounded } from '../rules/grounding.ts';
 import { similarity } from '../rules/similarity.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
+import { keptSlots } from '../home/marks.ts';
 
 type Db = DatabaseSync;
 
@@ -69,6 +70,8 @@ export function planRules(c: PlanContext): Rule<PlanOut>[] {
     (d) => (d.titles.length === c.count ? [] : [{ level: 'error', code: 'plan_count', message: `제목이 ${d.titles.length}개입니다 — 정확히 ${c.count}개`, where: 'titles', from: 'rule' }]),
     (d) =>
       d.titles.flatMap((t, i) => {
+        // 고정 · 이은 · 올린 칸은 앞 판에서 온 것이라 다시 재지 않는다 — 프로필이 바뀌었으면 옛 축 ID 일 수 있다(결정 2026-10-25)
+        if (c.lockedIdx.includes(i)) return [];
         const out: Issue[] = [];
         if (!c.pillarIds.includes(t.pillar_id)) out.push(issue(i, 'unknown_pillar', `축 ID "${t.pillar_id}" 가 프로필에 없습니다`));
         const n = [...t.title].length;
@@ -133,7 +136,9 @@ export async function generatePlan(ai: AiService, brandId: number, job?: JobCont
   const db = ai.db;
   const profile = profileForGeneration(db, brandId);
   const prev = latestPlan(db, brandId);
-  const locked = prev && prev.profileId === profile.profileId ? prev.slots.map((s, i) => ({ s, i })).filter((x) => x.s.locked) : [];
+  // 남길 칸: 홈에서 세트를 잇거나 「올렸어요」를 한 칸은 프로필 판이 바뀌어도(결정 2026-10-25), 사용자가 「고정」만 한 칸은 같은 프로필 판일 때만
+  const kept = keptSlots(db, brandId);
+  const locked = prev ? prev.slots.map((s, i) => ({ s, i })).filter((x) => kept.has(x.i) || (x.s.locked && prev.profileId === profile.profileId)) : [];
   const c = planContext(db, brandId, profile, locked.map((x) => x.i));
   const sel = currentSelection(db, brandId);
   const prompt = loadPrompt(db, 'series_plan', {

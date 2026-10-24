@@ -7,20 +7,13 @@ import { getSetting, setSetting } from '../config.ts';
 import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
 import { editSlot, latestPlan } from '../preview/plan.ts';
+import { homeMarks, type HomeMark } from './marks.ts';
 import { CADENCES, dueDates, localToday, pickToday, type Cadence } from './schedule.ts';
 
 type Db = DatabaseSync;
 
-interface Mark {
-  setId: number | null;
-  postedAt: string | null;
-  delayDays: number;
-}
-
-function marks(db: Db, brandId: number): Map<number, Mark> {
-  const rows = db.prepare('SELECT slot_idx, set_id, posted_at, delay_days FROM home_slots WHERE brand_id = ?').all(brandId) as Array<Record<string, unknown>>;
-  return new Map(rows.map((r) => [Number(r.slot_idx), { setId: r.set_id === null ? null : Number(r.set_id), postedAt: (r.posted_at as string | null) ?? null, delayDays: Number(r.delay_days) }]));
-}
+type Mark = HomeMark;
+const marks = homeMarks;
 
 function upsert(db: Db, brandId: number, idx: number, patch: Partial<Mark>): void {
   const prev = marks(db, brandId).get(idx) ?? { setId: null, postedAt: null, delayDays: 0 };

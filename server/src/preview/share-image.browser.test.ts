@@ -15,6 +15,7 @@ import { closeBrowser } from '../render/browser.ts';
 import { fixTemplate } from '../templates/store.ts';
 import type { BrandLook } from '../templates/types.ts';
 import { savePlan } from './plan.ts';
+import { markPosted } from '../home/store.ts';
 import { shareHtml, shareImage, shareView } from './share-image.ts';
 
 afterAll(() => closeBrowser());
@@ -71,6 +72,20 @@ describe('공유 이미지', () => {
     expect(html).toContain('만든 카드 <b>0</b> · 계획 <b>2</b>');
     expect(html).toContain('FirstFeed</b>로 만든 30일 계획');
     expect(html).not.toMatch(/팔로워|팔로잉/);
+  });
+
+  it('격자는 최근이 왼쪽 위 — 2번 칸이 1번 칸보다 앞, 「올렸어요」 한 칸은 「올림」 배지 (결정 2026-10-25 · FR-HM-4)', async () => {
+    const t = setup('짧은 바이오');
+    markPosted(t.db, 1, 0, '2026-10-25');
+    const v = await shareView(t.db, t.dataDir, 1);
+    expect(v.cells.slice(0, 2).map((c) => [c.title, c.state])).toEqual([
+      ['처음 만든 것부터', 'plan'],
+      ['설치만 하고 멈췄다면', 'posted'],
+    ]);
+    const html = shareHtml(v);
+    expect(html.match(/data-badge>계획</g)).toHaveLength(1);
+    expect(html.match(/data-badge>올림</g)).toHaveLength(1);
+    expect(html).toContain('올림 <b>1</b>');
   });
 
   it('바이오가 머리 칸(5줄)을 넘치면 PNG 를 만들지 않고 이유를 알린다', async () => {

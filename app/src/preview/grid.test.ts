@@ -21,9 +21,13 @@ describe('격자 칸 모양 (FR-BR-6)', () => {
 
 describe('칸 배지 · 채워지는 모션 (FR-BR-6 확장)', () => {
   it('계획 칸에만 「계획」 배지, 만든 칸 · 빈칸은 배지 없음', () => {
-    expect(badgeFor({ kind: 'plan' })).toBe('계획');
-    expect(badgeFor({ kind: 'made' })).toBeNull();
+    expect(badgeFor({ kind: 'plan', state: 'plan' })).toBe('계획');
+    expect(badgeFor({ kind: 'made', state: 'made' })).toBeNull();
     expect(badgeFor({ kind: 'empty' })).toBeNull();
+  });
+  it('칸 상태 3가지(FR-HM-4): 올렸다고 표시한 칸은 만든 칸이든 계획 칸이든 「올림」', () => {
+    expect(badgeFor({ kind: 'made', state: 'posted' })).toBe('올림');
+    expect(badgeFor({ kind: 'plan', state: 'posted' })).toBe('올림');
   });
   it('9칸이 왼쪽 위부터 차례로 — 마지막 칸이 끝나는 시각이 1.5초 안팎', () => {
     expect(flipDelay(0)).toBe(0);

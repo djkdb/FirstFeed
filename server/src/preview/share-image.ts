@@ -18,12 +18,15 @@ import { fixedTemplate } from '../templates/store.ts';
 import { planCover, previewDir } from './covers.ts';
 import { latestPlan } from './plan.ts';
 import { composeGrid } from './compose-grid.ts';
+import { homeMarks } from '../home/marks.ts';
 
 export const SHARE_SIZE = { width: 1080, height: 1920 };
 const FONT = { id: 'pretendard', family: 'Pretendard' };
 
 export interface ShareCell {
   kind: 'made' | 'plan' | 'empty';
+  /** 칸 상태(FR-HM-4) — 올림은 사용자가 「올렸어요」로 표시한 것 */
+  state: 'plan' | 'made' | 'posted' | null;
   /** 표지 그림(data: 주소). 계획 칸 표지를 못 그렸으면 없음 → 제목 글자 자리표시 */
   img: string | null;
   title: string | null;
@@ -35,6 +38,7 @@ export interface ShareView {
   avatar: { img: string } | { initial: string; bg: string; fg: string } | null;
   made: number;
   plan: number;
+  posted: number;
   cells: ShareCell[];
   /** 카드 크기와 격자 가림 — 화면(grid.ts cellBox)과 같은 비율로 자른다 */
   card: { width: number; height: number };
@@ -53,16 +57,16 @@ export async function shareView(db: DatabaseSync, dataDir: string, brandId: numb
   const plan = latestPlan(db, brandId);
   const made = listSets(db, brandId);
   const names = new Map((profile?.pillars ?? []).map((p) => [p.id, p.name]));
-  const grid = composeGrid(made, plan?.slots ?? [], names, getSetting(db, 'preview.gridCells'));
+  const grid = composeGrid(made, plan?.slots ?? [], names, getSetting(db, 'preview.gridCells'), homeMarks(db, brandId));
   const cells: ShareCell[] = [];
   for (const c of grid) {
-    if (c.kind === 'empty') cells.push({ kind: 'empty', img: null, title: null });
+    if (c.kind === 'empty') cells.push({ kind: 'empty', state: null, img: null, title: null });
     else if (c.kind === 'made') {
       const p = path.join(rendersDir(dataDir, c.setId), '01-cover.png');
-      cells.push({ kind: 'made', img: fs.existsSync(p) ? dataUri(p) : null, title: plain(c.headline) });
+      cells.push({ kind: 'made', state: c.state, img: fs.existsSync(p) ? dataUri(p) : null, title: plain(c.headline) });
     } else {
       const r = await planCover(db, dataDir, brandId, c.slot);
-      cells.push({ kind: 'plan', img: r.ok ? dataUri(path.join(previewDir(dataDir), r.file)) : null, title: c.title });
+      cells.push({ kind: 'plan', state: c.state, img: r.ok ? dataUri(path.join(previewDir(dataDir), r.file)) : null, title: c.title });
     }
   }
   const look = fixedTemplate(db, brandId)?.look.palette ?? sel.palette?.colors ?? null;
@@ -75,6 +79,7 @@ export async function shareView(db: DatabaseSync, dataDir: string, brandId: numb
     avatar: photo ? { img: dataUri(photo) } : name && look ? { initial: [...name][0]!, bg: look.primary, fg: look.background } : null,
     made: cells.filter((c) => c.kind === 'made').length,
     plan: cells.filter((c) => c.kind === 'plan').length,
+    posted: cells.filter((c) => c.state === 'posted').length,
     cells,
     card: { width: FRAME_SIZE.cover.width, height: FRAME_SIZE.cover.height },
     safe: getSetting(db, 'render.safeArea').feed,
@@ -93,7 +98,9 @@ export function shareHtml(v: ShareView): string {
         : c.img
           ? `<img src="${c.img}" alt="">`
           : `<div class="ph">${esc(c.title ?? '')}</div>`;
-    return `<div class="cell ${c.kind}">${inner}${c.kind === 'plan' ? '<span class="badge" data-badge>계획</span>' : ''}</div>`;
+    // 배지(FR-HM-4): 계획 칸은 「계획」, 사용자가 올렸다고 표시한 칸은 「올림」, 만든 칸은 없음
+    const badge = c.state === 'posted' ? '올림' : c.kind === 'plan' ? '계획' : null;
+    return `<div class="cell ${c.kind}${c.state === 'posted' ? ' posted' : ''}">${inner}${badge ? `<span class="badge" data-badge>${badge}</span>` : ''}</div>`;
   };
   const avatar = !v.avatar
     ? '<div class="avatar empty"></div>'
@@ -128,7 +135,7 @@ body{font-family:'${FONT.family}';background:#fff;color:#15161a;word-break:keep-
 <div class="head">${avatar}<div class="who">
 <div class="handle" data-slot="handle" data-max-lines="1">${esc(v.handle ?? '아이디 정하기 전')}</div>
 ${v.displayName ? `<div class="name" data-slot="name" data-max-lines="1">${esc(v.displayName)}</div>` : ''}
-<div class="counts" data-slot="counts" data-max-lines="1">만든 카드 <b>${v.made}</b> · 계획 <b>${v.plan}</b></div>
+<div class="counts" data-slot="counts" data-max-lines="1">만든 카드 <b>${v.made}</b> · 계획 <b>${v.plan}</b>${v.posted ? ` · 올림 <b>${v.posted}</b>` : ''}</div>
 </div></div>
 ${v.bio ? `<div class="bio" data-slot="bio" data-max-lines="5">${esc(v.bio)}</div>` : ''}
 <div class="grid">${v.cells.map(cell).join('')}</div>

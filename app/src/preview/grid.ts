@@ -22,8 +22,13 @@ export function cellBox(g: GridSpec, showHidden: boolean): CellBox {
   return { aspect: `${g.safe.w} / ${g.card.height}`, imgWidthPct: (g.card.width / g.safe.w) * 100, imgLeftPct: -(g.safe.x / g.safe.w) * 100, hiddenPct: 0 };
 }
 
-/** 칸 배지 — 계획 칸에만 「계획」(아직 만들지 않은 칸을 만든 것처럼 보이지 않게, 결정 2026-10-21). 만든 칸 · 빈칸은 없음 */
-export function badgeFor(cell: { kind: 'made' | 'plan' | 'empty' }): string | null {
+/**
+ * 칸 배지(FR-HM-4 · 결정 2026-10-25): 사용자가 「올렸어요」로 표시한 칸은 「올림」, 그 밖의 계획 칸은 「계획」(아직 만들지 않은 칸을
+ * 만든 것처럼 보이지 않게, 결정 2026-10-21), 만든 칸 · 빈칸은 없음
+ */
+export function badgeFor(cell: { kind: 'made' | 'plan' | 'empty'; state?: 'plan' | 'made' | 'posted' }): string | null {
+  if (cell.kind === 'empty') return null;
+  if (cell.state === 'posted') return '올림';
   return cell.kind === 'plan' ? '계획' : null;
 }
 

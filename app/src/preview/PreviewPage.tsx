@@ -231,6 +231,11 @@ function GridCell({
         {img(`/api/cards/sets/${c.setId}/png/01-cover.png`, c.headline.replace(/\*\*/g, ''))}
         {showHidden && <Hidden box={box} />}
         <PremadeBadge createdAt={c.createdAt} />
+        {badge && (
+          <span className="ig-badge" title="내가 「올렸어요」로 표시한 칸">
+            {badge}
+          </span>
+        )}
       </div>
     );
   const look = view.look;
@@ -255,7 +260,7 @@ function GridCell({
       )}
       {showHidden && <Hidden box={box} />}
       {badge && (
-        <span className="ig-badge" title={`아직 만들지 않은 계획 칸${c.locked ? ' · 고정' : ''}${c.origin === 'edit' ? ' · 직접 고침' : ''}`}>
+        <span className="ig-badge" title={`${c.state === 'posted' ? '내가 「올렸어요」로 표시한 칸' : '아직 만들지 않은 계획 칸'}${c.locked ? ' · 고정' : ''}${c.origin === 'edit' ? ' · 직접 고침' : ''}`}>
           {badge}
           {c.locked ? ' · 고정' : ''}
         </span>

@@ -12,7 +12,9 @@ import { text, type ProfileContent } from '../identity/model.ts';
 import { createSession, saveProfileVersion } from '../identity/store.ts';
 import { fixTemplate } from '../templates/store.ts';
 import type { BrandLook } from '../templates/types.ts';
-import { planRules, type PlanContext } from './plan.ts';
+import { latestPlan, planRules, type PlanContext } from './plan.ts';
+import { markPosted } from '../home/store.ts';
+import type { HomeMark } from '../home/marks.ts';
 import { composeGrid } from './routes.ts';
 
 const H = { host: 'localhost:4317', 'content-type': 'application/json' };
@@ -23,22 +25,27 @@ const look: BrandLook = JSON.parse(fs.readFileSync(path.join(env.repoRoot, 'test
 /** 축을 돌아가며 9개 — 숫자 없이 */
 const nine = (prefix = '제목') => ({ titles: Array.from({ length: 9 }, (_, i) => ({ title: `${prefix} ${'가나다라마바사아자'[i]}`, pillar_id: PILLARS[i % 3]!.id })) });
 
+/** 격자는 최근이 왼쪽 위라(결정 2026-10-25) 칸 위치가 아니라 계획 칸 번호로 찾는다 */
+const atSlot = (v: { cells: Array<{ slot?: number | null }> }, n: number) => v.cells.find((c) => c.slot === n);
+
+/** 정체성 프로필 내용(축 3개) — 프로필 판을 바꿔 보는 테스트가 축만 갈아 끼운다 */
+const profileContent = (): ProfileContent => ({
+  accountLine: '직접 써 본 AI 도구 정리',
+  accountLineOrigin: 'interview',
+  audience: '대학생',
+  audienceOrigin: 'interview',
+  pillars: PILLARS,
+  dropped: [],
+  voiceRules: [text('쉽게 쓴다', 'interview')],
+  avoid: [],
+  unknown: [],
+  presence: null,
+});
+
 function setup(steps: FakeStep[], opts: { template?: boolean; made?: string[] } = {}) {
   const db = openDb(':memory:');
   const sid = createSession(db, 1, {});
-  const content: ProfileContent = {
-    accountLine: '직접 써 본 AI 도구 정리',
-    accountLineOrigin: 'interview',
-    audience: '대학생',
-    audienceOrigin: 'interview',
-    pillars: PILLARS,
-    dropped: [],
-    voiceRules: [text('쉽게 쓴다', 'interview')],
-    avoid: [],
-    unknown: [],
-    presence: null,
-  };
-  saveProfileVersion(db, 1, content, { reason: 'interview', sessionId: sid, basedOn: null, jobId: null, activate: true });
+  saveProfileVersion(db, 1, profileContent(), { reason: 'interview', sessionId: sid, basedOn: null, jobId: null, activate: true });
   const tv = opts.template !== false ? fixTemplate(db, 1, 'A', look, { cover: { headline: { charsPerLine: 9, maxLines: 2, maxChars: null } } }, 'playwright-chromium 156', null) : null;
   // 이미 만든 카드 세트(표지만) — 계획이 같은 소재를 또 내지 않는지 보려고
   for (const headline of opts.made ?? []) {
@@ -60,7 +67,7 @@ function setup(steps: FakeStep[], opts: { template?: boolean; made?: string[] } 
   };
   const view = async () => (await (await req('GET', '')).json()) as {
     profile: { profileImage: string | null; handle: string | null };
-    cells: Array<{ kind: string; title?: string; locked?: boolean; origin?: string; pillarName?: string | null }>;
+    cells: Array<{ kind: string; slot?: number | null; title?: string; locked?: boolean; origin?: string; pillarName?: string | null }>;
     counts: { made: number; plan: number };
     plan: { slots: Array<{ title: string; locked: boolean }> } | null;
   };
@@ -71,24 +78,49 @@ function setup(steps: FakeStep[], opts: { template?: boolean; made?: string[] } 
   return { db, req, view, makePlan, provider };
 }
 
-describe('격자 구성', () => {
-  it('만든 세트가 9개 미만이면 만든 표지(최신순) 뒤를 계획 칸으로, 그래도 남으면 빈칸', () => {
+describe('격자 구성 — 실제 인스타처럼 가장 최근이 왼쪽 위 (결정 2026-10-25)', () => {
+  const plan9 = Array.from({ length: 9 }, (_, i) => ({ title: `계획 ${i + 1}`, pillarId: 'x', locked: false, origin: 'ai' as const }));
+  const kinds = (g: ReturnType<typeof composeGrid>) => g.map((c) => (c.kind === 'plan' ? `p${c.slot + 1}` : c.kind === 'made' ? `m${c.setId}` : '-'));
+
+  it('계획만 있으면 마지막에 올릴 9번 칸이 왼쪽 위, 1번 칸이 오른쪽 아래', () => {
+    const g = composeGrid([], plan9, new Map([['x', '축 X']]), 9);
+    expect(kinds(g)).toEqual(['p9', 'p8', 'p7', 'p6', 'p5', 'p4', 'p3', 'p2', 'p1']);
+    expect(g[8]).toMatchObject({ kind: 'plan', slot: 0, title: '계획 1', pillarName: '축 X', state: 'plan' });
+  });
+
+  it('잇지 않은 만든 세트는 계획보다 먼저 올린 것으로 — 오른쪽 아래부터(만든 순), 계획 칸은 그 위로', () => {
     const made = [
       { id: 7, cover: '최근 표지', createdAt: '2026-10-21 10:00:00' },
       { id: 3, cover: '이전 표지', createdAt: '2026-10-20 10:00:00' },
     ];
-    const plan = Array.from({ length: 5 }, (_, i) => ({ title: `계획 ${i}`, pillarId: 'x', locked: false, origin: 'ai' as const }));
-    const g = composeGrid(made, plan, new Map([['x', '축 X']]), 9);
-    expect(g.map((c) => c.kind)).toEqual(['made', 'made', 'plan', 'plan', 'plan', 'plan', 'plan', 'empty', 'empty']);
-    expect(g[0]).toMatchObject({ kind: 'made', setId: 7 });
-    expect(g[2]).toMatchObject({ kind: 'plan', slot: 0, title: '계획 0', pillarName: '축 X' });
+    const g = composeGrid(made, plan9.slice(0, 5), new Map(), 9);
+    expect(kinds(g)).toEqual(['p5', 'p4', 'p3', 'p2', 'p1', 'm7', 'm3', '-', '-']);
+    expect(g[5]).toMatchObject({ kind: 'made', setId: 7, slot: null, state: 'made' });
   });
 
-  it('만든 세트가 9개를 넘으면 최신 9개만 — 계획 칸은 없다', () => {
+  it('칸이 모자라면 만든 세트가 먼저 자리를 차지하고 계획 뒤쪽 칸이 빠진다(9칸)', () => {
+    const g = composeGrid([{ id: 1, cover: '표지', createdAt: '' }], plan9, new Map(), 9);
+    expect(kinds(g)).toEqual(['p8', 'p7', 'p6', 'p5', 'p4', 'p3', 'p2', 'p1', 'm1']);
+  });
+
+  it('만든 세트가 9개를 넘으면 가장 최근 9개만 — 가장 최근이 왼쪽 위, 계획 칸은 없다', () => {
     const made = Array.from({ length: 11 }, (_, i) => ({ id: 20 - i, cover: `표지 ${i}`, createdAt: '' }));
     const g = composeGrid(made, [{ title: '계획', pillarId: 'x', locked: false, origin: 'ai' }], new Map(), 9);
-    expect(g.every((c) => c.kind === 'made')).toBe(true);
-    expect(g).toHaveLength(9);
+    expect(kinds(g)).toEqual(['m20', 'm19', 'm18', 'm17', 'm16', 'm15', 'm14', 'm13', 'm12']);
+  });
+
+  it('칸 상태 3가지(FR-HM-4): 칸에 이은 세트는 그 칸 자리에 만듦, 올렸다고 표시하면 올림 — 그림 없는 칸도 올림', () => {
+    const made = [{ id: 5, cover: '이은 세트', createdAt: '' }];
+    const marks = new Map<number, HomeMark>([
+      [1, { setId: 5, postedAt: null, delayDays: 0 }],
+      [0, { setId: null, postedAt: '2026-10-25', delayDays: 0 }],
+    ]);
+    const g = composeGrid(made, plan9.slice(0, 3), new Map(), 9, marks);
+    expect(kinds(g)).toEqual(['p3', 'm5', 'p1', '-', '-', '-', '-', '-', '-']);
+    expect(g[1]).toMatchObject({ kind: 'made', setId: 5, slot: 1, state: 'made' });
+    expect(g[2]).toMatchObject({ kind: 'plan', slot: 0, state: 'posted' });
+    marks.set(1, { setId: 5, postedAt: '2026-10-28', delayDays: 0 });
+    expect(composeGrid(made, plan9.slice(0, 3), new Map(), 9, marks)[1]).toMatchObject({ kind: 'made', state: 'posted' });
   });
 });
 
@@ -139,7 +171,7 @@ describe('30일 뒤 미리보기 API', () => {
     expect((await t.makePlan()).phase).toBe('done');
     const v = await t.view();
     expect(v.cells.map((c) => c.kind)).toEqual(Array(9).fill('plan'));
-    expect(v.cells[1]).toMatchObject({ title: '제목 나', pillarName: '만든 것', locked: false, origin: 'ai' });
+    expect(atSlot(v, 1)).toMatchObject({ title: '제목 나', pillarName: '만든 것', locked: false, origin: 'ai' });
     expect(v.counts).toMatchObject({ made: 0, plan: 9 });
   });
 
@@ -173,16 +205,34 @@ describe('30일 뒤 미리보기 API', () => {
     expect(JSON.parse(runs[0]!.issues_json)).toMatchObject([{ code: 'title_like_made', where: 'titles.0.title' }]);
   });
 
+  it('「올렸어요」를 한 칸은 프로필 판이 바뀌어도 다시 만들 때 그대로 — 「고정」만 한 칸은 같은 프로필 판일 때만 (결정 2026-10-25)', async () => {
+    const NEW = [P('d'.repeat(16), '새 축 하나'), P('e'.repeat(16), '새 축 둘'), P('f'.repeat(16), '새 축 셋')];
+    const fresh = { titles: Array.from({ length: 9 }, (_, i) => ({ title: `새 ${'가나다라마바사아자'[i]}`, pillar_id: NEW[i % 3]!.id })) };
+    // AI 가 남길 칸을 옛 축 ID 그대로 옮겨 써도 규칙에 걸리지 않아야 한다
+    fresh.titles[2] = { title: '제목 다', pillar_id: PILLARS[2]!.id };
+    const t = setup([{ structured: nine() }, { structured: fresh }]);
+    await t.makePlan();
+    markPosted(t.db, 1, 2, '2026-10-25');
+    expect((await t.req('PUT', '/plan/4', { locked: true })).status).toBe(200);
+    const sid = createSession(t.db, 1, {});
+    saveProfileVersion(t.db, 1, { ...profileContent(), pillars: NEW }, { reason: 'alternative', sessionId: sid, basedOn: null, jobId: null, activate: true });
+    expect((await t.makePlan()).phase).toBe('done');
+    const slots = latestPlan(t.db, 1)!.slots;
+    expect(slots[2]).toMatchObject({ title: '제목 다', locked: true });
+    expect(slots[4]).toMatchObject({ title: '새 마', locked: false });
+    expect(slots[0]!.title).toBe('새 가');
+  });
+
   it('칸을 고치고 고정하면, 다시 만들어도 고정한 칸은 그대로다', async () => {
     const t = setup([{ structured: nine() }, { structured: nine('새') }]);
     await t.makePlan();
     expect((await t.req('PUT', '/plan/2', { title: '내가 쓴 제목', locked: true })).status).toBe(200);
     let v = await t.view();
-    expect(v.cells[2]).toMatchObject({ title: '내가 쓴 제목', locked: true, origin: 'edit' });
+    expect(atSlot(v, 2)).toMatchObject({ title: '내가 쓴 제목', locked: true, origin: 'edit' });
     await t.makePlan();
     v = await t.view();
-    expect(v.cells[2]).toMatchObject({ title: '내가 쓴 제목', locked: true, origin: 'edit' });
-    expect(v.cells[0]).toMatchObject({ title: '새 가', locked: false });
+    expect(atSlot(v, 2)).toMatchObject({ title: '내가 쓴 제목', locked: true, origin: 'edit' });
+    expect(atSlot(v, 0)).toMatchObject({ title: '새 가', locked: false });
   });
 
   it('고친 제목이 고정 템플릿 표지에 안 들어가면(9자 × 2줄) 저장하지 않고 이유를 알린다', async () => {

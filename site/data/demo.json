@@ -39,48 +39,57 @@
   "tiles": [
     {
       "src": "img/tile-1.png",
-      "title": "하얀 화면에서 이틀 헤맨 이야기",
-      "planned": false
+      "title": "용어 뜻을 찾을수록 더 헷갈릴 때",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-2.png",
-      "title": "AI한테 뭐라고 물어야 할지 모를 때",
-      "planned": true
+      "title": "정답 대신 막힌 지점부터 적는 이유",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-3.png",
-      "title": "사전 뜻 말고 내 말로 바꾼 뜻",
-      "planned": true
+      "title": "완성본보다 맨 처음 버전부터",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-4.png",
-      "title": "동아리 회비를 왜 웹페이지로 만들었나",
-      "planned": true
+      "title": "'에러 메시지'는 결국 무슨 말일까",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-5.png",
       "title": "풀었는데 어떻게 풀었는지 까먹었다",
-      "planned": true
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-6.png",
-      "title": "'에러 메시지'는 결국 무슨 말일까",
-      "planned": true
+      "title": "동아리 회비를 왜 웹페이지로 만들었나",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-7.png",
-      "title": "완성본보다 맨 처음 버전부터",
-      "planned": true
+      "title": "사전 뜻 말고 내 말로 바꾼 뜻",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-8.png",
-      "title": "정답 대신 막힌 지점부터 적는 이유",
-      "planned": true
+      "title": "AI한테 뭐라고 물어야 할지 모를 때",
+      "planned": true,
+      "posted": false
     },
     {
       "src": "img/tile-9.png",
-      "title": "용어 뜻을 찾을수록 더 헷갈릴 때",
-      "planned": true
+      "title": "하얀 화면에서 이틀 헤맨 이야기",
+      "planned": false,
+      "posted": false
     }
   ],
   "evidence": {

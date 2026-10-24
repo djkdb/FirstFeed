@@ -11,12 +11,13 @@ import { uncheckedGlosses } from '../cards/gloss-check.ts';
 import { getSet } from '../cards/store.ts';
 import { checkCaptionGloss, editCaption, generateCaption } from './caption.ts';
 import { ExportError, exportSet, openExport, uploadRoot } from './export.ts';
+import { PhoneShare } from './phone-share.ts';
 import { captionText, getCaption, listExports } from './store.ts';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
 
-export function publishRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir) {
+export function publishRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir, phone: PhoneShare = new PhoneShare()) {
   const db = ai.db;
   const state = (setId: number) => {
     const set = getSet(db, setId);
@@ -92,6 +93,20 @@ export function publishRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
         if (err instanceof ExportError || err instanceof FlowError) return c.json(bad(err.message), 400);
         throw err;
       }
+    })
+    // 폰으로 받기(FR-PB-5) — 이 API 자체는 127.0.0.1 에서만(localOnly). 같은 네트워크에 여는 것은 phone-share.ts 의 따로 켠 작은 서버뿐
+    .post('/exports/:id/phone', async (c) => {
+      try {
+        return c.json({ share: await phone.start(db, Number(c.req.param('id'))) });
+      } catch (err) {
+        if (err instanceof ExportError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    .get('/phone', (c) => c.json({ share: phone.info() }))
+    .delete('/phone', (c) => {
+      phone.stop();
+      return c.json({ share: null });
     })
     .post('/exports/:id/open', (c) => {
       try {

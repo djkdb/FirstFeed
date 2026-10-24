@@ -185,3 +185,8 @@ button.link{background:none;border:none;color:#1d4ed8;text-decoration:underline;
 @media (prefers-reduced-motion: reduce) {
   .ig-anim .ig-cell, .ig-bio .ig-type { animation: none !important; }
 }
+
+/* 폰으로 받기 (FR-PB-5) */
+.phone-share { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; margin: 8px 0; padding: 12px; border: 1px solid var(--line, #ddd); border-radius: 12px; }
+.phone-share p { margin: 4px 0; }
+.phone-qr { width: 200px; height: 200px; background: #fff; image-rendering: pixelated; }

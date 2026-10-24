@@ -16,6 +16,7 @@ import { brandRoutes } from './brand/routes.ts';
 import { templateRoutes } from './templates/routes.ts';
 import { cardRoutes } from './cards/routes.ts';
 import { publishRoutes } from './publish/routes.ts';
+import { PhoneShare } from './publish/phone-share.ts';
 import { demoRoutes } from './demo/routes.ts';
 import { previewRoutes } from './preview/routes.ts';
 
@@ -26,6 +27,8 @@ export interface AppDeps {
   detect?: () => Promise<DetectResult>;
   /** 올린 그림 등 데이터 폴더 (테스트는 임시 폴더) */
   dataDir?: string;
+  /** 폰으로 받기 서버 (테스트는 127.0.0.1 에 묶은 것) */
+  phoneShare?: PhoneShare;
 }
 
 const SmokeBody = z.object({ source: z.string().max(5000).optional() });
@@ -71,7 +74,7 @@ export function createApp(deps: AppDeps) {
     .route('/api/brand', brandRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/templates', templateRoutes(deps.db, deps.dataDir))
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
-    .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir))
+    .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir, deps.phoneShare ?? new PhoneShare()))
     .route('/api/demo', demoRoutes(deps.db))
     .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir));
   return app;

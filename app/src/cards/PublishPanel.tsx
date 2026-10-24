@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
+import { PhoneShare } from './PhoneShare.tsx';
 
 interface Gloss {
   sentence: string;
@@ -233,10 +234,11 @@ export function PublishPanel({ setId, cardUnchecked, onChanged }: { setId: numbe
             <code>{e.path}</code> · 파일 {e.files}개{' '}
             <button type="button" disabled={busy} onClick={() => void run(async () => void (await post(`/api/publish/exports/${e.id}/open`, {})))}>
               폴더 열기
-            </button>
+            </button>{' '}
+            <PhoneShare exportId={e.id} />
           </p>
         ))}
-        <p className="muted small">업로드 창에서 「업로드」 폴더의 그림을 전체 선택하면 01 → 마지막 순서로 들어가요. 캡션은 위의 「캡션 복사」로.</p>
+        <p className="muted small">업로드 창에서 「업로드」 폴더의 그림을 전체 선택하면 01 → 마지막 순서로 들어가요. 캡션은 위의 「캡션 복사」로. 휴대폰 앱으로 올릴 때는 「폰으로 받기」 — 인스타에서 1번부터 순서대로 탭하세요.</p>
       </div>
 
       {msg && <p className={`status ${msg.ok ? 'ok' : 'error'} small`}>{msg.text}</p>}

@@ -71,7 +71,10 @@ describe('공유 이미지', () => {
     expect(html.match(/data-badge>계획</g)).toHaveLength(2);
     expect(html).toContain('만든 카드 <b>0</b> · 계획 <b>2</b>');
     expect(html).toContain('FirstFeed</b>로 만든 30일 계획');
-    expect(html).not.toMatch(/팔로워|팔로잉/);
+    // 팔로워 · 팔로잉은 없는 숫자라 「–」(소개 페이지 · 미리보기 화면과 같은 규칙)
+    expect(html).toContain('<b>–</b>팔로워');
+    expect(html).toContain('<b>–</b>팔로잉');
+    expect(html).not.toMatch(/<b>\d+<\/b>팔로/);
   });
 
   it('격자는 최근이 왼쪽 위 — 2번 칸이 1번 칸보다 앞, 「올렸어요」 한 칸은 「올림」 배지 (결정 2026-10-25 · FR-HM-4)', async () => {

@@ -1,5 +1,5 @@
 // 「30일 뒤 내 계정」 공유 이미지 (FR-BR-7 · 결정 2026-10-24): 미리보기 화면을 스토리 크기(1080×1920) PNG 한 장으로.
-// 프로필 머리 + 격자 9칸 + 작은 「FirstFeed로 만든 30일 계획」. 격자는 화면과 같은 구성(composeGrid)·같은 가림(render.safeArea.feed)·
+// 프로필 머리 + 격자 9칸 + 작은 「FirstFeed로 만든 30일 계획」. 모양은 미리보기 화면 · 소개 페이지의 다크 폰 프로필(2026-10-25 · 팔로워 · 팔로잉 「–」). 격자는 화면과 같은 구성(composeGrid)·같은 가림(render.safeArea.feed)·
 // 같은 계획 칸 표지(planCover)이고, **계획 칸의 「계획」 배지는 그대로 남긴다** — 밖으로 나가는 그림이라 더욱, 만들지 않은 게시물을
 // 만든 것처럼 보이면 안 된다(결정 2026-10-21). 팔로워 같은 없는 숫자는 쓰지 않는다.
 // 그리기는 카드와 같은 렌더링 경로(renderCard: 앱에 넣은 글꼴 확인 · 글 칸 넘침 측정 · 바깥 요청 차단)라, 바이오가 넘치면 PNG 를 만들지 않는다.
@@ -111,30 +111,35 @@ export function shareHtml(v: ShareView): string {
 ${fontFaceCss([FONT.id])}
 *{box-sizing:border-box}
 html,body{margin:0;width:${SHARE_SIZE.width}px;height:${SHARE_SIZE.height}px;overflow:hidden}
-body{font-family:'${FONT.family}';background:#fff;color:#15161a;word-break:keep-all}
-[data-card]{position:relative;width:100%;height:100%;display:flex;flex-direction:column;padding:72px 0 0}
+body{font-family:'${FONT.family}';background:#0e1116;color:#f2f3f5;word-break:keep-all}
+[data-card]{position:relative;width:100%;height:100%;display:flex;flex-direction:column;padding:44px 0 0}
 .head{display:flex;gap:40px;align-items:center;padding:0 56px}
-.avatar{width:168px;height:168px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:72px;font-weight:700;overflow:hidden;box-shadow:0 0 0 2px #e4e4e7}
-.avatar.empty{background:#f1f1f3}
+.avatar{width:168px;height:168px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:72px;font-weight:700;overflow:hidden;box-shadow:0 0 0 4px #0e1116,0 0 0 7px #3a3f48}
+.avatar.empty{background:#22262d}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .who{min-width:0;flex:1}
 .handle{font-size:46px;font-weight:700;white-space:nowrap;overflow:hidden}
 .name{font-size:32px;font-weight:600;margin-top:6px;white-space:nowrap;overflow:hidden}
-.counts{font-size:28px;color:#5a5c63;margin-top:14px}
-.counts b{color:#15161a}
-.bio{font-size:29px;line-height:1.45;white-space:pre-line;padding:28px 56px 0;max-height:${Math.round(29 * 1.45 * 5) + 28}px;overflow:hidden}
-.grid{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 24px}
-.cell{position:relative;aspect-ratio:${v.safe.w} / ${v.card.height};overflow:hidden;background:#f1f1f3}
+.stats{display:flex;gap:32px;margin-top:10px;font-size:24px;color:#c9ccd2;white-space:nowrap}
+.stats b{font-size:28px;color:#f2f3f5;margin-right:6px}
+.counts{font-size:22px;color:#9ea3ab;margin-top:4px}
+.counts b{color:#f2f3f5;font-weight:600}
+/* 머리 칸이 줄어들지 않게(flex:none) — 넘치면 넘침으로 재야 PNG 를 막는다. 바이오 5줄까지 들어가게 맞춘 크기 */
+.bio{flex:none;font-size:27px;line-height:1.45;white-space:pre-line;padding:24px 56px 0;max-height:${Math.round(27 * 1.45 * 5) + 24}px;overflow:hidden}
+.head,.foot,.grid{flex:none}
+.grid{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 24px}
+.cell{position:relative;aspect-ratio:${v.safe.w} / ${v.card.height};overflow:hidden;background:#171a20}
 .cell img{position:absolute;top:0;height:100%;width:${imgW}%;left:${imgLeft}%;object-fit:cover}
-.cell.plan::after{content:'';position:absolute;inset:0;border:3px dashed rgba(21,22,26,.45);pointer-events:none}
-.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:28px;font-weight:700;color:#5a5c63;overflow:hidden}
+.cell.plan::after{content:'';position:absolute;inset:0;border:3px dashed #9ea3ab;pointer-events:none}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:28px;font-weight:700;color:#9ea3ab;overflow:hidden}
 .badge{position:absolute;z-index:1;right:12px;top:12px;font-size:24px;font-weight:700;padding:4px 14px;border-radius:999px;background:rgba(255,255,255,.94);color:#15161a;box-shadow:0 0 0 2px rgba(0,0,0,.25)}
-.foot{display:flex;justify-content:space-between;align-items:center;padding:22px 32px 28px;font-size:24px;color:#5a5c63}
-.foot b{color:${esc(v.accent)}}
+.foot{display:flex;justify-content:space-between;align-items:center;padding:22px 32px 28px;font-size:24px;color:#9ea3ab}
+.foot b{color:#f2f3f5}
 </style></head><body><div data-card>
 <div class="head">${avatar}<div class="who">
 <div class="handle" data-slot="handle" data-max-lines="1">${esc(v.handle ?? '아이디 정하기 전')}</div>
 ${v.displayName ? `<div class="name" data-slot="name" data-max-lines="1">${esc(v.displayName)}</div>` : ''}
+<div class="stats"><div><b>${v.made + v.plan}</b>게시물</div><div><b>–</b>팔로워</div><div><b>–</b>팔로잉</div></div>
 <div class="counts" data-slot="counts" data-max-lines="1">만든 카드 <b>${v.made}</b> · 계획 <b>${v.plan}</b>${v.posted ? ` · 올림 <b>${v.posted}</b>` : ''}</div>
 </div></div>
 ${v.bio ? `<div class="bio" data-slot="bio" data-max-lines="5">${esc(v.bio)}</div>` : ''}

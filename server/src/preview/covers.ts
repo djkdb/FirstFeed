@@ -11,6 +11,8 @@ import { resolveLook } from '../templates/look.ts';
 import { renderFrame } from '../templates/render-frame.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { latestPlan } from './plan.ts';
+import { getSetting } from '../config.ts';
+import { pillarIndexOf } from '../templates/variant.ts';
 
 export type PlanCover = { ok: true; file: string; cached: boolean } | { ok: false; reason: string; cached: boolean };
 
@@ -33,8 +35,12 @@ export async function planCover(db: DatabaseSync, dataDir: string, brandId: numb
   const fixed = fixedTemplate(db, brandId);
   const draft = fixed ? draftById(fixed.draftId) : undefined;
   if (!fixed || !draft) return { ok: false, reason: '고정한 템플릿이 없어 표지로 그릴 수 없어요.', cached: false };
-  const chip = activeProfile(db, brandId)?.pillars.find((p) => p.id === slot.pillarId)?.name ?? null;
-  const key = crypto.createHash('sha256').update(JSON.stringify([slot.title, chip, fixed.id])).digest('hex').slice(0, 16);
+  const pillars = activeProfile(db, brandId)?.pillars ?? [];
+  const chip = pillars.find((p) => p.id === slot.pillarId)?.name ?? null;
+  // 축 색 변형(2026-10-25): 실제 카드 표지와 같은 축 번호 · 같은 함수. 켜고 끔 · 번호가 바뀌면 다시 그린다
+  const pillarIndex = pillarIndexOf(pillars, slot.pillarId);
+  const variant = getSetting(db, 'render.pillarCoverVariant') ? pillarIndex : null;
+  const key = crypto.createHash('sha256').update(JSON.stringify([slot.title, chip, fixed.id, variant])).digest('hex').slice(0, 16);
   const dir = previewDir(dataDir);
   const png = path.join(dir, `plan-${key}.png`);
   const failed = path.join(dir, `plan-${key}.json`);
@@ -42,7 +48,7 @@ export async function planCover(db: DatabaseSync, dataDir: string, brandId: numb
   if (fs.existsSync(failed)) return { ok: false, reason: (JSON.parse(fs.readFileSync(failed, 'utf8')) as { reason: string }).reason, cached: true };
 
   return serial(async () => {
-    const fr = await renderFrame(db, draft, resolveLook(fixed.look, dataDir), { kind: 'cover', headline: slot.title, sub: null, chip });
+    const fr = await renderFrame(db, draft, resolveLook(fixed.look, dataDir), { kind: 'cover', headline: slot.title, sub: null, chip }, { pillarIndex });
     fs.mkdirSync(dir, { recursive: true });
     if (fr.ok && fr.png) {
       fs.writeFileSync(png, fr.png);

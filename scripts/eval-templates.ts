@@ -1,5 +1,6 @@
 // 템플릿 넘침 측정 (FR-TP-4 수용 기준: 결과 PNG 에 글자가 잘리거나 겹친 경우 0건 — 테스트 세트 기준).
-//   npm run eval:templates -- [--label=templates] [--drafts=F] [--photos=light,dark,busy]
+//   npm run eval:templates -- [--label=templates] [--drafts=F] [--photos=light,dark,busy] [--pillars=1,2,3,4]
+// --pillars: 축 색 변형(2026-10-25, templates/variant.ts) — 그 축 번호로 표지 · 릴스 표지 원고만 다시 그린다(본문 · 마무리는 변형 없음)
 // 그림 바탕 시안(F)은 테스트 그림(tests/fixtures/generated/images)을 깐 변형도 잰다 — 그림이 깔리는 표지·릴스 표지 원고만(결정 2026-10-18)
 // 시안 × 브랜드(me·doyun·seoyeon 고정 키트) × 넘침 테스트 세트(tests/fixtures/generated/overflow/cases.json).
 // 판정은 DOM 측정(기준 브라우저 Playwright Chromium 으로만). PNG 는 판정이 실패해도 마지막 단계 크기로 남긴다 —
@@ -18,6 +19,7 @@ const args = process.argv.slice(2);
 const label = args.find((a) => a.startsWith('--label='))?.slice(8) ?? 'templates';
 const onlyDrafts = args.find((a) => a.startsWith('--drafts='))?.slice(9).split(',');
 const photos = (args.find((a) => a.startsWith('--photos='))?.slice(9) ?? 'light,dark,busy').split(',').filter(Boolean);
+const pillars = (args.find((a) => a.startsWith('--pillars='))?.slice(10) ?? '').split(',').filter(Boolean).map(Number);
 // 날짜는 이 컴퓨터 시간대 기준 — toISOString(UTC)은 한국 새벽에 전날 날짜가 된다(실제로 10-15 새벽에 10-14 로 찍힘)
 const date = new Date().toLocaleDateString('sv-SE');
 const outDir = path.join(env.repoRoot, 'tests/results', `${date}-${label}`);
@@ -56,8 +58,9 @@ const rows: Row[] = [];
 fs.rmSync(outDir, { recursive: true, force: true });
 // 변형: 시안마다 그림 없이 한 번 + 그림 바탕 시안은 테스트 그림마다
 const VARIANTS = DRAFTS.filter((d) => !onlyDrafts || onlyDrafts.includes(d.id)).flatMap((d) => [
-  { key: d.id, d, photo: null as string | null },
-  ...(d.id === 'F' ? photos.map((ph) => ({ key: `F·${ph}`, d, photo: `data:image/png;base64,${fs.readFileSync(path.join(env.repoRoot, `tests/fixtures/generated/images/${ph}.png`)).toString('base64')}` })) : []),
+  { key: d.id, d, photo: null as string | null, pillar: null as number | null },
+  ...(d.id === 'F' ? photos.map((ph) => ({ key: `F·${ph}`, d, photo: `data:image/png;base64,${fs.readFileSync(path.join(env.repoRoot, `tests/fixtures/generated/images/${ph}.png`)).toString('base64')}`, pillar: null })) : []),
+  ...pillars.map((n) => ({ key: `${d.id}·축${n}`, d, photo: null, pillar: n })),
 ]);
 for (const v of VARIANTS)
   for (const [id, set] of BRANDS) {
@@ -66,8 +69,8 @@ for (const v of VARIANTS)
     const dir = path.join(outDir, `${v.key}-${id}`);
     fs.mkdirSync(dir, { recursive: true });
     for (const c of cases) {
-      if (v.photo && c.content.kind !== 'cover' && c.content.kind !== 'reel_cover') continue;
-      const r = await renderPhotoFrame(db, d, look, c.content, v.photo, { captureEvenIfBad: true });
+      if ((v.photo || v.pillar !== null) && c.content.kind !== 'cover' && c.content.kind !== 'reel_cover') continue;
+      const r = await renderPhotoFrame(db, d, look, c.content, v.photo, { captureEvenIfBad: true, pillarIndex: v.pillar });
       const result: Row['result'] = r.problems.some((p) => p.code === 'font_fallback')
         ? '대체 글꼴'
         : r.problems.some((p) => p.code === 'low_contrast_on_photo')

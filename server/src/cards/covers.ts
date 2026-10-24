@@ -11,6 +11,7 @@ import { renderFrame } from '../templates/render-frame.ts';
 import type { CoverContent } from '../templates/types.ts';
 import { cardContext, estimatedLines, profileBlock, type CardContext } from './context.ts';
 import { cardCountClaims, countClaims, countMismatch } from './count.ts';
+import { pillarIndexOf } from '../templates/variant.ts';
 
 export const CoversSchema = z.object({
   titles: z
@@ -151,7 +152,8 @@ export async function generateCovers(
           for (const [i, t] of d.titles.entries()) {
             if (bad.has(i)) continue;
             const content = coverContent(c, t);
-            const fr = await renderFrame(ai.db, c.template.draft, c.template.look, content);
+            // 축 색 변형 — 실제 카드 표지도 미리보기 계획 칸과 같은 함수(templates/variant.ts)
+            const fr = await renderFrame(ai.db, c.template.draft, c.template.look, content, { pillarIndex: pillarIndexOf(c.profile.pillars, t.pillar_id) });
             if (fr.ok && fr.png) drawn.set(JSON.stringify(content), { png: fr.png, scale: fr.scale });
             else out.push(issue(i, fr.problems[0]?.code ?? 'text_overflow', [...fr.shorten.map((s) => s.message), ...fr.problems.map((p) => p.message)].slice(0, 2).join(' ')));
           }

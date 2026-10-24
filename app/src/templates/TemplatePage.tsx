@@ -114,6 +114,7 @@ export function TemplatePage() {
         )}
         {notice && <p className="status ok small">{notice}</p>}
         <p className="muted small">표지·릴스 표지는 인스타 격자에서 잘리는 자리를 피해야 해요 — 그 숫자는 아직 앱에서 확인 전이라 엄하게 잡아 두었어요.</p>
+        <PillarVariant />
       </section>
 
       {state.drafts.map((d) => {
@@ -152,3 +153,31 @@ export function TemplatePage() {
     </>
   );
 }
+
+/** 축 색 변형 켜고 끄기(2026-10-25) — 표지 바탕색을 축마다 팔레트의 다른 색으로. 미리보기 계획 칸 · 실제 카드 표지 모두 */
+function PillarVariant() {
+  const [on, setOn] = useState<boolean | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    fetch('/api/templates/options')
+      .then((r) => r.json() as Promise<{ pillarCoverVariant: boolean }>)
+      .then((b) => setOn(b.pillarCoverVariant))
+      .catch(() => setErr('설정을 불러오지 못했어요.'));
+  }, []);
+  if (on === null) return err ? <p className="status error small">{err}</p> : null;
+  const toggle = (next: boolean) =>
+    fetch('/api/templates/options', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pillarCoverVariant: next }) })
+      .then((r) => r.json() as Promise<{ pillarCoverVariant: boolean }>)
+      .then((b) => setOn(b.pillarCoverVariant))
+      .catch(() => setErr('바꾸지 못했어요. 다시 시도하세요.'));
+  return (
+    <p className="small">
+      <label>
+        <input type="checkbox" checked={on} onChange={(e) => void toggle(e.target.checked)} /> 표지 바탕색을 축마다 다르게(축 색 변형)
+      </label>
+      <span className="muted"> — 고정한 틀은 그대로, 표지 바탕만 브랜드 팔레트의 다른 색으로 돌려요(글자색은 명암비 4.5:1 이상으로 자동). 미리보기의 계획 칸과 실제 카드 표지가 같아요.</span>
+      {err && <span className="status error"> {err}</span>}
+    </p>
+  );
+}
+

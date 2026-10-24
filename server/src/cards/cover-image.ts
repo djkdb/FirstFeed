@@ -10,6 +10,8 @@ import { draftById } from '../templates/index.ts';
 import { renderPhotoFrame } from '../templates/render-frame.ts';
 import { getTemplateVersion } from '../templates/store.ts';
 import { getSet, replaceCard, setCoverImage } from './store.ts';
+import { getProfile } from '../identity/store.ts';
+import { pillarIndexOf } from '../templates/variant.ts';
 
 export class CoverImageError extends Error {}
 
@@ -25,7 +27,9 @@ export async function applyCoverImage(db: Db, dataDir: string, setId: number, by
   const type = name.split('.').pop() as ImageType;
   const dataUrl = `data:${MIME[type]};base64,${fs.readFileSync(file).toString('base64')}`;
   const cover = set.cards.find((c) => c.idx === 0)!;
-  const r = await renderPhotoFrame(db, draft, resolveLook(tv.look, dataDir), cover.content, dataUrl);
+  // 축 색 변형: 이 세트를 만든 프로필 판의 축 순서로(처음 그릴 때와 같은 번호)
+  const pillars = getProfile(db, set.profileId)?.pillars ?? [];
+  const r = await renderPhotoFrame(db, draft, resolveLook(tv.look, dataDir), cover.content, dataUrl, { pillarIndex: pillarIndexOf(pillars, set.pillarId) });
   if (!r.ok || !r.png) {
     fs.rmSync(file, { force: true });
     return { ok: false, problems: [...r.shorten.map((x) => x.message), ...r.problems.map((x) => x.message)].slice(0, 3) };

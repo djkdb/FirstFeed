@@ -2,7 +2,7 @@
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
-import { env } from '../config.ts';
+import { env, getSetting, setSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { RenderError } from '../render/browser.ts';
 import { measureBudget } from './budget.ts';
@@ -39,6 +39,19 @@ const renderFail = (err: unknown) => (err instanceof RenderError ? { error: `${e
 
 export function templateRoutes(db: Db, dataDir = env.dataDir) {
   return new Hono()
+    // 축 색 변형 켜고 끄기(2026-10-25) — 고정 판은 그대로, 표지 바탕색만 축마다 팔레트의 다른 색(templates/variant.ts)
+    .get('/options', (c) => c.json({ pillarCoverVariant: getSetting(db, 'render.pillarCoverVariant') }))
+    .put(
+      '/options',
+      validator('json', (v, c) => {
+        const b = z.object({ pillarCoverVariant: z.boolean() }).safeParse(v);
+        return b.success ? b.data : c.json({ error: '켜고 끄기를 다시 골라 주세요.' }, 400);
+      }),
+      (c) => {
+        setSetting(db, 'render.pillarCoverVariant', c.req.valid('json').pillarCoverVariant);
+        return c.json({ pillarCoverVariant: getSetting(db, 'render.pillarCoverVariant') });
+      },
+    )
     .get('/', (c) => {
       const { missing } = lookFromSelection(db, BRAND_ID);
       const fixed = fixedTemplate(db, BRAND_ID);

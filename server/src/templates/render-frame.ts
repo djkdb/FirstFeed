@@ -4,6 +4,14 @@ import { getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { renderCard, type RenderProblem, type RenderResult } from '../render/render.ts';
 import { FRAME_SIZE, type BrandLook, type Draft, type FrameContent, type PhotoOpts } from './types.ts';
+import { pillarCoverLook } from './variant.ts';
+
+/** 축 색 변형(설정 render.pillarCoverVariant): 표지 · 릴스 표지에만, 축 번호가 있을 때만 */
+export function coverLook(db: Db | null, draft: Draft, look: BrandLook, content: FrameContent, pillarIndex: number | null | undefined): BrandLook {
+  if (content.kind !== 'cover' && content.kind !== 'reel_cover') return look;
+  if (!getSetting(db, 'render.pillarCoverVariant')) return look;
+  return pillarCoverLook(draft.id, look, pillarIndex);
+}
 
 export interface FrameResult extends RenderResult {
   /** 통과한(또는 마지막으로 시도한) 글자 크기 비율 */
@@ -49,9 +57,10 @@ export async function renderFrame(
   look: BrandLook,
   content: FrameContent,
   /** 측정·테스트 세트용: 마지막 단계에서 넘쳐도 PNG 를 만든다 (앱에서는 쓰지 않는다 — 반쯤 만든 결과) */
-  opts: { captureEvenIfBad?: boolean; photo?: PhotoOpts } = {},
+  opts: { captureEvenIfBad?: boolean; photo?: PhotoOpts; pillarIndex?: number | null } = {},
 ): Promise<FrameResult> {
   const { width, height, safe } = FRAME_SIZE[content.kind];
+  look = coverLook(db, draft, look, content, opts.pillarIndex);
   const safeRect = safe ? getSetting(db, 'render.safeArea')[safe] : null;
   const steps = getSetting(db, 'render.scaleSteps');
   const tries: FrameResult['tries'] = [];
@@ -94,7 +103,7 @@ export async function renderPhotoFrame(
   look: BrandLook,
   content: FrameContent,
   background: string | null,
-  opts: { captureEvenIfBad?: boolean } = {},
+  opts: { captureEvenIfBad?: boolean; pillarIndex?: number | null } = {},
 ): Promise<PhotoFrameResult> {
   if (!background || (content.kind !== 'cover' && content.kind !== 'reel_cover')) return { ...(await renderFrame(db, draft, look, content, opts)), shade: null, shadeTries: [] };
   const min = getSetting(db, 'render.photoMinContrast');
@@ -103,7 +112,7 @@ export async function renderPhotoFrame(
   let last: FrameResult | null = null;
   for (const shade of steps) {
     // 측정용(captureEvenIfBad)은 단계마다 넘김 — 넘침은 첫 단계에서 바로 돌려주므로, 마지막 단계에만 넘기면 넘친 PNG 가 안 남는다(측정에서 빈 칸으로 발견)
-    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: opts.captureEvenIfBad === true });
+    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: opts.captureEvenIfBad === true, pillarIndex: opts.pillarIndex });
     const worst = Math.min(21, ...(r.contrast ?? []).map((x) => x.ratio));
     shadeTries.push({ shade, worst });
     last = r;

@@ -18,6 +18,7 @@ import { cardContext, estimatedLines, profileBlock, type CardContext } from './c
 import { cardCountClaims, countClaims, countMismatch } from './count.ts';
 import { reasonOf } from './covers.ts';
 import { saveSet, type CardToSave } from './store.ts';
+import { pillarIndexOf } from '../templates/variant.ts';
 
 const CardV1 = z.object({
   title: z.string().min(1).max(60),
@@ -186,7 +187,8 @@ export async function renderAll(ai: AiService, c: CardContext, cover: ChosenCove
   const issues: Issue[] = [];
   const fs = frames(c, cover, d);
   for (const [idx, content] of fs.entries()) {
-    const result = await renderFrame(ai.db, c.template.draft, c.template.look, content);
+    // 축 색 변형은 표지에만(renderFrame 이 본문 · 마무리는 그대로 둔다) — 표지 후보 때와 같은 축 번호
+    const result = await renderFrame(ai.db, c.template.draft, c.template.look, content, { pillarIndex: pillarIndexOf(c.profile.pillars, cover.pillarId) });
     rendered.push({ kind: content.kind as RenderedCard['kind'], content, result });
     if (!result.ok)
       issues.push(issue(whereOf(idx, d.cards.length), result.problems[0]?.code ?? 'text_overflow', [...result.shorten.map((s) => s.message), ...result.problems.map((p) => p.message)].slice(0, 2).join(' ')));

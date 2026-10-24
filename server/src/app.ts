@@ -19,6 +19,7 @@ import { publishRoutes } from './publish/routes.ts';
 import { PhoneShare } from './publish/phone-share.ts';
 import { demoRoutes } from './demo/routes.ts';
 import { previewRoutes } from './preview/routes.ts';
+import { homeRoutes } from './home/routes.ts';
 
 export interface AppDeps {
   db: Db;
@@ -76,7 +77,8 @@ export function createApp(deps: AppDeps) {
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir, deps.phoneShare ?? new PhoneShare()))
     .route('/api/demo', demoRoutes(deps.db))
-    .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir));
+    .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir))
+    .route('/api/home', homeRoutes(deps.db));
   return app;
 }
 

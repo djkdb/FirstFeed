@@ -102,6 +102,7 @@ describe('폰으로 받기 페이지', () => {
     const r = await get(`/s/${TOKEN}`);
     const html = await r.text();
     expect(html).toContain('인스타에서 1번부터 순서대로 고르세요');
+    expect(html).toContain('카페 같은 공용 와이파이에서는 쓰지 마세요');
     expect([...html.matchAll(/(\d+)번 저장/g)].map((m) => m[1])).toEqual(['1', '2', '3']);
     expect(html.indexOf('01_cover.png')).toBeLessThan(html.indexOf('02_body.png'));
     expect(html).toContain('캡션 복사');

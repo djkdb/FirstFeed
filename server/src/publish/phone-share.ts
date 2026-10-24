@@ -108,6 +108,7 @@ ${
     ? `<h2>캡션</h2><pre id="cap">${esc(s.caption)}</pre><button type="button" id="copy">캡션 복사</button> <span id="copied" class="muted" role="status"></span>`
     : '<p class="muted">이 폴더에는 캡션이 없어요.</p>'
 }
+<p class="muted">카페 같은 공용 와이파이에서는 쓰지 마세요.</p>
 <p class="muted">같은 와이파이의 이 기기에서만 열려요 · ${esc(hhmm)}에 닫혀요 · 컴퓨터에서 「지금 닫기」를 누르면 바로 닫혀요</p>
 </main><script nonce="${nonce}">
 document.getElementById('all').addEventListener('click',async()=>{for(const a of document.querySelectorAll('a.save')){a.click();await new Promise(r=>setTimeout(r,800));}});

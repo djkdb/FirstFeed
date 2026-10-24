@@ -63,6 +63,9 @@ export function PhoneShare({ exportId }: { exportId: number }) {
         <p className="small">
           같은 와이파이의 기기에서만 · 처음 연 기기 하나만 · <strong>{new Date(share.expiresAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</strong>에 저절로 닫힘
         </p>
+        <p className="small">
+          <strong>카페 같은 공용 와이파이에서는 쓰지 마세요.</strong> 같은 와이파이의 모르는 기기도 이 주소에 접속을 시도할 수 있어요.
+        </p>
         <p className="small">{share.opened ? '휴대폰에서 열었어요.' : '아직 열지 않았어요.'}</p>
         <p className="small muted">
           주소: <code>{share.url}</code>

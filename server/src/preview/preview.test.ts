@@ -12,7 +12,7 @@ import { text, type ProfileContent } from '../identity/model.ts';
 import { createSession, saveProfileVersion } from '../identity/store.ts';
 import { fixTemplate } from '../templates/store.ts';
 import type { BrandLook } from '../templates/types.ts';
-import { latestPlan, planRules, type PlanContext } from './plan.ts';
+import { latestPlan, planRules, savePlan, type PlanContext } from './plan.ts';
 import { markPosted } from '../home/store.ts';
 import type { HomeMark } from '../home/marks.ts';
 import { composeGrid } from './routes.ts';
@@ -219,8 +219,32 @@ describe('30일 뒤 미리보기 API', () => {
     expect((await t.makePlan()).phase).toBe('done');
     const slots = latestPlan(t.db, 1)!.slots;
     expect(slots[2]).toMatchObject({ title: '제목 다', locked: true });
-    expect(slots[4]).toMatchObject({ title: '새 마', locked: false });
-    expect(slots[0]!.title).toBe('새 가');
+    // 고정만 한 4번 칸(제목 마)은 새 프로필에서 남지 않고, 나머지 8칸은 새 제목(칸 순서는 줄무늬 맞추기로 바뀔 수 있다)
+    expect(slots.some((x) => x.title === '제목 마')).toBe(false);
+    expect(slots.filter((x, i) => i !== 2 && x.title.startsWith('새 ') && !x.locked)).toHaveLength(8);
+  });
+
+  it('계획을 만들면 같은 축이 같은 열(3칸 간격)에 이어지지 않게 칸 순서를 맞춘다 — AI 는 축을 차례로 돌려 줘도 (결정 2026-10-25)', async () => {
+    const t = setup([{ structured: nine() }]);
+    await t.makePlan();
+    const ids = latestPlan(t.db, 1)!.slots.map((s) => s.pillarId);
+    expect(ids.filter((x, i) => i + 3 < ids.length && x === ids[i + 3])).toHaveLength(0);
+    expect([...ids].sort()).toEqual(nine().titles.map((x) => x.pillar_id).sort());
+  });
+
+  it('이미 있는 계획은 「칸 순서 맞추기」로만(AI 없음) — 올린 칸은 그 자리', async () => {
+    const t = setup([]);
+    const pid = Number((t.db.prepare('SELECT id FROM brand_profiles ORDER BY id DESC LIMIT 1').get() as { id: number }).id);
+    savePlan(t.db, 1, pid, nine().titles.map((x) => ({ title: x.title, pillarId: x.pillar_id, locked: false, origin: 'ai' as const })), null);
+    markPosted(t.db, 1, 4, '2026-10-25');
+    const before = latestPlan(t.db, 1)!.slots;
+    const r = (await (await t.req('POST', '/plan/arrange')).json()) as { changed: boolean };
+    expect(r.changed).toBe(true);
+    const after = latestPlan(t.db, 1)!.slots;
+    expect(after[4]).toEqual(before[4]);
+    const ids = after.map((s) => s.pillarId);
+    expect(ids.filter((x, i) => i + 3 < ids.length && x === ids[i + 3]).length).toBeLessThan(6);
+    expect(((await (await t.req('POST', '/plan/arrange')).json()) as { changed: boolean }).changed).toBe(false);
   });
 
   it('칸을 고치고 고정하면, 다시 만들어도 고정한 칸은 그대로다', async () => {

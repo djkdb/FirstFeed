@@ -19,6 +19,7 @@ import { similarity } from '../rules/similarity.ts';
 import type { Issue, Rule } from '../rules/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { keptSlots } from '../home/marks.ts';
+import { arrangeOrder } from './arrange.ts';
 
 type Db = DatabaseSync;
 
@@ -162,7 +163,9 @@ export async function generatePlan(ai: AiService, brandId: number, job?: JobCont
   const slots: PlanSlot[] = r.data.titles.map((t) => ({ title: t.title, pillarId: t.pillar_id, locked: false, origin: 'ai' }));
   // 고정한 칸은 AI 가 다르게 써도 사용자의 것을 지킨다
   for (const { s, i } of locked) if (i < slots.length) slots[i] = s;
-  return { plan: savePlan(db, brandId, profile.profileId, slots, r.jobId), calls: r.calls, rewrites: r.rewrites };
+  // 같은 축이 같은 열에 이어지지 않게(결정 2026-10-25 · 줄무늬) — 남길 칸은 그 자리, 나머지만
+  const order = arrangeOrder(slots.map((s) => s.pillarId), new Set(locked.map((x) => x.i)));
+  return { plan: savePlan(db, brandId, profile.profileId, order.map((i) => slots[i]!), r.jobId), calls: r.calls, rewrites: r.rewrites };
 }
 
 /**
@@ -191,6 +194,20 @@ export function editSlot(db: Db, brandId: number, idx: number, patch: { title?: 
   if (patch.locked !== undefined) next.locked = patch.locked;
   const slots = plan.slots.map((s, i) => (i === idx ? next : s));
   return savePlan(db, brandId, plan.profileId, slots, null);
+}
+
+/**
+ * 이미 있는 계획의 칸 순서만 맞춘다(AI 없음, 결정 2026-10-25 · 줄무늬). 고정 · 이은 · 올린 칸은 그 자리 — 홈 표시가 칸 번호로 이어져 있어서.
+ * 바뀐 게 없으면 새 판을 만들지 않는다
+ */
+export function arrangePlan(db: Db, brandId: number): { plan: SavedPlan | null; changed: boolean } {
+  const plan = latestPlan(db, brandId);
+  if (!plan) return { plan: null, changed: false };
+  const kept = keptSlots(db, brandId);
+  const fixed = new Set(plan.slots.map((s, i) => (s.locked || kept.has(i) ? i : -1)).filter((i) => i >= 0));
+  const order = arrangeOrder(plan.slots.map((s) => s.pillarId), fixed);
+  if (order.every((v, i) => v === i)) return { plan, changed: false };
+  return { plan: savePlan(db, brandId, plan.profileId, order.map((i) => plan.slots[i]!), null), changed: true };
 }
 
 export function savePlan(db: Db, brandId: number, profileId: number, slots: PlanSlot[], jobId: string | null): SavedPlan {

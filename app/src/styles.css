@@ -339,5 +339,7 @@ a.button.primary:hover { background: var(--accent); border-color: var(--accent);
 
 /* 글자 원(2026-10-25) — 사진이 없을 때 주색 원 + 이름 첫 글자, 하이라이트는 축 색 원 + 첫 글자 */
 .ig-mark { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 30px; }
+/* 폰 틀 안 사진 자리(.phone-ring .ig-avatar 는 display:block)보다 뒤에서 가운데 맞춤을 다시 건다 — 처음엔 글자가 왼쪽 위로 쏠렸다(캡처에서 발견) */
+.phone-ring .ig-mark { display: flex; }
 .phone .ig-hl-mark { border: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; box-shadow: 0 0 0 1px var(--phone-ring), 0 0 0 4px var(--phone); outline: 1px solid var(--phone-ring); outline-offset: 3px; }
 

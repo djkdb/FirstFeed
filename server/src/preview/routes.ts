@@ -15,11 +15,13 @@ import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
 import { FRAME_SIZE } from '../templates/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
-import { editSlot, generatePlan, latestPlan } from './plan.ts';
+import { arrangePlan, editSlot, generatePlan, latestPlan } from './plan.ts';
 import { composeGrid } from './compose-grid.ts';
 import { homeMarks } from '../home/marks.ts';
 import { PLAN_FILE, planCover, previewDir } from './covers.ts';
 import { shareImage } from './share-image.ts';
+import { draftById } from '../templates/index.ts';
+import { avatarSwatch, highlightSwatches } from './swatches.ts';
 import { RenderError } from '../render/browser.ts';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -54,6 +56,16 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
         },
         highlights: (visual?.candidates.imagePrompts ?? []).filter((p) => p.target === 'highlight').map((p) => p.label),
         look: fixed?.look.palette ?? sel.palette?.colors ?? null,
+        /** 글자 원(2026-10-25): 사진이 없을 때의 프로필 원 · 하이라이트 원 — 축 색은 그 축 표지 바탕색과 같게 */
+        swatches: (() => {
+          const pal = fixed?.look.palette ?? (sel.palette ? { name: sel.palette.name, ...sel.palette.colors } : null);
+          if (!pal) return null;
+          const labels = (visual?.candidates.imagePrompts ?? []).filter((p) => p.target === 'highlight').map((p) => p.label);
+          return {
+            avatar: avatarSwatch(sel.displayName ?? sel.handle, pal),
+            highlights: highlightSwatches(labels, pal, (draftById(fixed?.draftId ?? '')?.id ?? null), getSetting(db, 'render.pillarCoverVariant')),
+          };
+        })(),
         /** 계획 칸 자리표시를 고정 템플릿의 제목 글꼴로 그리려고 */
         titleFont: (() => {
           const f = fontById(fixed?.look.titleFont ?? sel.titleFont ?? '');
@@ -92,6 +104,8 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
         throw err;
       }
     })
+    // 칸 순서만 맞추기(AI 없음) — 같은 축이 같은 열에 이어지지 않게. 고정 · 이은 · 올린 칸은 그대로
+    .post('/plan/arrange', (c) => c.json({ changed: arrangePlan(db, BRAND_ID).changed }))
     .post('/plan', (c) => c.json({ jobId: jobs.start('series_plan', (job) => generatePlan(ai, BRAND_ID, job)) }))
     .put(
       '/plan/:idx',

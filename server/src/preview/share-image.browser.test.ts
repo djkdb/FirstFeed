@@ -17,6 +17,8 @@ import type { BrandLook } from '../templates/types.ts';
 import { savePlan } from './plan.ts';
 import { markPosted } from '../home/store.ts';
 import { shareHtml, shareImage, shareView } from './share-image.ts';
+import { highlightSwatches } from './swatches.ts';
+import { renderCard } from '../render/render.ts';
 
 afterAll(() => closeBrowser());
 
@@ -96,6 +98,17 @@ describe('공유 이미지', () => {
     const r = await shareImage(t.db, t.dataDir, 1);
     if (!r.ok) throw new Error(r.reason);
     expect(pngSize(r.png)).toEqual({ width: 1080, height: 1920 });
+  });
+
+  it('하이라이트 줄(축 색 원 3개)이 있어도 바이오 5줄까지 그린다 — 글자 원은 첫 글자 (2026-10-25)', async () => {
+    const t = setup(['코딩 처음인 비전공자가 막혔다 풀린 기록을 남겨요', '▸ 막힘→풀림 순서대로', '▸ 내 말로 푼 개발 용어', '▸ 처음 만든 것들 포트폴리오', '▸ 질문은 댓글로 남겨 주세요'].join('\n'));
+    const v = await shareView(t.db, t.dataDir, 1);
+    v.highlights = highlightSwatches(['막힘→풀림 순서', '내 말로 푼 용어', '처음 만든 것들'], look.palette, 'A', true);
+    const html = shareHtml(v);
+    expect(html.match(/<div class="hl">/g)).toHaveLength(3);
+    expect(v.avatar).toMatchObject({ initial: '도' });
+    const r = await renderCard(t.db, { html, width: 1080, height: 1920, captureEvenIfBad: true, allowFontFallback: true });
+    expect(r.problems.filter((p) => p.code !== 'font_fallback')).toEqual([]);
   });
 
   it('바이오가 머리 칸(5줄)을 넘치면 PNG 를 만들지 않고 이유를 알린다', async () => {

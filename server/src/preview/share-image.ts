@@ -7,7 +7,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { assetPath } from '../brand/assets.ts';
-import { currentSelection } from '../brand/store.ts';
+import { currentSelection, latestKit } from '../brand/store.ts';
+import type { VisualCandidates } from '../brand/types.ts';
+import { draftById } from '../templates/index.ts';
+import { avatarSwatch, highlightSwatches, type Swatch } from './swatches.ts';
 import { listSets, rendersDir } from '../cards/store.ts';
 import { getSetting } from '../config.ts';
 import { activeProfile } from '../identity/store.ts';
@@ -36,6 +39,8 @@ export interface ShareView {
   displayName: string | null;
   bio: string | null;
   avatar: { img: string } | { initial: string; bg: string; fg: string } | null;
+  /** 하이라이트 원(2026-10-25): 축 색 원 + 축 이름 첫 글자 — 미리보기 화면과 같은 함수(swatches.ts) */
+  highlights: Array<Swatch & { label: string }>;
   made: number;
   plan: number;
   posted: number;
@@ -69,14 +74,18 @@ export async function shareView(db: DatabaseSync, dataDir: string, brandId: numb
       cells.push({ kind: 'plan', state: c.state, img: r.ok ? dataUri(path.join(previewDir(dataDir), r.file)) : null, title: c.title });
     }
   }
-  const look = fixedTemplate(db, brandId)?.look.palette ?? sel.palette?.colors ?? null;
+  const fixed = fixedTemplate(db, brandId);
+  const look = fixed?.look.palette ?? (sel.palette ? { name: sel.palette.name, ...sel.palette.colors } : null);
   const photo = sel.profileImage ? assetPath(dataDir, sel.profileImage) : null;
   const name = sel.displayName ?? sel.handle;
+  const av = look ? avatarSwatch(name, look) : null;
+  const labels = (latestKit<VisualCandidates>(db, brandId, 'visual')?.candidates.imagePrompts ?? []).filter((x) => x.target === 'highlight').map((x) => x.label);
   return {
     handle: sel.handle,
     displayName: sel.displayName,
     bio: sel.bio,
-    avatar: photo ? { img: dataUri(photo) } : name && look ? { initial: [...name][0]!, bg: look.primary, fg: look.background } : null,
+    avatar: photo ? { img: dataUri(photo) } : av ? { initial: av.mark, bg: av.bg, fg: av.fg } : null,
+    highlights: look ? highlightSwatches(labels, look, draftById(fixed?.draftId ?? '')?.id ?? null, getSetting(db, 'render.pillarCoverVariant')) : [],
     made: cells.filter((c) => c.kind === 'made').length,
     plan: cells.filter((c) => c.kind === 'plan').length,
     posted: cells.filter((c) => c.state === 'posted').length,
@@ -127,7 +136,12 @@ body{font-family:'${FONT.family}';background:#0e1116;color:#f2f3f5;word-break:ke
 /* 머리 칸이 줄어들지 않게(flex:none) — 넘치면 넘침으로 재야 PNG 를 막는다. 바이오 5줄까지 들어가게 맞춘 크기 */
 .bio{flex:none;font-size:27px;line-height:1.45;white-space:pre-line;padding:24px 56px 0;max-height:${Math.round(27 * 1.45 * 5) + 24}px;overflow:hidden}
 .head,.foot,.grid{flex:none}
-.grid{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 24px}
+.hls{flex:none;display:flex;gap:30px;padding:22px 56px 0}
+.hl{display:flex;flex-direction:column;align-items:center;gap:8px;width:96px;font-size:20px;color:#c9ccd2;text-align:center}
+.hl span{width:76px;height:76px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;box-shadow:0 0 0 3px #0e1116,0 0 0 5px #3a3f48}
+.hl em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+/* 격자 양옆 여백 56px — 하이라이트 줄을 더하고도 바이오 5줄이 들어가게(테스트로 확인) */
+.grid{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 56px}
 .cell{position:relative;aspect-ratio:${v.safe.w} / ${v.card.height};overflow:hidden;background:#171a20}
 .cell img{position:absolute;top:0;height:100%;width:${imgW}%;left:${imgLeft}%;object-fit:cover}
 .cell.plan::after{content:'';position:absolute;inset:0;border:3px dashed #9ea3ab;pointer-events:none}
@@ -143,6 +157,7 @@ ${v.displayName ? `<div class="name" data-slot="name" data-max-lines="1">${esc(v
 <div class="counts" data-slot="counts" data-max-lines="1">만든 카드 <b>${v.made}</b> · 계획 <b>${v.plan}</b>${v.posted ? ` · 올림 <b>${v.posted}</b>` : ''}</div>
 </div></div>
 ${v.bio ? `<div class="bio" data-slot="bio" data-max-lines="5">${esc(v.bio)}</div>` : ''}
+${v.highlights.length ? `<div class="hls">${v.highlights.map((h) => `<div class="hl"><span style="background:${esc(h.bg)};color:${esc(h.fg)}">${esc(h.mark)}</span><em>${esc(h.label)}</em></div>`).join('')}</div>` : ''}
 <div class="grid">${v.cells.map(cell).join('')}</div>
 <div class="foot"><span><b>FirstFeed</b>로 만든 30일 계획</span><span>「계획」 칸은 아직 만들지 않은 게시물</span></div>
 </div></body></html>`;

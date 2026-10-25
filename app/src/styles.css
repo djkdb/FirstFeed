@@ -336,3 +336,8 @@ a.button.primary:hover { background: var(--accent); border-color: var(--accent);
 .rewrite-diff { line-height: 1.7; }
 .rewrite-diff del { color: var(--error); text-decoration: line-through; text-decoration-thickness: 1.5px; background: var(--error-soft); }
 .rewrite-diff ins { color: var(--ok); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; background: var(--ok-soft); }
+
+/* 글자 원(2026-10-25) — 사진이 없을 때 주색 원 + 이름 첫 글자, 하이라이트는 축 색 원 + 첫 글자 */
+.ig-mark { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 30px; }
+.phone .ig-hl-mark { border: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; box-shadow: 0 0 0 1px var(--phone-ring), 0 0 0 4px var(--phone); outline: 1px solid var(--phone-ring); outline-offset: 3px; }
+

@@ -25,6 +25,17 @@ export function PreviewPage() {
   /** 바뀌면 모션을 처음부터 다시 — 「다시 보기」 · 새 계획 */
   const [play, setPlay] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
+  /** 같은 축이 같은 열에 이어지지 않게 칸 순서만 맞춘다(AI 없음, 결정 2026-10-25) */
+  const arrange = async () => {
+    setError(null);
+    setInfo(null);
+    const r = await fetch('/api/preview/plan/arrange', { method: 'POST' }).catch(() => null);
+    if (!r?.ok) return setError('칸 순서를 맞추지 못했어요. 다시 시도하세요.');
+    const b = (await r.json()) as { changed: boolean };
+    setInfo(b.changed ? '같은 축이 같은 열에 이어지지 않게 칸 순서를 바꿨어요.' : '이미 같은 축이 같은 열에 이어지지 않아요.');
+    await load(true);
+  };
   /** 고친다고 고른 계획 칸 번호 — 고치기 · 고정은 폰 틀 밖에서 */
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -132,7 +143,7 @@ export function PreviewPage() {
           {!p.handle && <div className="phone-missing">(아이디 미정 — 「브랜드」에서 고르세요)</div>}
           <div className="ig-head">
             <span className="phone-ring">
-              <Avatar image={p.profileImage} />
+              <Avatar image={p.profileImage} swatch={view.swatches?.avatar ?? null} />
             </span>
             <div className="phone-who">
               <div className="ig-name">{p.displayName ?? <span className="phone-muted">(이름 미정)</span>}</div>
@@ -175,12 +186,18 @@ export function PreviewPage() {
           </div>
           {view.highlights.length > 0 && (
             <div className="ig-highlights">
-              {view.highlights.map((h) => (
-                <div key={h} className="ig-hl">
-                  <span className="ig-hl-circle" title="하이라이트 커버 그림은 아직 올리지 않았어요(FR-BR-4)" />
-                  <span className="small">{h}</span>
-                </div>
-              ))}
+              {view.highlights.map((h, i) => {
+                // 축 색 원 + 축 이름 첫 글자(소개 페이지와 같은 방식) — 하이라이트 커버 그림을 올리기 전 자리
+                const sw = view.swatches?.highlights[i];
+                return (
+                  <div key={h} className="ig-hl">
+                    <span className={sw ? 'ig-hl-circle ig-hl-mark' : 'ig-hl-circle'} style={sw ? { background: sw.bg, color: sw.fg } : undefined} title="하이라이트 커버 그림은 아직 올리지 않았어요(FR-BR-4)">
+                      {sw?.mark}
+                    </span>
+                    <span className="small">{h}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div className="phone-tabs" aria-hidden="true">
@@ -223,6 +240,9 @@ export function PreviewPage() {
             <button type="button" onClick={() => setPlay((n) => n + 1)}>
               다시 보기
             </button>
+            <button type="button" disabled={!view.plan || !!jobId} onClick={() => void arrange()} title="AI 없이 칸 순서만 — 고정 · 이은 · 올린 칸은 그대로">
+              칸 순서 맞추기
+            </button>
             <button type="button" disabled={saving || covers === null} onClick={saveImage} title="스토리 크기(1080×1920) PNG — 계획 칸의 「계획」 배지는 그대로 남아요">
               {saving ? '이미지 만드는 중…' : '이미지로 저장'}
             </button>
@@ -235,6 +255,7 @@ export function PreviewPage() {
           {!view.ready.template && <p className="note small">「템플릿」에서 시안을 고정해야 계획 칸을 그 틀의 표지로 그릴 수 있어요.</p>}
           {view.plan?.stale && <p className="note small">계획을 만든 뒤 프로필이 바뀌었어요. 다시 만들면 바뀐 축으로 계획합니다.</p>}
           {error && <p className="status error">{error}</p>}
+          {info && <p className="status ok small">{info}</p>}
           <SlotEditor key={pickedPlan ? `${pickedPlan.slot}:${pickedPlan.title}` : 'none'} cell={pickedPlan} edit={edit} onClose={() => setSelected(null)} />
         </div>
       </div>
@@ -292,9 +313,15 @@ function SlotEditor({
   );
 }
 
-/** 프로필 사진: 올린 파일(「브랜드」의 글자형 시안도 그림으로 올라간다)이 있으면 그것, 없으면 빈 원 */
-function Avatar({ image }: { image: string | null }) {
+/** 프로필 사진: 올린 파일이 있으면 그것, 없으면 주색 원 + 이름 첫 글자(소개 페이지와 같은 방식, 2026-10-25), 이름도 없으면 빈 원 */
+function Avatar({ image, swatch }: { image: string | null; swatch: { bg: string; fg: string; mark: string } | null }) {
   if (image) return <img className="ig-avatar" src={`/api/brand/assets/${image}`} alt="프로필 사진" />;
+  if (swatch)
+    return (
+      <span className="ig-avatar ig-mark" style={{ background: swatch.bg, color: swatch.fg }} title="프로필 사진을 아직 고르지 않았어요 — 이름 첫 글자로 보여요">
+        {swatch.mark}
+      </span>
+    );
   return <span className="ig-avatar ig-empty" title="프로필 사진을 아직 고르지 않았어요" />;
 }
 

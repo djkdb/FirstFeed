@@ -63,7 +63,7 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
           const labels = (visual?.candidates.imagePrompts ?? []).filter((p) => p.target === 'highlight').map((p) => p.label);
           return {
             avatar: avatarSwatch(sel.displayName ?? sel.handle, pal),
-            highlights: highlightSwatches(labels, pal, (draftById(fixed?.draftId ?? '')?.id ?? null), getSetting(db, 'render.pillarCoverVariant')),
+            highlights: highlightSwatches(labels, pal, (draftById(fixed?.draftId ?? '')?.id ?? null), getSetting(db, 'render.pillarCoverVariant'), (profile?.pillars ?? []).map((x) => x.name)),
           };
         })(),
         /** 계획 칸 자리표시를 고정 템플릿의 제목 글꼴로 그리려고 */

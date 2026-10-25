@@ -85,7 +85,7 @@ export async function shareView(db: DatabaseSync, dataDir: string, brandId: numb
     displayName: sel.displayName,
     bio: sel.bio,
     avatar: photo ? { img: dataUri(photo) } : av ? { initial: av.mark, bg: av.bg, fg: av.fg } : null,
-    highlights: look ? highlightSwatches(labels, look, draftById(fixed?.draftId ?? '')?.id ?? null, getSetting(db, 'render.pillarCoverVariant')) : [],
+    highlights: look ? highlightSwatches(labels, look, draftById(fixed?.draftId ?? '')?.id ?? null, getSetting(db, 'render.pillarCoverVariant'), (profile?.pillars ?? []).map((x) => x.name)) : [],
     made: cells.filter((c) => c.kind === 'made').length,
     plan: cells.filter((c) => c.kind === 'plan').length,
     posted: cells.filter((c) => c.state === 'posted').length,

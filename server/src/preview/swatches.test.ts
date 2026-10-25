@@ -23,5 +23,8 @@ describe('글자 원 (2026-10-25, 소개 페이지와 같은 방식)', () => {
     expect(on.map((h) => h.mark)).toEqual(['가', '나', '다']);
     for (const h of on) expect(contrastRatio(h.fg, h.bg)).toBeGreaterThanOrEqual(3);
     expect(highlightSwatches(['가'], look.palette, 'B', false)[0]!.bg).toBe(look.palette.primary);
+    // 하이라이트 순서가 축 순서와 달라도 이름이 같으면 그 축의 색
+    const byName = highlightSwatches(['다 축', '가 축'], look.palette, 'B', true, ['가 축', '나 축', '다 축']);
+    expect(byName.map((h) => h.bg)).toEqual([surfaces[2], surfaces[0]]);
   });
 });

@@ -20,12 +20,16 @@ export function avatarSwatch(name: string | null, p: Palette): Swatch | null {
   return mark ? { bg: p.primary, fg: inkFor(p.primary, p), mark } : null;
 }
 
-/** 하이라이트 i 번째의 원 — 축 색 변형이 꺼져 있으면 팔레트 색을 차례로(주색 · 보조색 · 강조색) */
-export function highlightSwatches(labels: string[], p: Palette, draftId: Draft['id'] | null, variantOn: boolean): Array<Swatch & { label: string }> {
+/**
+ * 하이라이트 원 — 이름이 프로필 축 이름과 같으면 그 축 번호의 색(그 축 표지 바탕색), 아니면 하이라이트 순서대로.
+ * 축 색 변형이 꺼져 있으면 팔레트 색을 차례로(주색 · 보조색 · 강조색)
+ */
+export function highlightSwatches(labels: string[], p: Palette, draftId: Draft['id'] | null, variantOn: boolean, pillarNames: string[] = []): Array<Swatch & { label: string }> {
   const surface = COVER_SURFACE[draftId ?? 'A'];
   const colors = variantOn ? coverVariants(draftId ?? 'A', p).map((v) => v[surface]) : [p.primary, p.secondary, p.accent];
   return labels.map((label, i) => {
-    const bg = colors[i % colors.length]!;
+    const at = pillarNames.indexOf(label);
+    const bg = colors[(at >= 0 ? at : i) % colors.length]!;
     return { label, bg, fg: inkFor(bg, p), mark: first(label) };
   });
 }

@@ -39,31 +39,31 @@
   "tiles": [
     {
       "src": "img/tile-1.png",
-      "title": "용어 뜻을 찾을수록 더 헷갈릴 때",
-      "planned": true,
-      "posted": false
-    },
-    {
-      "src": "img/tile-2.png",
       "title": "정답 대신 막힌 지점부터 적는 이유",
       "planned": true,
       "posted": false
     },
     {
+      "src": "img/tile-2.png",
+      "title": "과제로 만든 게 첫 포트폴리오?",
+      "planned": true,
+      "posted": false
+    },
+    {
       "src": "img/tile-3.png",
-      "title": "완성본보다 맨 처음 버전부터",
+      "title": "풀었는데 어떻게 풀었는지 까먹었다",
       "planned": true,
       "posted": false
     },
     {
       "src": "img/tile-4.png",
-      "title": "'에러 메시지'는 결국 무슨 말일까",
+      "title": "완성본보다 맨 처음 버전부터",
       "planned": true,
       "posted": false
     },
     {
       "src": "img/tile-5.png",
-      "title": "풀었는데 어떻게 풀었는지 까먹었다",
+      "title": "'에러 메시지'는 결국 무슨 말일까",
       "planned": true,
       "posted": false
     },

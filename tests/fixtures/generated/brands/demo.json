@@ -1,0 +1,11 @@
+{
+  "note": "소개 페이지 데모 브랜드(AI 생성 페르소나 demo — devlog 2026-10-22-03)의 키트 값. 앱으로 만든 데모 데이터 폴더(레포 밖 임시 폴더)가 2026-10-30 에 지워져, 지워지기 전 이 세션의 출력에서 옮겼다: 팔레트 다섯 색은 축 색 변형 확인 출력(devlog 2026-10-25-01 「변형 수」 — 시안 A 순서 background · primary · secondary · accent · text), 글꼴은 고정 템플릿 조회(제목 paperlogy · 본문 pretendard), 아이디 · 이름은 site/data/demo.json. 팔레트 이름 「노트 위 파란 펜」은 devlog 2026-10-22-03",
+  "look": {
+    "palette": { "name": "노트 위 파란 펜", "primary": "#2F5D8A", "secondary": "#DCE6F0", "accent": "#F2B33D", "background": "#FAF7F0", "text": "#2B2B2B" },
+    "titleFont": "paperlogy",
+    "bodyFont": "pretendard",
+    "handle": "nonmajor.codelog",
+    "displayName": "비전공자 코딩 기록 | 막힘→풀림",
+    "profileImage": null
+  }
+}

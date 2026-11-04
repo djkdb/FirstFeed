@@ -88,6 +88,7 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 | 브랜딩 키트 측정 (구독 사용량 듦) | `npm run eval:brand -- --snapshot`(프로필 스냅숏, 없는 사람만) → `npm run eval:brand -- --runs=2` · `--reflect=me`(FR-ID-6: 말투·축 바꾸기 전/후 바이오). 오래 걸리는 측정은 `caffeinate -i` 로 감싸고 덮개를 연 채로 |
 | 템플릿 넘침 측정 (구독 사용량 없음, 기준 브라우저 필요) | `npm run eval:templates` — 시안 × 브랜드(tests/fixtures/*/brands) × 넘침 테스트 세트 → `tests/results/<날짜>-templates/<시안>-<브랜드>/*.png`(`_sheet.png` 한눈에 보기) + 요약 표. 판정 통과인데 잘린 PNG 가 없는지 직접 열어 대조 |
 | 렌더링 브라우저 준비 (처음 한 번) | `npx playwright install chromium` — 앱은 브라우저를 내려받지 않는다. 테스트 중 실제 브라우저로 그리는 것은 `*.browser.test.ts`(단위 테스트 뒤에 파일 하나씩) |
+| 토큰 측정 (구독 사용량 듦) | `npm run eval:tokens -- --runs=2 --label=<이름>` (`--overhead-only` 고정 토큰만 · `--steps=visual,plan` · `--model 과제=sonnet` · `--prompt 이름=vN`) → `tests/results/<날짜>-tokens-<이름>.md`·`.json`. 클라우드 개발 컨테이너에서만 `--cloud-session` |
 | 노력 단계별 응답 시간 측정 | `npm run ai:effort -- --fixture=seoyeon --levels=default,low,medium,high --repeat=2` |
 
 ## 5. 작업 규칙
@@ -186,7 +187,7 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 - **가리기 함수 하나를 대화 내보내기와 커밋 검사가 같이 쓴다** — 한쪽만 고쳐 규칙이 어긋나는 일을 막으려고
 - **커밋 전 훅: 개인정보 검사 + 린트 + 타입 체크**, `npm install`(prepare)로 켜짐 — 사람이(AI가) 기억해서 돌리는 검사는 빠진다 (「겪은 오류」 참고)
 - **오탐 허용 목록은 항목마다 이유 한 줄 필수** — 이유 없는 예외가 쌓이면 검사가 무력해져서
-- **앱의 CLI 호출은 `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence`** — `--safe-mode` 는 CLAUDE.md·훅·스킬·MCP 를 끄면서 구독 로그인은 그대로 쓴다(`--help` 확인). 두 장치는 **막는 범위가 달라서** 같이 쓴다: 사용자 전역 설정(`~/.claude/CLAUDE.md`·사용자 훅·스킬)은 작업 폴더와 무관하게 읽히므로 safe-mode 만 막고, 임시 폴더는 프로젝트 범위(작업 폴더의 CLAUDE.md·`.claude/`)만 막는다. 대조 실험(devlog 02)은 레포 CLAUDE.md 만 쟀다
+- **앱의 CLI 호출은 `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence`**(2026-11-04 에 `--setting-sources ""` · `--disable-slash-commands` · 앱 전용 `--system-prompt` 를 더함 — 아래) — `--safe-mode` 는 CLAUDE.md·훅·스킬·MCP 를 끄면서 구독 로그인은 그대로 쓴다(`--help` 확인). 두 장치는 **막는 범위가 달라서** 같이 쓴다: 사용자 전역 설정(`~/.claude/CLAUDE.md`·사용자 훅·스킬)은 작업 폴더와 무관하게 읽히므로 safe-mode 만 막고, 임시 폴더는 프로젝트 범위(작업 폴더의 CLAUDE.md·`.claude/`)만 막는다. 대조 실험(devlog 02)은 레포 CLAUDE.md 만 쟀다
 
 ### 2026-10-13 · 구독 보호와 정체성 흐름 계획 (devlog: [2026-10-13-03](docs/devlog/2026-10-13-03-구독-경로-환경-변수와-정정.md), [2026-10-13-04](docs/devlog/2026-10-13-04-정체성-흐름.md))
 - **구독 보호는 경고가 아니라 차단** — 실행 직전 `claude auth status` 로 구독인지 판정하고, 아니면 호출하지 않는다(ai_runs 에 blocked). 판정 결과는 `ai.authCacheMs`(기본 60초) 동안 기억. 경고만 하면 그사이 다른 요금으로 돈다
@@ -391,6 +392,15 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 - **「AI 가 고친 곳」은 규칙 코드 · 마크다운 기호를 보이지 않는다** — 「카드 N · 이유 한 줄」(규칙 코드마다 한국어 문장 표 한 곳) + 바뀐 부분만 강조(지운 것 취소선 · 더한 것 밑줄)
 - **계획 칸 순서는 같은 축이 같은 열에 이어지지 않게 코드가 맞춘다** — 축 3개가 3열을 차례로 돌면 열마다 한 색(세로 줄무늬)이 됐다. 고정 · 이은 · 올린 칸은 움직이지 않고 나머지만 재배치, 축이 2 · 4 · 5개일 때도 같은 열 연속을 최소로
 - 프로필 사진이 없으면 주색 원 + 이름 첫 글자, 하이라이트는 축 색 원 + 축 이름 첫 글자(소개 페이지와 같은 방식) — 미리보기 · 공유 이미지. 소개 페이지 「계획」 배지는 오른쪽 위로
+
+### 2026-11-04 · 토큰 줄이기 (사용자 지시, devlog: [2026-11-04-01](docs/devlog/2026-11-04-01-토큰-줄이기.md))
+- **AI 호출마다 토큰 사용량을 남긴다**(`ai_runs` 의 input · cache_creation · cache_read · output · thinking 토큰 · 표시 가격, 마이그레이션 014). 측정은 `npm run eval:tokens` 하나로 — 고정 입력(공개 fixture me + 실제 소재 1개)으로 과제별 전/후를 같은 방법으로 잰다
+- **CLI 호출에 앱 전용 시스템 프롬프트(`prompts/_system/app`) · `--setting-sources ""` · `--disable-slash-commands`** — 기본 코딩용 시스템 프롬프트가 호출마다 약 1.2k 토큰을 더했다. 고정 토큰 sonnet 3,288 → 2,166 · opus 3,358 → 2,160, 과제별 호출 1번 입력 −16~−48%. 이미지(Read) · 웹 검색 · 일반 경로 구조화 출력 확인. 격리가 강해지는 쪽(설정 파일 · 스킬 · 명령을 안 읽음). 끄는 설정 `ai.appSystemPrompt`(비교용). `claude --help`(2.1.318)로 옵션 확인
+  - 시스템 프롬프트는 모든 호출에 붙으므로 짧게 유지한다. 과제 규칙은 과제 프롬프트에 둔다
+- **자기 평가 · 재작성에 넘기는 결과 JSON 은 들여쓰기 없이** — 글자 수 약 −34%, 내용은 같다
+- **과제별 모델은 그대로**(측정 tests/results/2026-11-04-tokens-model-*.md): smoke_extract haiku 는 규칙 통과는 같지만 생각 토큰 때문에 출력 2배 · 더 느림 / brand_visual sonnet 은 규칙 · 토큰 같고 약 7초 빠르나 한 사람 · 2회라 eval:brand 로 다시 재기 전에는 안 바꿈 / series_plan sonnet 은 1회 통과 2/2 → 1/2 로 나빠짐. **모델을 바꿀 때는 출력 · 생각 토큰까지 잰다** — 작은 모델이 늘 싸고 빠른 것이 아니다
+- **자기 평가를 끄는 과제는 늘리지 않는다** — 코드 규칙만인 과제는 꼬리질문 · 시각 · 계획 그대로. 나머지는 근거 규칙의 알려진 한계를 자기 평가가 맡고 있다(5장)
+- 구독 사용량이 캐시 쓰기 · 읽기 · 출력을 어떻게 세는지는 **확인 못 함** — 측정에는 칸별 숫자를 같이 적는다
 
 ## 겪은 오류
 

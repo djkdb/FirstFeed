@@ -26,6 +26,18 @@ describe('AI 어댑터', () => {
     expect(runs(db)).toEqual([{ attempt: 1, kind: 'generate', status: 'ok', model: 'sonnet' }]);
   });
 
+  it('토큰 사용량을 호출 기록에 남긴다', async () => {
+    const { db, ai } = setup([{ structured: { title: '하나' } }]);
+    await ai.call({ task: 'smoke_extract', prompt: 'p', schema: Schema });
+    expect(db.prepare('SELECT input_tokens, cache_creation_tokens, cache_read_tokens, output_tokens, cost_usd FROM ai_runs').get()).toEqual({
+      input_tokens: 2,
+      cache_creation_tokens: 10,
+      cache_read_tokens: 20,
+      output_tokens: 5,
+      cost_usd: null,
+    });
+  });
+
   it('깨진 JSON 이면 이유를 붙여 1회 다시 요청한다', async () => {
     const { db, ai, provider } = setup([{ text: '죄송합니다' }, { text: '{"title":"둘째"}' }]);
     const r = await ai.call({ task: 'smoke_extract', prompt: '원래 프롬프트', schema: Schema });

@@ -45,6 +45,21 @@ export interface ProviderRunOutput {
   /** 실제로 쓰인 모델 이름 (CLI 가 알려 줄 때) */
   model?: string;
   durationMs: number;
+  /** 토큰 사용량 (공급자가 알려 줄 때만, 모르면 null) */
+  usage?: AiUsage | null;
+}
+
+/** 호출 한 번의 토큰 사용량. 입력은 캐시 안 된 입력 · 캐시 쓰기 · 캐시 읽기 셋으로 나뉜다(Claude Code 결과 봉투 그대로) */
+export interface AiUsage {
+  inputTokens: number | null;
+  cacheCreationTokens: number | null;
+  cacheReadTokens: number | null;
+  outputTokens: number | null;
+  /** 출력 중 생각 토큰 */
+  thinkingTokens: number | null;
+  /** CLI 가 적은 표시 가격(구독 경로에서는 실제로 청구되지 않는다 — 비교용) */
+  costUsd: number | null;
+  apiMs: number | null;
 }
 
 export interface ProviderStatus {

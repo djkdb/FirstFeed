@@ -7,7 +7,7 @@ import { getSetting, modelForTask } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { extractJson, type ExtractVia } from './extract.ts';
 import { loadPrompt } from './prompts.ts';
-import { AiError, type AiProvider, type AiRequest } from './types.ts';
+import { AiError, type AiProvider, type AiRequest, type AiUsage } from './types.ts';
 import { sleptNote, startStopwatch } from '../lib/sleep-clock.ts';
 
 export type RunKind = 'generate' | 'json_retry' | 'rewrite' | 'review';
@@ -234,17 +234,17 @@ export class AiService {
         if (!extracted.ok) {
           lastError = extracted.error;
           lastKind = 'invalid_json';
-          this.log({ ...base, model: usedModel, status: 'invalid_json', error: lastError, durationMs: out.durationMs, sleptMs: sw.sleptMs() });
+          this.log({ ...base, model: usedModel, status: 'invalid_json', error: lastError, durationMs: out.durationMs, sleptMs: sw.sleptMs(), usage: out.usage });
           continue;
         }
         const parsed = req.schema.safeParse(extracted.value);
         if (!parsed.success) {
           lastError = `스키마에 맞지 않음:\n${describeZodError(parsed.error)}`;
           lastKind = 'schema_error';
-          this.log({ ...base, model: usedModel, status: 'schema_error', error: lastError, durationMs: out.durationMs, sleptMs: sw.sleptMs() });
+          this.log({ ...base, model: usedModel, status: 'schema_error', error: lastError, durationMs: out.durationMs, sleptMs: sw.sleptMs(), usage: out.usage });
           continue;
         }
-        const runId = this.log({ ...base, model: usedModel, status: 'ok', error: null, durationMs: out.durationMs, sleptMs: sw.sleptMs() });
+        const runId = this.log({ ...base, model: usedModel, status: 'ok', error: null, durationMs: out.durationMs, sleptMs: sw.sleptMs(), usage: out.usage });
         return { data: parsed.data, runId, jobId: ctx.jobId, model: usedModel, via: extracted.via, durationMs: out.durationMs };
       }
       throw new AiError(
@@ -277,11 +277,15 @@ export class AiService {
     sleptMs?: number;
     startedAt: string;
     promptRef?: { name: string; version: string };
+    /** 토큰 사용량 — 공급자가 알려 준 호출만(실패해 결과 봉투가 없으면 NULL) */
+    usage?: AiUsage | null;
   }): number {
+    const u = r.usage ?? null;
     const res = this.db
       .prepare(
-        `INSERT INTO ai_runs (job_id, task, provider, model, prompt_name, prompt_ver, attempt, kind, status, error, duration_ms, started_at, finished_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO ai_runs (job_id, task, provider, model, prompt_name, prompt_ver, attempt, kind, status, error, duration_ms, started_at, finished_at,
+                              input_tokens, cache_creation_tokens, cache_read_tokens, output_tokens, thinking_tokens, cost_usd)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         r.job.jobId,
@@ -297,6 +301,12 @@ export class AiService {
         r.durationMs,
         r.startedAt,
         new Date().toISOString(),
+        u?.inputTokens ?? null,
+        u?.cacheCreationTokens ?? null,
+        u?.cacheReadTokens ?? null,
+        u?.outputTokens ?? null,
+        u?.thinkingTokens ?? null,
+        u?.costUsd ?? null,
       );
     const tag = r.status === 'ok' ? '성공' : r.status;
     console.log(`[AI] ${r.task} #${r.job.attempt} ${r.kind} → ${tag} (${r.model}, ${(r.durationMs / 1000).toFixed(1)}초${sleptNote(r.sleptMs ?? 0)})${r.error ? ` — ${r.error.split('\n')[0]}` : ''}`);

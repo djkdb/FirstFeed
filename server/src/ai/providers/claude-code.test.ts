@@ -27,14 +27,17 @@ log('run');
 let input = '';
 process.stdin.on('data', (d) => (input += d));
 process.stdin.on('end', () => {
-  console.log(JSON.stringify({ type: 'result', is_error: false, result: '', structured_output: { leaked } }));
+  // 받은 인자는 FAKE_ARGS 파일에 남긴다(구조화 결과 모양은 기존 시험 그대로 두려고). usage 는 2.1.318 실제 봉투의 칸 이름
+  if (process.env.FAKE_ARGS) fs.writeFileSync(process.env.FAKE_ARGS, JSON.stringify(args));
+  console.log(JSON.stringify({ type: 'result', is_error: false, result: '', structured_output: { leaked }, total_cost_usd: 0.01, duration_api_ms: 900,
+    usage: { input_tokens: 2, cache_creation_input_tokens: 800, cache_read_input_tokens: 1144, output_tokens: 52, output_tokens_details: { thinking_tokens: 7 } } }));
 });
 `;
 
 let dir: string;
 let bin: string;
 let logFile: string;
-const touched = [...NON_SUBSCRIPTION_ENV, 'CLAUDE_CODE_OAUTH_TOKEN', 'FAKE_AUTH_METHOD', 'FAKE_LOG'];
+const touched = [...NON_SUBSCRIPTION_ENV, 'CLAUDE_CODE_OAUTH_TOKEN', 'FAKE_AUTH_METHOD', 'FAKE_LOG', 'FAKE_ARGS'];
 const saved: Record<string, string | undefined> = {};
 const input: ProviderRunInput = { prompt: 'p', jsonSchema: {}, model: 'sonnet', images: [], web: false, timeoutMs: 10_000 };
 const calls = () => (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8').trim().split('\n').filter(Boolean) : []);
@@ -126,5 +129,20 @@ describe('실행 직전 차단', () => {
     process.env.FAKE_AUTH_METHOD = 'third_party';
     await expect(p.run(input)).rejects.toMatchObject({ kind: 'not_subscription' });
     expect(calls()).toEqual(['auth', 'run', 'auth']);
+  });
+});
+
+describe('사용량 (토큰 줄이기 2026-11-04)', () => {
+  const argsOf = async (extra: Partial<ProviderRunInput>) => {
+    freshLog();
+    const file = path.join(dir, `args-${Math.random().toString(36).slice(2)}.json`);
+    process.env.FAKE_ARGS = file;
+    const out = await new ClaudeCodeProvider({ bin }).run({ ...input, ...extra });
+    return { out, args: JSON.parse(fs.readFileSync(file, 'utf8')) as string[] };
+  };
+
+  it('결과 봉투의 usage 를 읽는다', async () => {
+    const { out } = await argsOf({});
+    expect(out.usage).toEqual({ inputTokens: 2, cacheCreationTokens: 800, cacheReadTokens: 1144, outputTokens: 52, thinkingTokens: 7, costUsd: 0.01, apiMs: 900 });
   });
 });

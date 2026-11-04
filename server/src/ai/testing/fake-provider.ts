@@ -42,7 +42,7 @@ export class FakeProvider implements AiProvider {
         return { structured: step.structured, text: '', model: input.model, durationMs: step.waitMs };
       }
       return 'structured' in step
-        ? { structured: step.structured, text: '', model: input.model, durationMs: 1 }
+        ? { structured: step.structured, text: '', model: input.model, durationMs: 1, usage: { inputTokens: 2, cacheCreationTokens: 10, cacheReadTokens: 20, outputTokens: 5, thinkingTokens: 0, costUsd: null, apiMs: null } }
         : { text: step.text, model: input.model, durationMs: 1 };
     } finally {
       this.running--;

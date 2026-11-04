@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { getSetting } from '../../config.ts';
 import { runProcess } from '../../lib/process.ts';
-import { AiError, type AiProvider, type ProviderRunInput, type ProviderRunOutput, type ProviderStatus } from '../types.ts';
+import { AiError, type AiProvider, type AiUsage, type ProviderRunInput, type ProviderRunOutput, type ProviderStatus } from '../types.ts';
 import { sleptNote, startStopwatch } from '../../lib/sleep-clock.ts';
 
 export interface ClaudeCodeOptions {
@@ -18,6 +18,12 @@ export interface ClaudeCodeOptions {
   isolation?: { safeMode: boolean; tempCwd: boolean; cwd?: string };
   /** 로그인 확인 결과를 기억하는 시간(ms). 매 호출마다 auth status 를 돌리면 1초 남짓씩 느려져서 */
   authCacheMs?: number;
+  /**
+   * 구독 판정 함수. 기본은 isSubscriptionAuth. 바꾸는 것은 측정 스크립트가 클라우드 개발 컨테이너
+   * (Claude Code 원격 세션 — 사용자 본인 계정의 oauth_token 으로 로그인)에서 돌 때뿐(scripts/eval-tokens.ts --cloud-session).
+   * 앱 서버는 이 값을 넘기지 않는다
+   */
+  acceptAuth?: (auth: AuthStatus, env: NodeJS.ProcessEnv) => boolean;
 }
 
 const DETECT_TIMEOUT_MS = 15_000;
@@ -96,6 +102,31 @@ interface ResultEnvelope {
   structured_output?: unknown;
   modelUsage?: Record<string, unknown>;
   duration_ms?: number;
+  duration_api_ms?: number;
+  total_cost_usd?: number;
+  usage?: {
+    input_tokens?: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+    output_tokens?: number;
+    output_tokens_details?: { thinking_tokens?: number };
+  };
+}
+
+/** 결과 봉투의 사용량. 칸이 없으면 null(모르는 값은 0 으로 채우지 않는다) — 2.1.318 실제 호출로 칸 이름 확인 */
+export function usageOf(env: ResultEnvelope): AiUsage | null {
+  const u = env.usage;
+  if (!u) return null;
+  const n = (v: unknown) => (typeof v === 'number' ? v : null);
+  return {
+    inputTokens: n(u.input_tokens),
+    cacheCreationTokens: n(u.cache_creation_input_tokens),
+    cacheReadTokens: n(u.cache_read_input_tokens),
+    outputTokens: n(u.output_tokens),
+    thinkingTokens: n(u.output_tokens_details?.thinking_tokens),
+    costUsd: n(env.total_cost_usd),
+    apiMs: n(env.duration_api_ms),
+  };
 }
 
 export class ClaudeCodeProvider implements AiProvider {
@@ -103,12 +134,14 @@ export class ClaudeCodeProvider implements AiProvider {
   private readonly bin: string;
   private readonly isolation: NonNullable<ClaudeCodeOptions['isolation']>;
   private readonly authCacheMs: number;
+  private readonly acceptAuth: NonNullable<ClaudeCodeOptions['acceptAuth']>;
   private authCache: { status: AuthStatus | null; at: number } | null = null;
 
   constructor(opts: ClaudeCodeOptions = {}) {
     this.bin = opts.bin ?? 'claude';
     this.isolation = opts.isolation ?? { safeMode: true, tempCwd: true };
     this.authCacheMs = opts.authCacheMs ?? getSetting(null, 'ai.authCacheMs');
+    this.acceptAuth = opts.acceptAuth ?? isSubscriptionAuth;
   }
 
   /** 실제 호출과 같은 환경으로 로그인 상태를 읽는다. fresh 가 아니면 잠깐 기억해 둔 값을 쓴다 */
@@ -156,7 +189,7 @@ export class ClaudeCodeProvider implements AiProvider {
       };
     }
     const loggedIn = parsed.loggedIn === true;
-    const subscription = isSubscriptionAuth(parsed, subscriptionEnv());
+    const subscription = this.acceptAuth(parsed, subscriptionEnv());
     return {
       ...base,
       installed: true,
@@ -176,7 +209,7 @@ export class ClaudeCodeProvider implements AiProvider {
     if (auth && auth.loggedIn !== true) {
       throw new AiError('not_logged_in', 'Claude Code 에 로그인되어 있지 않습니다.', NOT_LOGGED_IN_HINT);
     }
-    if (auth && !isSubscriptionAuth(auth, subscriptionEnv())) {
+    if (auth && !this.acceptAuth(auth, subscriptionEnv())) {
       throw new AiError(
         'not_subscription',
         `Claude Code 가 구독(claude.ai)이 아닌 방식(${auth.authMethod ?? '알 수 없음'}${auth.apiProvider && auth.apiProvider !== 'firstParty' ? ` · ${auth.apiProvider}` : ''})으로 인증되어 있어 호출을 막았습니다.`,
@@ -263,6 +296,7 @@ export class ClaudeCodeProvider implements AiProvider {
         text: env.result ?? '',
         model: env.modelUsage ? Object.keys(env.modelUsage)[0] : undefined,
         durationMs,
+        usage: usageOf(env),
       };
     } finally {
       await fs.rm(tmp, { recursive: true, force: true });

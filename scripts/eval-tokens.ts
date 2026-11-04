@@ -82,6 +82,8 @@ interface RunRow {
   costUsd: number | null;
   ms: number | null;
   ruleErrors: number;
+  /** 코드 규칙 위반 코드(재작성 · 뺀 후보의 이유 — 근거 위반을 따로 세려고) */
+  ruleCodes: string[];
 }
 
 /** ai_runs → 측정 줄. 자기 평가 줄에는 같은 작업에서 바로 앞의 생성 과제를 붙인다 */
@@ -95,7 +97,7 @@ function collect(db: Db, run: number): RunRow[] {
     const task = String(r.task);
     const of = task === 'self_review' ? (lastTask.get(job) ?? null) : null;
     if (task !== 'self_review') lastTask.set(job, task);
-    const issues = r.issues_json ? (JSON.parse(String(r.issues_json)) as Array<{ level: string; from?: string }>) : [];
+    const issues = r.issues_json ? (JSON.parse(String(r.issues_json)) as Array<{ level: string; from?: string; code: string }>) : [];
     return {
       run,
       task,
@@ -111,6 +113,7 @@ function collect(db: Db, run: number): RunRow[] {
       costUsd: r.cost_usd as number | null,
       ms: r.duration_ms as number | null,
       ruleErrors: issues.filter((i) => i.level === 'error' && i.from === 'rule').length,
+      ruleCodes: issues.filter((i) => i.level === 'error' && i.from === 'rule').map((i) => i.code),
     };
   });
 }
@@ -182,11 +185,13 @@ async function oneRun(run: number): Promise<{ rows: RunRow[]; notes: string[] }>
   });
   await step('visual', async () => {
     const r = await generateVisual(ai, 1);
-    return `뺀 후보 ${r.dropped.length} · 재작성 ${r.rewrites}`;
+    // 모델을 바꿔 볼 때 사람이 읽고 비교하려고 결과를 짧게 남긴다
+    const c = r.candidates;
+    return `뺀 후보 ${r.dropped.length} · 재작성 ${r.rewrites} · 팔레트 ${c.palettes.map((p) => `${p.name}(${Object.values(p.colors).join(' ')})`).join(' / ')} · 폰트 ${c.fontPairs.map((f) => `${f.title}+${f.body}`).join(' / ')} · 그림 ${c.imagePrompts.map((x) => `[${x.target}] ${x.prompt}`).join(' / ')}`;
   });
   await step('plan', async () => {
     const r = await generatePlan(ai, 1);
-    return `칸 ${r.plan.slots.length} · 재작성 ${r.rewrites}`;
+    return `칸 ${r.plan.slots.length} · 재작성 ${r.rewrites} · ${r.plan.slots.map((x) => `[${x.pillarId}] ${x.title}`).join(' / ')}`;
   });
   if (steps.has('cards') || steps.has('caption')) {
     const text = fs.readFileSync(path.join(env.repoRoot, 'tests/fixtures/real/sources', `${sourceName}.md`), 'utf8').replace(/^\s*<!--[\s\S]*?-->\s*/, '').trim();
@@ -209,7 +214,8 @@ async function oneRun(run: number): Promise<{ rows: RunRow[]; notes: string[] }>
   return { rows: collect(db, run), notes };
 }
 
-const ovh = await overhead();
+/** --no-overhead: 모델 비교처럼 과제만 다시 잴 때 고정 토큰 호출(4번)을 건너뛴다 */
+const ovh = args.includes('--no-overhead') ? [] : await overhead();
 const all: RunRow[] = [];
 const notes: string[] = [];
 if (!overheadOnly) {
@@ -259,14 +265,14 @@ if (!overheadOnly) {
     );
   }
   // 과제 하나를 끝내는 데 든 전부(생성 + 재작성 + 형식 재요청 + 그 과제의 자기 평가) — 1회 평균
-  lines.push('', '## 과제별 합 (1회 평균 — 생성 · 재작성 · 자기 평가 포함)', '', '| 과제 | 호출 수 | 입력 합 | 출력 | 시간 | 1회 통과 | 재작성 | 코드 규칙 위반 |', '|---|---|---|---|---|---|---|---|');
+  lines.push('', '## 과제별 합 (1회 평균 — 생성 · 재작성 · 자기 평가 포함)', '', '| 과제 | 호출 수 | 입력 합 | 출력 | 시간 | 1회 통과 | 재작성 | 코드 규칙 위반 | 위반 코드 |', '|---|---|---|---|---|---|---|---|---|');
   const tasks = [...new Set(all.filter((r) => r.task !== 'self_review').map((r) => r.task))];
   for (const t of tasks) {
     const per = Array.from({ length: runs }, (_, i) => all.filter((r) => r.run === i + 1 && (r.task === t || r.of === t)));
     const sum = (rs: RunRow[], f: (r: RunRow) => number | null) => rs.reduce((n, r) => n + (f(r) ?? 0), 0);
     const firstPass = per.filter((rs) => rs.find((r) => r.task === t && r.kind === 'generate')?.status === 'ok').length;
     lines.push(
-      `| ${t} | ${fmt(avg(per.map((rs) => rs.length)), 1)} | ${fmt(avg(per.map((rs) => sum(rs, totalIn))))} | ${fmt(avg(per.map((rs) => sum(rs, (r) => r.output))))} | ${fmt(avg(per.map((rs) => sum(rs, (r) => r.ms) / 1000)), 0)}초 | ${firstPass}/${runs} | ${per.map((rs) => rs.filter((r) => r.task === t && r.kind === 'rewrite').length).join('·')} | ${per.map((rs) => sum(rs.filter((r) => r.task === t), (r) => r.ruleErrors)).join('·')} |`,
+      `| ${t} | ${fmt(avg(per.map((rs) => rs.length)), 1)} | ${fmt(avg(per.map((rs) => sum(rs, totalIn))))} | ${fmt(avg(per.map((rs) => sum(rs, (r) => r.output))))} | ${fmt(avg(per.map((rs) => sum(rs, (r) => r.ms) / 1000)), 0)}초 | ${firstPass}/${runs} | ${per.map((rs) => rs.filter((r) => r.task === t && r.kind === 'rewrite').length).join('·')} | ${per.map((rs) => sum(rs.filter((r) => r.task === t), (r) => r.ruleErrors)).join('·')} | ${[...new Set(per.flatMap((rs) => rs.filter((r) => r.task === t).flatMap((r) => r.ruleCodes ?? [])))].join(', ') || '-'} |`,
     );
   }
   const perRun = Array.from({ length: runs }, (_, i) => all.filter((r) => r.run === i + 1));

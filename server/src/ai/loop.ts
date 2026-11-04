@@ -103,11 +103,12 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
       // 수용 기준(예: 바이오가 계정 정의와 축을 담는가)을 놓치지 않는다
       const ruleErrors = issues.filter((i) => i.level === 'error');
       const usable = ruleErrors.length === 0 || (req.acceptByDropping?.(ruleErrors, gen.data) ?? false);
+      // 결과 JSON 은 들여쓰기 없이 넘긴다(자기 평가 · 재작성) — 들여쓰기 공백·줄바꿈이 글자 수를 3분의 1쯤 늘리는데 모델이 읽는 내용은 같다(토큰 줄이기 2026-11-04)
       if (usable && req.selfReview !== false) {
         const review = loadPrompt(
           ai.db,
           'self_review',
-          { requirements: req.prompt, output: JSON.stringify(gen.data, null, 2), criteria: req.reviewCriteria ?? '(이 과제만의 추가 기준 없음)' },
+          { requirements: req.prompt, output: JSON.stringify(gen.data), criteria: req.reviewCriteria ?? '(이 과제만의 추가 기준 없음)' },
           undefined,
           ['criteria'],
         );
@@ -147,7 +148,7 @@ export async function generateChecked<T>(ai: AiService, req: CheckedRequest<T>, 
       rewrites++;
       reasons = errors.slice(0, 3).map((e) => e.message);
       prompt = `${req.prompt}\n\n${
-        loadPrompt(ai.db, '_system/rewrite', { previous: JSON.stringify(gen.data, null, 2), issues: formatIssues(errors) }).text
+        loadPrompt(ai.db, '_system/rewrite', { previous: JSON.stringify(gen.data), issues: formatIssues(errors) }).text
       }`;
     }
   } finally {

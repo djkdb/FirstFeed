@@ -1,0 +1,35 @@
+# 토큰 측정 · 2026-11-04 · model-visual-plan-opus
+
+- 고정 입력: 실제 · 공개 fixture me(설문 8 + 고정 질문 5 · 프로필 스냅숏 · 키트 · 시안 A) + 소재 ig-claude-code-skills · 2회
+- 프롬프트: self_review@v2, identity_profile@v2, identity_followup@v2, brand_visual@v2, brand_words_review@v2, card_body@v3, card_body_review@v4, caption_min@v1, caption_min_review@v2, series_plan@v4
+- 모델: smoke_extract=sonnet, smoke_context_probe=sonnet, identity_followup=sonnet, task_extract=sonnet, insight_read=sonnet, identity_profile=opus, identity_alternatives=opus, brand_words=opus, brand_visual=opus, cover_titles=opus, series_plan=opus, card_body=opus, reel_script=opus, caption_set=opus, caption_min=opus, self_review=opus
+- CLI: claude 2.1.318 (Claude Code) · 클라우드 개발 컨테이너(--cloud-session)
+- 입력 합 = 캐시 안 된 입력 + 캐시 쓰기 + 캐시 읽기. 비용은 CLI 가 적은 표시 가격(구독에서는 청구되지 않음 — 비교용)
+
+## 고정 토큰 (아주 짧은 프롬프트 + 작은 스키마)
+
+| 모델 | 입력 합 | 캐시 안 됨 | 캐시 쓰기 | 캐시 읽기 | 출력 | 시간 |
+|---|---|---|---|---|---|---|
+
+## 호출 종류별 평균 (호출 1번 기준)
+
+| 과제 | 종류 | 모델 | 호출 수 | 입력 합 | 캐시 안 됨 | 캐시 쓰기 | 캐시 읽기 | 출력 | 그중 생각 | 시간 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| brand_visual | generate | claude-opus-5-5 | 2 | 5,114 | 2 | 801 | 4,311 | 2,655 | 888 | 27.9초 |
+| series_plan | generate | claude-opus-5-5 | 2 | 4,683 | 2 | 798 | 3,883 | 2,278 | 1,829 | 26.1초 |
+
+## 과제별 합 (1회 평균 — 생성 · 재작성 · 자기 평가 포함)
+
+| 과제 | 호출 수 | 입력 합 | 출력 | 시간 | 1회 통과 | 재작성 | 코드 규칙 위반 | 위반 코드 |
+|---|---|---|---|---|---|---|---|---|
+| brand_visual | 1.0 | 5,114 | 2,655 | 28초 | 2/2 | 0·0 | 0·0 | - |
+| series_plan | 1.0 | 4,683 | 2,278 | 26초 | 2/2 | 0·0 | 0·0 | - |
+
+- 전체 1회 평균: 호출 2.0 · 입력 합 9,797 · 출력 4,933 · 표시 가격 $0.11 · 시간 54초
+
+## 단계 결과
+
+- 1회 visual: 뺀 후보 0 · 재작성 0 · 팔레트 터미널 민트(#0F766E #5EEAD4 #F59E0B #F7FAF9 #1F2933) / 나이트 코딩(#7C9CFF #334155 #FDE047 #111827 #F3F4F6) / 따뜻한 연습장(#B03A0A #6B4E3D #F2B544 #FFF8EE #2B2118) · 폰트 paperlogy+pretendard / pretendard+gowun-dodum / gowun-batang+pretendard · 그림 [profile] Instagram profile picture, 1:1, 1080x1080. Draw the character ZUN exactly following the user's own existing character drawing (use the provided reference art; do not invent or change its design). ZUN sits in the center beside a small glowing laptop with a few soft code-bracket shapes floating around, friendly and curious mood. Flat clean illustration, simple solid pastel background, generous padding so it reads well inside a circular crop. no text, no letters, no logos, no people. / [highlight] Instagram story highlight cover, 9:16, 1080x1920. A single simple icon centered within a circle in the middle of the frame: a small toolbox opened with a glowing sparkle and a magnifying glass resting on an official-looking document page, suggesting a new tool checked and tried firsthand. Flat minimal illustration, solid soft background, lots of empty space around the circle. no text, no letters, no logos, no people. / [highlight] Instagram story highlight cover, 9:16, 1080x1920. A single simple icon centered within a circle in the middle of the frame: a laptop screen with colorful building blocks stacking up out of it and a small magic-wand sparkle, suggesting something built with AI through vibe coding. Flat minimal illustration, solid soft background, lots of empty space around the circle. no text, no letters, no logos, no people. / [highlight] Instagram story highlight cover, 9:16, 1080x1920. A single simple icon centered within a circle in the middle of the frame: a lanyard name badge lying on an open notebook with a small connecting-dots network line, suggesting collaboration and activity records. Flat minimal illustration, solid soft background, lots of empty space around the circle. no text, no letters, no logos, no people, no faces. (26초)
+- 1회 plan: 칸 9 · 재작성 0 · [1a73b8075a69b404] AI 답이 매번 다르게 나온다면 / [d504e3e51e772165] 바이브코딩, 첫 문장은 뭐라고 써요? / [555fe14aff188a1e] 네이버 AI 디깅클럽에 뽑히기까지 / [d504e3e51e772165] Claude로 처음 만든 건 뭐였냐면 / [555fe14aff188a1e] 청년 공공 AX 서포터즈, 뭘 할까 / [1a73b8075a69b404] 새 도구 깔고 뭐부터 눌러야 할지 / [555fe14aff188a1e] 계정 하나가 대외활동으로 이어질 때 / [1a73b8075a69b404] 요약글 말고 공식 문서 먼저 / [d504e3e51e772165] 만들다 막힌 순간, AI한테 한 말 (28초)
+- 2회 visual: 뺀 후보 0 · 재작성 0 · 팔레트 공식 문서 블루(#1E4FD8 #DCE6FB #F59E0B #F7F9FC #111827) / 다크 터미널(#22C55E #1E293B #A78BFA #0F172A #E2E8F0) / 따뜻한 작업노트(#C2410C #FDBA74 #0F766E #FFF7ED #292524) · 폰트 paperlogy+pretendard / noto-serif-kr+noto-sans-kr / suit+gowun-dodum · 그림 [profile] Square 1:1 profile image, 1080x1080. The user's own original character ZUN, drawn strictly following the user's existing ZUN character artwork as reference — do not invent or change its design. ZUN sits beside a small laptop showing an abstract glowing code window, friendly and curious mood, simple flat illustration, clean solid background, bold centered composition that stays readable at small circle size. No people, no humans, no text, no letters, no logos. / [highlight] Vertical 9:16 highlight cover, 1080x1920. Main subject centered within a circle in the middle of the frame: a simple flat icon of a toolbox with a spark and a small checkmark, suggesting a new tool that was tried and verified. Minimal flat illustration, solid background, generous empty space around the circle, consistent icon style for a series. No people, no text, no letters, no logos. / [highlight] Vertical 9:16 highlight cover, 1080x1920. Main subject centered within a circle in the middle of the frame: a simple flat icon of a code bracket window turning into a small finished app card with a sparkle, suggesting something built with AI. Minimal flat illustration, solid background, generous empty space around the circle, consistent icon style for a series. No people, no text, no letters, no logos. / [highlight] Vertical 9:16 highlight cover, 1080x1920. Main subject centered within a circle in the middle of the frame: a simple flat icon of an open notebook with a pinned badge and two linked chat bubbles, suggesting a record of activities and collaboration. Minimal flat illustration, solid background, generous empty space around the circle, consistent icon style for a series. No people, no faces, no text, no letters, no logos. (31초)
+- 2회 plan: 칸 9 · 재작성 0 · [1a73b8075a69b404] 새 도구 소식, 바로 깔아도 될까 / [d504e3e51e772165] 코딩 몰라도 앱을 만들 수 있을까 / [555fe14aff188a1e] 계정 하나가 대외활동으로 이어질 때 / [d504e3e51e772165] 만들어 달라고만 하면 생기는 일 / [1a73b8075a69b404] 공식 문서 말고 블로그만 봤다면 / [d504e3e51e772165] 완성본 말고 처음 막힌 곳 / [1a73b8075a69b404] 잘 안 될 때 다들 하는 실수 / [555fe14aff188a1e] 청년 공공 AX 서포터즈, 뭘 하나 / [1a73b8075a69b404] Claude, 처음 열면 뭐부터? (25초)

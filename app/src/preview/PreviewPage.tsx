@@ -114,6 +114,17 @@ export function PreviewPage() {
     await load(false); // 고친 칸만 새로 그려진다(나머지는 서버가 그린 것을 다시 쓴다)
     return true;
   };
+  /** 계획 칸에 그림 올리기 · 빼기(2026-11-04) — 시안 F 를 고정했으면 그 그림을 바탕으로 표지를 그린다 */
+  const slotImage = async (idx: number, file: File | null) => {
+    const r = await fetch(`/api/preview/plan/${idx}/image`, file ? { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file } : { method: 'DELETE' }).catch(() => null);
+    if (!r?.ok) {
+      const b = r ? ((await r.json().catch(() => ({}))) as { error?: string }) : {};
+      setError(b.error ?? '그림을 바꾸지 못했어요. 다시 시도하세요.');
+      return;
+    }
+    setError(null);
+    await load(false);
+  };
 
   if (!view) return <section className="card">{error ?? '불러오는 중…'}</section>;
   if (!view.ready.profile) return <section className="card">먼저 「정체성」에서 프로필을 만들고 확정하세요. 미리보기는 그 프로필로 그립니다.</section>;
@@ -256,7 +267,7 @@ export function PreviewPage() {
           {view.plan?.stale && <p className="note small">계획을 만든 뒤 프로필이 바뀌었어요. 다시 만들면 바뀐 축으로 계획합니다.</p>}
           {error && <p className="status error">{error}</p>}
           {info && <p className="status ok small">{info}</p>}
-          <SlotEditor key={pickedPlan ? `${pickedPlan.slot}:${pickedPlan.title}` : 'none'} cell={pickedPlan} edit={edit} onClose={() => setSelected(null)} />
+          <SlotEditor key={pickedPlan ? `${pickedPlan.slot}:${pickedPlan.title}` : 'none'} cell={pickedPlan} edit={edit} slotImage={slotImage} photoDraft={view.draftId === 'F'} onClose={() => setSelected(null)} />
         </div>
       </div>
     </section>
@@ -267,10 +278,15 @@ export function PreviewPage() {
 function SlotEditor({
   cell,
   edit,
+  slotImage,
+  photoDraft,
   onClose,
 }: {
   cell: Extract<Cell, { kind: 'plan' }> | null;
   edit: (i: number, p: { title?: string; locked?: boolean }) => Promise<boolean>;
+  slotImage: (i: number, file: File | null) => Promise<void>;
+  /** 고정한 시안이 F(그림 바탕 표지)인가 — 아니면 그림을 올려도 표지에 안 깔린다고 알린다 */
+  photoDraft: boolean;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
@@ -297,6 +313,22 @@ function SlotEditor({
               닫기
             </button>
           </div>
+          <div className="actions">
+            <label className="small">
+              {cell.image ? '그림 바꾸기' : '그림 올리기'}{' '}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => e.target.files?.[0] && void slotImage(cell.slot, e.target.files[0])} />
+            </label>
+            {cell.image && (
+              <button type="button" className="small" onClick={() => void slotImage(cell.slot, null)}>
+                그림 빼기
+              </button>
+            )}
+          </div>
+          <p className="muted small">
+            {photoDraft
+              ? '올린 그림을 표지 바탕으로 깔아요(글자가 잘 보이게 아래쪽을 어둡게). 그림을 올린 칸은 고정돼 계획을 다시 만들어도 남아요.'
+              : '그림 바탕 표지는 「템플릿」에서 시안 F 를 고정했을 때만 깔려요. 지금 시안에서는 글자 표지 그대로예요.'}
+          </p>
         </>
       ) : (
         <div className="actions">

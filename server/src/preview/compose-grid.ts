@@ -11,7 +11,7 @@ export type CellState = 'plan' | 'made' | 'posted';
 
 export type GridCell =
   | { kind: 'made'; setId: number; headline: string; createdAt: string; slot: number | null; state: 'made' | 'posted' }
-  | { kind: 'plan'; slot: number; title: string; pillarId: string; pillarName: string | null; locked: boolean; origin: PlanSlot['origin']; state: 'plan' | 'posted' }
+  | { kind: 'plan'; slot: number; title: string; pillarId: string; pillarName: string | null; locked: boolean; origin: PlanSlot['origin']; state: 'plan' | 'posted'; image: string | null }
   | { kind: 'empty' };
 
 export function composeGrid(
@@ -38,7 +38,7 @@ export function composeGrid(
       const m = marks.get(slot);
       const set = m?.setId !== null && m?.setId !== undefined ? byId.get(m.setId) : undefined;
       if (set) return madeCell(set, slot, m?.postedAt != null);
-      return { kind: 'plan', slot, title: p.title, pillarId: p.pillarId, pillarName: pillarNames.get(p.pillarId) ?? null, locked: p.locked, origin: p.origin, state: m?.postedAt ? 'posted' : 'plan' };
+      return { kind: 'plan', slot, title: p.title, pillarId: p.pillarId, pillarName: pillarNames.get(p.pillarId) ?? null, locked: p.locked, origin: p.origin, state: m?.postedAt ? 'posted' : 'plan', image: p.image ?? null };
     }),
   ];
   const shown = unlinked.length >= cells ? timeline.slice(unlinked.length - cells, unlinked.length) : timeline.slice(0, cells);

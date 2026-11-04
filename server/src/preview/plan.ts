@@ -29,6 +29,11 @@ export interface PlanSlot {
   locked: boolean;
   /** ai = AI 가 쓴 제목, edit = 사용자가 고친 제목(허용 출처 4번) */
   origin: 'ai' | 'edit';
+  /**
+   * 사용자가 이 칸에 올린 그림(data 폴더의 자산 이름, 2026-11-04). 시안 F(그림 바탕 표지)를 고정했을 때 계획 칸 표지 바탕으로 깐다 —
+   * 실제 게시물처럼 보이게. AI 가 그림을 만들지는 않는다(비목표). 없던 칸은 undefined
+   */
+  image?: string | null;
 }
 export interface SavedPlan {
   id: number;
@@ -194,6 +199,19 @@ export function editSlot(db: Db, brandId: number, idx: number, patch: { title?: 
   if (patch.locked !== undefined) next.locked = patch.locked;
   const slots = plan.slots.map((s, i) => (i === idx ? next : s));
   return savePlan(db, brandId, plan.profileId, slots, null);
+}
+
+/**
+ * 칸에 그림 올리기 · 빼기(2026-11-04). 그림을 올린 칸은 고정한다 — 다시 만들 때 사용자가 고른 그림이 다른 제목에 붙거나 사라지지 않게.
+ * 뺄 때는 고정을 그대로 둔다(사용자가 직접 풀 수 있다). 새 판(이력)
+ */
+export function setSlotImage(db: Db, brandId: number, idx: number, image: string | null): SavedPlan {
+  const plan = latestPlan(db, brandId);
+  if (!plan) throw new FlowError('아직 계획이 없습니다.', '「계획 만들기」를 먼저 누르세요.');
+  const slot = plan.slots[idx];
+  if (!slot) throw new FlowError(`${idx + 1}번 칸이 없습니다.`, '화면을 새로고침한 뒤 다시 시도하세요.');
+  const next: PlanSlot = image ? { ...slot, image, locked: true } : { ...slot, image: null };
+  return savePlan(db, brandId, plan.profileId, plan.slots.map((s, i) => (i === idx ? next : s)), null);
 }
 
 /**

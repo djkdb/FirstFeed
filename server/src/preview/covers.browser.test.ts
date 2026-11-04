@@ -14,7 +14,7 @@ import { closeBrowser, getBrowser } from '../render/browser.ts';
 import { fixTemplate } from '../templates/store.ts';
 import type { BrandLook } from '../templates/types.ts';
 import { planCover } from './covers.ts';
-import { editSlot, savePlan } from './plan.ts';
+import { editSlot, latestPlan, savePlan } from './plan.ts';
 
 let hasBrowser = false;
 beforeAll(async () => {
@@ -31,7 +31,7 @@ const PILLAR = { id: 'a'.repeat(16), name: '두 번 가 본 판정', description
 // AI 생성 데모 브랜드(seoyeon) — 사용자 실제 자료가 아니다
 const look: BrandLook = JSON.parse(fs.readFileSync(path.join(env.repoRoot, 'tests/fixtures/generated/brands/seoyeon.json'), 'utf8')).look;
 
-function setup(charsPerLine = 9) {
+function setup(charsPerLine = 9, draftId: 'A' | 'F' = 'A') {
   const db = openDb(':memory:');
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'firstfeed-plancover-'));
   const content: ProfileContent = {
@@ -47,7 +47,7 @@ function setup(charsPerLine = 9) {
     presence: null,
   };
   const pid = saveProfileVersion(db, 1, content, { reason: 'interview', sessionId: createSession(db, 1, {}), basedOn: null, jobId: null, activate: true });
-  fixTemplate(db, 1, 'A', look, { cover: { headline: { charsPerLine, maxLines: 2, maxChars: null } } }, 'test', null);
+  fixTemplate(db, 1, draftId, look, { cover: { headline: { charsPerLine, maxLines: 2, maxChars: null } } }, 'test', null);
   const slot = (title: string) => ({ title, pillarId: PILLAR.id, locked: false, origin: 'ai' as const });
   return { db, dataDir, pid, slot };
 }
@@ -97,4 +97,32 @@ describe('계획 칸 표지 렌더링', () => {
     expect(png.headers.get('content-type')).toBe('image/png');
     expect((await app.request('/api/preview/png/..%2Fsecret.png', { headers: H })).status).toBe(400);
   });
+
+  it('칸에 올린 그림: 시안 F 면 바탕으로 깔고(다시 그림) 칸을 고정, 시안 A 면 글자 표지 그대로 — 빼면 원래 표지(2026-11-04)', async () => {
+    if (!hasBrowser) return;
+    const img = fs.readFileSync(path.join(env.repoRoot, 'tests/fixtures/generated/images/dark.png'));
+    const H = { host: 'localhost:4317', origin: 'http://localhost:5173', 'content-type': 'application/octet-stream' };
+    for (const draftId of ['F', 'A'] as const) {
+      const t = setup(9, draftId);
+      savePlan(t.db, 1, t.pid, [t.slot('평일 오후가 낫다')], null);
+      const app = createApp({ db: t.db, ai: new AiService({ db: t.db, provider: new FakeProvider([]) }), dataDir: t.dataDir });
+      const plain = await planCover(t.db, t.dataDir, 1, 0);
+      const up = await app.request('/api/preview/plan/0/image', { method: 'POST', headers: H, body: img });
+      expect(up.status).toBe(200);
+      const slot = latestPlan(t.db, 1)!.slots[0]!;
+      expect(slot.locked).toBe(true);
+      expect(slot.image).toMatch(/^plan-.+\.png$/);
+      const withImage = await planCover(t.db, t.dataDir, 1, 0);
+      expect(withImage.ok).toBe(true);
+      if (draftId === 'F') expect(withImage.ok && plain.ok && withImage.file !== plain.file).toBe(true);
+      else expect(withImage).toMatchObject({ cached: true }); // 시안 A 는 그림을 쓰지 않아 같은 표지
+      expect((await app.request('/api/preview/plan/0/image', { method: 'DELETE', headers: H })).status).toBe(200);
+      expect(await planCover(t.db, t.dataDir, 1, 0)).toMatchObject({ ok: true, cached: true });
+    }
+    // 그림이 아닌 파일은 거절
+    const t = setup(9, 'F');
+    savePlan(t.db, 1, t.pid, [t.slot('평일 오후가 낫다')], null);
+    const app = createApp({ db: t.db, ai: new AiService({ db: t.db, provider: new FakeProvider([]) }), dataDir: t.dataDir });
+    expect((await app.request('/api/preview/plan/0/image', { method: 'POST', headers: H, body: new TextEncoder().encode('not an image') })).status).toBe(400);
+  }, 60_000);
 });

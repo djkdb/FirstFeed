@@ -8,7 +8,8 @@ import type { DatabaseSync } from 'node:sqlite';
 import { activeProfile } from '../identity/store.ts';
 import { draftById } from '../templates/index.ts';
 import { resolveLook } from '../templates/look.ts';
-import { renderFrame } from '../templates/render-frame.ts';
+import { renderFrame, renderPhotoFrame } from '../templates/render-frame.ts';
+import { assetPath, MIME, type ImageType } from '../brand/assets.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { latestPlan } from './plan.ts';
 import { getSetting } from '../config.ts';
@@ -40,7 +41,10 @@ export async function planCover(db: DatabaseSync, dataDir: string, brandId: numb
   // 축 색 변형(2026-10-25): 실제 카드 표지와 같은 축 번호 · 같은 함수. 켜고 끔 · 번호가 바뀌면 다시 그린다
   const pillarIndex = pillarIndexOf(pillars, slot.pillarId);
   const variant = getSetting(db, 'render.pillarCoverVariant') ? pillarIndex : null;
-  const key = crypto.createHash('sha256').update(JSON.stringify([slot.title, chip, fixed.id, variant])).digest('hex').slice(0, 16);
+  // 칸에 올린 그림: 시안 F(그림 바탕 표지)일 때만 바탕으로 깐다 — 카드 세트의 그림 바탕 표지와 같은 함수(글자 뒤 명암비를 재서 띠 진하기를 고른다)
+  const imageFile = slot.image && draft.id === 'F' ? assetPath(dataDir, slot.image) : null;
+  const image = imageFile && fs.existsSync(imageFile) ? imageFile : null;
+  const key = crypto.createHash('sha256').update(JSON.stringify([slot.title, chip, fixed.id, variant, image ? slot.image : null])).digest('hex').slice(0, 16);
   const dir = previewDir(dataDir);
   const png = path.join(dir, `plan-${key}.png`);
   const failed = path.join(dir, `plan-${key}.json`);
@@ -48,7 +52,10 @@ export async function planCover(db: DatabaseSync, dataDir: string, brandId: numb
   if (fs.existsSync(failed)) return { ok: false, reason: (JSON.parse(fs.readFileSync(failed, 'utf8')) as { reason: string }).reason, cached: true };
 
   return serial(async () => {
-    const fr = await renderFrame(db, draft, resolveLook(fixed.look, dataDir), { kind: 'cover', headline: slot.title, sub: null, chip }, { pillarIndex });
+    const content = { kind: 'cover' as const, headline: slot.title, sub: null, chip };
+    const look = resolveLook(fixed.look, dataDir);
+    const dataUrl = image ? `data:${MIME[image.split('.').pop() as ImageType]};base64,${fs.readFileSync(image).toString('base64')}` : null;
+    const fr = dataUrl ? await renderPhotoFrame(db, draft, look, content, dataUrl, { pillarIndex }) : await renderFrame(db, draft, look, content, { pillarIndex });
     fs.mkdirSync(dir, { recursive: true });
     if (fr.ok && fr.png) {
       fs.writeFileSync(png, fr.png);

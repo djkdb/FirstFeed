@@ -15,7 +15,8 @@ import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
 import { FRAME_SIZE } from '../templates/types.ts';
 import { fixedTemplate } from '../templates/store.ts';
-import { arrangePlan, editSlot, generatePlan, latestPlan } from './plan.ts';
+import { arrangePlan, editSlot, generatePlan, latestPlan, setSlotImage } from './plan.ts';
+import { AssetError, saveAsset } from '../brand/assets.ts';
 import { composeGrid } from './compose-grid.ts';
 import { homeMarks } from '../home/marks.ts';
 import { PLAN_FILE, planCover, previewDir } from './covers.ts';
@@ -56,6 +57,8 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
         },
         highlights: (visual?.candidates.imagePrompts ?? []).filter((p) => p.target === 'highlight').map((p) => p.label),
         look: fixed?.look.palette ?? sel.palette?.colors ?? null,
+        /** 고정한 시안 — F(그림 바탕 표지)면 계획 칸에 올린 그림을 바탕으로 그린다 */
+        draftId: fixed?.draftId ?? null,
         /** 글자 원(2026-10-25): 사진이 없을 때의 프로필 원 · 하이라이트 원 — 축 색은 그 축 표지 바탕색과 같게 */
         swatches: (() => {
           const pal = fixed?.look.palette ?? (sel.palette ? { name: sel.palette.name, ...sel.palette.colors } : null);
@@ -107,6 +110,24 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
     // 칸 순서만 맞추기(AI 없음) — 같은 축이 같은 열에 이어지지 않게. 고정 · 이은 · 올린 칸은 그대로
     .post('/plan/arrange', (c) => c.json({ changed: arrangePlan(db, BRAND_ID).changed }))
     .post('/plan', (c) => c.json({ jobId: jobs.start('series_plan', (job) => generatePlan(ai, BRAND_ID, job)) }))
+    // 계획 칸에 그림 올리기(2026-11-04) — 본문은 파일 바이트 그대로. 형식은 매직 바이트로, 이름은 서버가(브랜딩 그림과 같은 함수)
+    .post('/plan/:idx/image', async (c) => {
+      try {
+        const name = saveAsset(dataDir, new Uint8Array(await c.req.arrayBuffer()), getSetting(db, 'brand.maxUploadBytes'), 'plan');
+        return c.json({ plan: setSlotImage(db, BRAND_ID, Number(c.req.param('idx')), name) });
+      } catch (err) {
+        if (err instanceof AssetError || err instanceof FlowError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        throw err;
+      }
+    })
+    .delete('/plan/:idx/image', (c) => {
+      try {
+        return c.json({ plan: setSlotImage(db, BRAND_ID, Number(c.req.param('idx')), null) });
+      } catch (err) {
+        if (err instanceof FlowError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        throw err;
+      }
+    })
     .put(
       '/plan/:idx',
       validator('json', (v, c) => {

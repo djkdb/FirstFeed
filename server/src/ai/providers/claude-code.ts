@@ -1,5 +1,5 @@
 // Claude Code CLI 공급자. 사용자 본인의 구독(로그인)으로 `claude -p` 를 비대화형으로 실행한다.
-// 옵션은 모두 `claude --help`(2.1.296)로 확인한 것만 쓴다.
+// 옵션은 모두 `claude --help`(2.1.296 · 2.1.318)로 확인한 것만 쓴다.
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -247,6 +247,13 @@ export class ClaudeCodeProvider implements AiProvider {
         tools.join(','),
         '--strict-mcp-config', // 사용자 컴퓨터에 설정된 MCP 서버(메일·노션 등)를 불러오지 않는다
         '--no-session-persistence', // 앱 호출이 사용자의 대화 기록에 쌓이지 않게
+        // 사용자 · 프로젝트 · 로컬 설정 파일을 읽지 않는다(관리자 정책 설정은 CLI 가 그대로 적용). --safe-mode 와 막는 범위가 겹치지만
+        // safe-mode 는 「사용자 맞춤」을 끄는 것이고 이것은 설정 파일 자체를 안 읽는 것이라 같이 쓴다(2.1.318 --help)
+        '--setting-sources',
+        '',
+        '--disable-slash-commands', // 스킬 · 명령 목록이 앱 호출에 붙지 않게
+        // 기본 코딩용 시스템 프롬프트 대신 앱 전용 짧은 글 — 호출마다 붙는 고정 토큰을 줄인다(결정 2026-11-04)
+        ...(input.systemPrompt ? ['--system-prompt', input.systemPrompt] : []),
         ...(tools.length > 0 ? ['--allowedTools', tools.join(',')] : []),
         ...(this.isolation.safeMode ? ['--safe-mode'] : []),
       ];

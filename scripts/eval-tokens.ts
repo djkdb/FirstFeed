@@ -16,6 +16,7 @@ import { openDb, type Db } from '../server/src/db/index.ts';
 import { AiService } from '../server/src/ai/adapter.ts';
 import { ClaudeCodeProvider, isSubscriptionAuth, type AuthStatus } from '../server/src/ai/providers/claude-code.ts';
 import { toCliSchema } from '../server/src/ai/adapter.ts';
+import { loadPrompt } from '../server/src/ai/prompts.ts';
 import { closeBrowser } from '../server/src/render/browser.ts';
 import { askNext, makeProfile } from '../server/src/identity/flow.ts';
 import { addAnsweredTurn, createSession } from '../server/src/identity/store.ts';
@@ -123,7 +124,9 @@ async function overhead(): Promise<Array<{ model: string; schema: boolean; input
   const schema = toCliSchema(z.object({ ok: z.boolean() }));
   for (const model of ['sonnet', 'opus'] as const) {
     for (let i = 0; i < 2; i++) {
-      const r = await p.run({ prompt: '{"ok": true} 를 그대로 답하라.', jsonSchema: schema, model, images: [], web: false, timeoutMs: 120_000 });
+      // 앱과 같게: 설정이 켜져 있으면 앱 시스템 프롬프트를 넘긴다(어댑터와 같은 조건)
+      const systemPrompt = getSetting(null, 'ai.appSystemPrompt') ? loadPrompt(null, '_system/app', {}).text : undefined;
+      const r = await p.run({ prompt: '{"ok": true} 를 그대로 답하라.', jsonSchema: schema, model, images: [], web: false, timeoutMs: 120_000, ...(systemPrompt ? { systemPrompt } : {}) });
       const u = r.usage ?? null;
       const total = u?.inputTokens === null || !u ? null : (u.inputTokens ?? 0) + (u.cacheCreationTokens ?? 0) + (u.cacheReadTokens ?? 0);
       out.push({ model, schema: true, input: u?.inputTokens ?? null, cacheWrite: u?.cacheCreationTokens ?? null, cacheRead: u?.cacheReadTokens ?? null, total, output: u?.outputTokens ?? null, ms: r.durationMs });

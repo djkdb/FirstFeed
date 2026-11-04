@@ -26,8 +26,8 @@ describe('AI 어댑터', () => {
     expect(runs(db)).toEqual([{ attempt: 1, kind: 'generate', status: 'ok', model: 'sonnet' }]);
   });
 
-  it('토큰 사용량을 호출 기록에 남긴다', async () => {
-    const { db, ai } = setup([{ structured: { title: '하나' } }]);
+  it('토큰 사용량을 호출 기록에 남기고, 앱 시스템 프롬프트를 공급자에 넘긴다(설정으로 끌 수 있다)', async () => {
+    const { db, ai, provider } = setup([{ structured: { title: '하나' } }, { structured: { title: '둘' } }]);
     await ai.call({ task: 'smoke_extract', prompt: 'p', schema: Schema });
     expect(db.prepare('SELECT input_tokens, cache_creation_tokens, cache_read_tokens, output_tokens, cost_usd FROM ai_runs').get()).toEqual({
       input_tokens: 2,
@@ -36,6 +36,10 @@ describe('AI 어댑터', () => {
       output_tokens: 5,
       cost_usd: null,
     });
+    expect(provider.calls[0]?.systemPrompt).toContain('FirstFeed');
+    setSetting(db, 'ai.appSystemPrompt', false);
+    await ai.call({ task: 'smoke_extract', prompt: 'p', schema: Schema });
+    expect(provider.calls[1]?.systemPrompt).toBeUndefined();
   });
 
   it('깨진 JSON 이면 이유를 붙여 1회 다시 요청한다', async () => {

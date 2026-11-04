@@ -185,6 +185,7 @@ export class AiService {
       req.timeoutMs ?? (req.web ? getSetting(this.db, 'ai.webTimeoutMs') : (getSetting(this.db, 'ai.taskTimeoutsMs')[req.task] ?? getSetting(this.db, 'ai.timeoutMs')));
     const maxRetries = getSetting(this.db, 'ai.maxJsonRetries');
     const jsonSchema = toCliSchema(req.schema);
+    const systemPrompt = getSetting(this.db, 'ai.appSystemPrompt') ? loadPrompt(this.db, '_system/app', {}).text : undefined;
 
     try {
       let lastError = '';
@@ -216,6 +217,7 @@ export class AiService {
             jsonSchema,
             model,
             ...(effort ? { effort } : {}),
+            ...(systemPrompt ? { systemPrompt } : {}),
             images: req.images ?? [],
             web: req.web ?? false,
             timeoutMs,

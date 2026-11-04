@@ -132,7 +132,7 @@ describe('실행 직전 차단', () => {
   });
 });
 
-describe('사용량 (토큰 줄이기 2026-11-04)', () => {
+describe('격리 · 시스템 프롬프트 · 사용량 (토큰 줄이기 2026-11-04)', () => {
   const argsOf = async (extra: Partial<ProviderRunInput>) => {
     freshLog();
     const file = path.join(dir, `args-${Math.random().toString(36).slice(2)}.json`);
@@ -140,6 +140,33 @@ describe('사용량 (토큰 줄이기 2026-11-04)', () => {
     const out = await new ClaudeCodeProvider({ bin }).run({ ...input, ...extra });
     return { out, args: JSON.parse(fs.readFileSync(file, 'utf8')) as string[] };
   };
+  const after = (args: string[], flag: string) => args[args.indexOf(flag) + 1];
+
+  it('설정 파일 · 슬래시 명령을 끄고, 안전 모드 · 도구 끔은 그대로', async () => {
+    const { args } = await argsOf({});
+    expect(after(args, '--setting-sources')).toBe('');
+    expect(args).toContain('--disable-slash-commands');
+    expect(args).toContain('--safe-mode');
+    expect(args).toContain('--strict-mcp-config');
+    expect(after(args, '--tools')).toBe('');
+    expect(args).not.toContain('--system-prompt'); // 주지 않으면 CLI 기본
+  });
+
+  it('앱 시스템 프롬프트를 주면 --system-prompt 로 넘긴다', async () => {
+    const { args } = await argsOf({ systemPrompt: '앱 전용' });
+    expect(after(args, '--system-prompt')).toBe('앱 전용');
+  });
+
+  it('이미지 경로는 읽기 도구만, 웹 경로는 검색 도구만 연다(시스템 프롬프트를 바꿔도)', async () => {
+    const img = path.join(dir, 'a.png');
+    fs.writeFileSync(img, 'x');
+    const withImage = (await argsOf({ systemPrompt: 's', images: [img] })).args;
+    expect(after(withImage, '--tools')).toBe('Read');
+    expect(after(withImage, '--allowedTools')).toBe('Read');
+    expect(withImage).toContain('--add-dir');
+    const withWeb = (await argsOf({ systemPrompt: 's', web: true })).args;
+    expect(after(withWeb, '--tools')).toBe('WebSearch,WebFetch');
+  });
 
   it('결과 봉투의 usage 를 읽는다', async () => {
     const { out } = await argsOf({});

@@ -95,6 +95,11 @@ export const DEFAULTS = {
   'ai.webTimeoutMs': 300_000,
   /** 로그인(구독) 확인 결과를 기억하는 시간(ms). 실행 직전 확인을 매번 하면 호출마다 1초 남짓 느려진다 */
   'ai.authCacheMs': 60_000,
+  /**
+   * Claude Code 의 기본(코딩용) 시스템 프롬프트 대신 짧은 앱 전용 시스템 프롬프트(prompts/_system/app)를 쓴다.
+   * 기본 프롬프트가 호출마다 약 1,340 토큰을 더했다(tests/results/2026-11-04-tokens-baseline.md). 끄면 CLI 기본 프롬프트 — 전/후 비교용
+   */
+  'ai.appSystemPrompt': true,
   /** 인터뷰 최소 질문 수 — 이보다 적으면 AI 가 "충분하다"고 해도 계속 묻는다 (CLAUDE.md 결정 5) */
   'identity.minTurns': 3,
   /** 인터뷰 최대 질문 수 — 여기서 멈춘다 */

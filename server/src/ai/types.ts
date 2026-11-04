@@ -30,6 +30,8 @@ export interface ProviderRunInput {
   jsonSchema: Record<string, unknown>;
   model: ModelAlias;
   effort?: Effort;
+  /** 공급자 기본 시스템 프롬프트 대신 쓸 글(prompts/_system/app). 없으면 공급자 기본값 */
+  systemPrompt?: string;
   images: string[];
   web: boolean;
   timeoutMs: number;

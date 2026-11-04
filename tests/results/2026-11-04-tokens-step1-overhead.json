@@ -1,0 +1,81 @@
+{
+ "date": "2026-11-04",
+ "label": "step1-overhead",
+ "versions": {
+  "self_review": "v2",
+  "identity_profile": "v2",
+  "identity_followup": "v2",
+  "brand_visual": "v2",
+  "brand_words_review": "v2",
+  "card_body": "v3",
+  "card_body_review": "v4",
+  "caption_min": "v1",
+  "caption_min_review": "v2",
+  "series_plan": "v4"
+ },
+ "models": {
+  "default": "sonnet",
+  "smoke_extract": "sonnet",
+  "smoke_context_probe": "sonnet",
+  "identity_followup": "sonnet",
+  "task_extract": "sonnet",
+  "insight_read": "sonnet",
+  "identity_profile": "opus",
+  "identity_alternatives": "opus",
+  "brand_words": "opus",
+  "brand_visual": "opus",
+  "cover_titles": "opus",
+  "series_plan": "opus",
+  "card_body": "opus",
+  "reel_script": "opus",
+  "caption_set": "opus",
+  "caption_min": "opus",
+  "self_review": "opus"
+ },
+ "source": "ig-claude-code-skills",
+ "runs": 2,
+ "overhead": [
+  {
+   "model": "sonnet",
+   "schema": true,
+   "input": 2,
+   "cacheWrite": 2168,
+   "cacheRead": 0,
+   "total": 2170,
+   "output": 52,
+   "ms": 2506
+  },
+  {
+   "model": "sonnet",
+   "schema": true,
+   "input": 2,
+   "cacheWrite": 806,
+   "cacheRead": 1358,
+   "total": 2166,
+   "output": 52,
+   "ms": 1804
+  },
+  {
+   "model": "opus",
+   "schema": true,
+   "input": 2,
+   "cacheWrite": 2158,
+   "cacheRead": 0,
+   "total": 2160,
+   "output": 52,
+   "ms": 4548
+  },
+  {
+   "model": "opus",
+   "schema": true,
+   "input": 2,
+   "cacheWrite": 803,
+   "cacheRead": 1356,
+   "total": 2161,
+   "output": 52,
+   "ms": 2224
+  }
+ ],
+ "calls": [],
+ "notes": []
+}

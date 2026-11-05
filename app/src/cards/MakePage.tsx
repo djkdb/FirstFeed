@@ -280,6 +280,12 @@ const slotFromHash = (): number | null => {
   return v !== null && /^\d+$/.test(v) ? Number(v) : null;
 };
 
+/** 작업 콘솔에서 왔을 때(#/make?set=N) 열 세트 */
+const setFromHash = (): number | null => {
+  const v = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('set');
+  return v !== null && /^\d+$/.test(v) ? Number(v) : null;
+};
+
 export function MakePage() {
   const [state, setState] = useState<State | null>(null);
   // 홈에서 고른 계획 칸 — 세트를 다 만들면 그 칸에 잇는다(FR-HM-2 · 결정 2026-10-24)
@@ -294,7 +300,20 @@ export function MakePage() {
   const [covers, setCovers] = useState<CoversResult | null>(null);
   const [bodyResult, setBodyResult] = useState<BodyResult | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
-  const [viewSet, setViewSet] = useState<number | null>(null);
+  const [viewSet, setViewSet] = useState<number | null>(setFromHash);
+  // 작업 콘솔의 줄(#/make?set=N)을 누르면 그 세트를 연다 — 같은 탭 안에서 주소만 바뀌어도
+  useEffect(() => {
+    const onHash = () => {
+      const id = setFromHash();
+      if (id === null) return;
+      setViewSet(id);
+      setTimeout(() => {
+        void document.getElementById('set-view')?.scrollIntoView({ block: 'start' });
+      }, 300);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -555,7 +574,7 @@ export function MakePage() {
       )}
 
       {viewSet !== null && (
-        <section className="card">
+        <section className="card" id="set-view">
           <h2>카드 세트 #{viewSet}</h2>
           <SetView setId={viewSet} />
         </section>

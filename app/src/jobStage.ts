@@ -8,6 +8,22 @@ export interface Stage {
   reasons: string[];
 }
 
+/** 과제 이름 — 작업 콘솔 한 줄의 제목 */
+export const TASK_LABEL: Record<string, string> = {
+  identity_profile: '정체성 프로필 만들기',
+  identity_followup: '인터뷰 꼬리질문',
+  identity_alternatives: '다른 방향 두 개',
+  brand_words: '아이디 · 이름 · 바이오 후보',
+  brand_visual: '색 · 글꼴 · 그림 프롬프트',
+  cover_titles: '표지 제목 후보',
+  card_body: '카드뉴스 본문',
+  card_chat: '채팅으로 고치기',
+  caption_min: '캡션',
+  series_plan: '첫 9개 게시물 계획',
+  smoke_extract: 'AI 시험 호출',
+};
+export const taskLabel = (task: string) => TASK_LABEL[task] ?? task;
+
 /** 처음 쓸 때 과제마다 무엇을 하는지 */
 const WRITING: Record<string, string> = {
   identity_profile: '답변에서 축 찾는 중',
@@ -17,6 +33,7 @@ const WRITING: Record<string, string> = {
   brand_visual: '색 · 글꼴 · 그림 프롬프트 고르는 중',
   cover_titles: '표지 제목 후보 쓰는 중',
   card_body: '본문 카드 쓰는 중',
+  card_chat: '말한 대로 카드 고치는 중',
   caption_min: '캡션 쓰는 중',
   series_plan: '첫 9개 게시물 제목 계획하는 중',
   smoke_extract: '원문에서 사실 뽑는 중',

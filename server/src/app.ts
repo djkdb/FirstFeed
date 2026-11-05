@@ -10,6 +10,7 @@ import { localOnly } from './lib/local-only.ts';
 import { detectProviders, type DetectResult } from './ai/detect.ts';
 import type { AiService } from './ai/adapter.ts';
 import { JobStore } from './ai/jobs.ts';
+import { consoleFeed } from './console/feed.ts';
 import { runSmokeExtract } from './tasks/smoke-extract.ts';
 import { identityRoutes } from './identity/routes.ts';
 import { brandRoutes } from './brand/routes.ts';
@@ -70,6 +71,7 @@ export function createApp(deps: AppDeps) {
       if (!state) return c.json({ error: '작업을 찾지 못했습니다. 서버가 다시 시작됐다면 시험 호출을 다시 실행하세요.' }, 404);
       return c.json(state);
     })
+    .get('/api/console', (c) => c.json(consoleFeed(deps.db, jobs, 1)))
     .post('/api/ai/jobs/:jobId/cancel', (c) => c.json({ cancelled: jobs.cancel(c.req.param('jobId')) }))
     .route('/api/identity', identityRoutes(deps.ai, jobs))
     .route('/api/brand', brandRoutes(deps.ai, jobs, deps.dataDir))

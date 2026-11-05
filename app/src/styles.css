@@ -7,12 +7,14 @@
   --ink: #eef2fa;
   --muted-strong: #c3cbdd;
   --muted: #a3adc4;
-  --accent: #4c7dff;
-  /* 흰 글자를 올리는 채운 단추 · 선택된 탭 — --accent 위 흰 글자는 3.7:1 이라 한 단계 진하게(5.25:1) */
-  --accent-fill: #3461e6;
-  --accent-fill-hover: #3a66e8;
-  --accent-soft: rgba(76, 125, 255, 0.14);
-  --accent-ink: #b8ccff;
+  --accent: #ffffff;
+  /* 강조는 흰색(사용자 지시 2026-11-05 — 파랑은 특정 계정의 개성 색처럼 보여서). 앱 화면은 중립색만 쓰고, 색은 사용자 브랜드(카드 · 미리보기)에만.
+     채운 단추 · 선택된 탭 = 흰 바탕 + 진한 글자(--on-fill) */
+  --accent-fill: #ffffff;
+  --on-fill: #0b0e16;
+  --accent-fill-hover: #dfe3ec;
+  --accent-soft: rgba(255, 255, 255, 0.08);
+  --accent-ink: #e6e9f0;
   --line: #2e3a5c;
   /* 폰 틀 — 소개 페이지의 폰 프로필 그대로 */
   --phone: #0e1116;
@@ -94,10 +96,10 @@ textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; 
 .tabs { display: flex; flex-wrap: wrap; gap: var(--s-1); margin: 0 0 var(--s-5); }
 .tabs a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1px solid transparent; color: var(--muted-strong); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
 .tabs a:hover { border-color: var(--line); color: var(--ink); }
-.tabs a.on { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
+.tabs a.on { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
 
 /* 공통 */
-button.primary { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
+button.primary { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
 button.primary:hover:not(:disabled) { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
 .actions { display: flex; gap: var(--s-2); align-items: center; margin-top: var(--s-3); flex-wrap: wrap; }
 .small { font-size: 13px; }
@@ -114,7 +116,7 @@ select { font: inherit; font-size: 14px; min-height: 40px; padding: 0 var(--s-2)
 .survey legend { font-weight: 600; margin-bottom: 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border-radius: var(--r-pill); min-height: 36px; padding: 0 var(--s-3); font-size: 14px; font-weight: 500; }
-.chip.on { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
+.chip.on { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
 
 /* 인터뷰 */
 .turns { list-style: none; padding: 0; margin: 12px 0; }
@@ -295,8 +297,8 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
 /* 버튼 모양 링크(다른 탭으로 가는 「이 칸으로 만들기」 등) — 버튼과 같은 알약 */
 a.button { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; text-decoration: none; }
 a.button:hover { border-color: var(--ink); color: var(--ink); }
-a.button.primary { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
-a.button.primary:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); color: #fff; }
+a.button.primary { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
+a.button.primary:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); color: var(--on-fill); }
 /* 소개 페이지의 작은 머리글(.eyebrow) */
 .eyebrow { margin: 0; font-size: 14px; font-weight: 600; color: var(--accent); }
 
@@ -353,8 +355,8 @@ a.button.primary:hover { background: var(--accent-fill-hover); border-color: var
 .chat-panel h3{margin:0 0 6px}
 .chat-log{display:flex;flex-direction:column;gap:12px;max-height:560px;overflow-y:auto;padding:8px 2px;margin:8px 0}
 .chat-turn{display:flex;flex-direction:column;gap:6px}
-.chat-me{align-self:flex-end;max-width:80%;background:var(--accent-fill);color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;white-space:pre-wrap}
-.chat-me .tag{background:rgba(255,255,255,.2);color:#fff}
+.chat-me{align-self:flex-end;max-width:80%;background:var(--accent-fill);color:var(--on-fill);padding:8px 12px;border-radius:14px 14px 4px 14px;white-space:pre-wrap}
+.chat-me .tag{background:rgba(11,14,22,.1);color:var(--on-fill)}
 .chat-ai{align-self:flex-start;max-width:92%;border:1px solid var(--line);padding:10px 12px;border-radius:14px 14px 14px 4px;display:flex;flex-direction:column;gap:8px}
 .chat-ai.discarded,.chat-ai.reverted{opacity:.6}
 .chat-change{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
@@ -364,6 +366,6 @@ a.button.primary:hover { background: var(--accent-fill-hover); border-color: var
 .chat-change > .small{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:4px}
 .chat-targets{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
 .chip-toggle{border:1px solid var(--line);background:none;border-radius:999px;padding:2px 10px;cursor:pointer;font:inherit;color:inherit}
-.chip-toggle.on{background:var(--accent-fill);border-color:var(--accent-fill);color:#fff}
+.chip-toggle.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-fill)}
 .chat-input{display:flex;gap:8px;align-items:flex-end}
 .chat-input textarea{flex:1;min-width:0;resize:vertical;font:inherit}

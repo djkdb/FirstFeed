@@ -2,15 +2,18 @@
    공통 토큰은 소개 페이지(site/index.html)의 규칙을 옮긴 것(결정 2026-10-24 · 디자인 통일): 색 · 글꼴 · 간격 · 모서리 · 버튼(알약 · 44px).
    카드 렌더링(server/src/templates)은 이 파일과 상관없다 — 브랜드 키트의 색 · 글꼴로 그린다 */
 :root {
-  /* 색 — 소개 페이지 그대로 */
-  --ground: #f4f1ea;
-  --ink: #15161a;
-  --muted-strong: #3d3f46;
-  --muted: #5a5c63;
-  --accent: #2b44c9;
-  --accent-soft: #eef1fd;
-  --accent-ink: #1f2a6b;
-  --line: #c9c4b8;
+  /* 색 — 소개 페이지(2026-11-04 다시 짠 어두운 남색)와 같게. 크림색 바탕은 쓰지 않는다(사용자 지시 2026-11-04 · 11-05) */
+  --ground: #070a12;
+  --ink: #eef2fa;
+  --muted-strong: #c3cbdd;
+  --muted: #a3adc4;
+  --accent: #4c7dff;
+  /* 흰 글자를 올리는 채운 단추 · 선택된 탭 — --accent 위 흰 글자는 3.7:1 이라 한 단계 진하게(5.25:1) */
+  --accent-fill: #3461e6;
+  --accent-fill-hover: #3a66e8;
+  --accent-soft: rgba(76, 125, 255, 0.14);
+  --accent-ink: #b8ccff;
+  --line: #2e3a5c;
   /* 폰 틀 — 소개 페이지의 폰 프로필 그대로 */
   --phone: #0e1116;
   --phone-ink: #f2f3f5;
@@ -19,22 +22,22 @@
   --phone-ring: #3a3f48;
   --phone-edge: #1c1f25;
   --phone-cell: #171a20;
-  /* 소개 페이지에는 카드 면이 없어 바탕에서 한 단계씩 밝게 · 어둡게만 더함 */
-  --surface: #fbfaf6;
-  --surface-2: #ece8de;
-  --surface-3: #e4dfd3;
-  /* 상태 색(앱에만 있음) — 값은 그대로, 이름만 토큰으로 */
-  --ok: #1d7a46;
-  --ok-soft: #e7f5ec;
-  --error: #b42318;
-  --error-soft: #fdecea;
-  --warn-ink: #7a4a00;
-  --warn-soft: #fff6e2;
-  --warn-line: #d97706;
-  --warn-mark: #fde68a;
-  --premade-ink: #5b21b6;
-  --premade-soft: #ede9fe;
-  --premade-line: #c4b5fd;
+  /* 카드 면 — 소개 페이지의 상자(.box)와 같은 단계 */
+  --surface: #111729;
+  --surface-2: #161e35;
+  --surface-3: #1c2642;
+  /* 상태 색(앱에만 있음) — 어두운 바탕에서 읽히게 밝은 쪽으로 */
+  --ok: #5fd39a;
+  --ok-soft: rgba(95, 211, 154, 0.14);
+  --error: #ff8a8a;
+  --error-soft: rgba(255, 138, 138, 0.14);
+  --warn-ink: #ffd28a;
+  --warn-soft: rgba(255, 196, 92, 0.12);
+  --warn-line: #f59e0b;
+  --warn-mark: rgba(253, 230, 138, 0.35);
+  --premade-ink: #cdb8ff;
+  --premade-soft: rgba(167, 139, 250, 0.16);
+  --premade-line: #7c5ccf;
   /* 예전 이름 — 남은 곳이 있어도 같은 색이 되게 */
   --bg: var(--ground);
   --text: var(--ink);
@@ -54,6 +57,7 @@
   font-family: var(--font);
   color: var(--ink);
   background: var(--ground);
+  color-scheme: dark; /* 스크롤바 · 기본 입력 칸도 어두운 쪽으로 */
 }
 body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--font); word-break: keep-all; line-height: 1.55; }
 a { color: var(--ink); }
@@ -90,11 +94,11 @@ textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; 
 .tabs { display: flex; flex-wrap: wrap; gap: var(--s-1); margin: 0 0 var(--s-5); }
 .tabs a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1px solid transparent; color: var(--muted-strong); text-decoration: none; font-size: 14px; font-weight: 600; white-space: nowrap; }
 .tabs a:hover { border-color: var(--line); color: var(--ink); }
-.tabs a.on { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.tabs a.on { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
 
 /* 공통 */
-button.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
-button.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+button.primary { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
+button.primary:hover:not(:disabled) { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); }
 .actions { display: flex; gap: var(--s-2); align-items: center; margin-top: var(--s-3); flex-wrap: wrap; }
 .small { font-size: 13px; }
 .qid { display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 5px; margin-right: 4px; vertical-align: 1px; }
@@ -102,7 +106,7 @@ button.primary:hover:not(:disabled) { background: var(--accent); border-color: v
 input { font: inherit; font-size: 14px; min-height: 40px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--ink); width: 100%; box-sizing: border-box; margin-top: 6px; }
 /* 체크 · 라디오는 글 칸 규칙(너비 · 높이)에서 뺀다 — 처음엔 커다랗게 늘어났다(디자인 통일 전후 캡처에서 발견) */
 input[type='file'] { border: 0; padding: 0; min-height: 0; background: none; width: auto; }
-input[type='checkbox'], input[type='radio'] { width: auto; min-height: 0; padding: 0; margin: 0 var(--s-1) 0 0; accent-color: var(--ink); vertical-align: -2px; }
+input[type='checkbox'], input[type='radio'] { width: auto; min-height: 0; padding: 0; margin: 0 var(--s-1) 0 0; accent-color: var(--accent); vertical-align: -2px; }
 select { font: inherit; font-size: 14px; min-height: 40px; padding: 0 var(--s-2); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--ink); }
 
 /* 설문 */
@@ -110,7 +114,7 @@ select { font: inherit; font-size: 14px; min-height: 40px; padding: 0 var(--s-2)
 .survey legend { font-weight: 600; margin-bottom: 6px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border-radius: var(--r-pill); min-height: 36px; padding: 0 var(--s-3); font-size: 14px; font-weight: 500; }
-.chip.on { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+.chip.on { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
 
 /* 인터뷰 */
 .turns { list-style: none; padding: 0; margin: 12px 0; }
@@ -265,7 +269,7 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
 .preview .actions label { display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; flex: none; }
 
 /* 계획 칸 배지 — 만든 칸에는 없다(결정 2026-10-21: 계획을 만든 것처럼 보이게 하지 않는다) */
-.ig-badge { position: absolute; right: 4px; top: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgb(255 255 255 / 92%); color: var(--ink); box-shadow: 0 0 0 1px rgb(0 0 0 / 25%); }
+.ig-badge { position: absolute; right: 4px; top: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgb(255 255 255 / 92%); color: #15161a; box-shadow: 0 0 0 1px rgb(0 0 0 / 25%); }
 .ig-plan-reason { font-size: 10px; opacity: 0.8; }
 /* 채워지는 모션 — 칸마다 지연을 다르게(grid.ts flipDelay), 바이오는 줄마다 타이핑 */
 .ig-anim .ig-cell { animation-name: ig-flip; animation-timing-function: ease-out; animation-fill-mode: both; backface-visibility: hidden; }
@@ -291,8 +295,8 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
 /* 버튼 모양 링크(다른 탭으로 가는 「이 칸으로 만들기」 등) — 버튼과 같은 알약 */
 a.button { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--s-4); border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 600; text-decoration: none; }
 a.button:hover { border-color: var(--ink); color: var(--ink); }
-a.button.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
-a.button.primary:hover { background: var(--accent); border-color: var(--accent); color: var(--ground); }
+a.button.primary { background: var(--accent-fill); color: #fff; border-color: var(--accent-fill); }
+a.button.primary:hover { background: var(--accent-fill-hover); border-color: var(--accent-fill-hover); color: #fff; }
 /* 소개 페이지의 작은 머리글(.eyebrow) */
 .eyebrow { margin: 0; font-size: 14px; font-weight: 600; color: var(--accent); }
 
@@ -349,7 +353,7 @@ a.button.primary:hover { background: var(--accent); border-color: var(--accent);
 .chat-panel h3{margin:0 0 6px}
 .chat-log{display:flex;flex-direction:column;gap:12px;max-height:560px;overflow-y:auto;padding:8px 2px;margin:8px 0}
 .chat-turn{display:flex;flex-direction:column;gap:6px}
-.chat-me{align-self:flex-end;max-width:80%;background:var(--accent, #3b6cf6);color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;white-space:pre-wrap}
+.chat-me{align-self:flex-end;max-width:80%;background:var(--accent-fill);color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;white-space:pre-wrap}
 .chat-me .tag{background:rgba(255,255,255,.2);color:#fff}
 .chat-ai{align-self:flex-start;max-width:92%;border:1px solid var(--line);padding:10px 12px;border-radius:14px 14px 14px 4px;display:flex;flex-direction:column;gap:8px}
 .chat-ai.discarded,.chat-ai.reverted{opacity:.6}
@@ -360,6 +364,6 @@ a.button.primary:hover { background: var(--accent); border-color: var(--accent);
 .chat-change > .small{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:4px}
 .chat-targets{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
 .chip-toggle{border:1px solid var(--line);background:none;border-radius:999px;padding:2px 10px;cursor:pointer;font:inherit;color:inherit}
-.chip-toggle.on{background:var(--accent, #3b6cf6);border-color:var(--accent, #3b6cf6);color:#fff}
+.chip-toggle.on{background:var(--accent-fill);border-color:var(--accent-fill);color:#fff}
 .chat-input{display:flex;gap:8px;align-items:flex-end}
 .chat-input textarea{flex:1;min-width:0;resize:vertical;font:inherit}

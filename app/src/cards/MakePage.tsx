@@ -6,6 +6,7 @@ import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
 import { PublishPanel } from './PublishPanel.tsx';
+import { ChatPanel } from './ChatPanel.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { useJob, type JobView } from '../useJob.ts';
 import { StageLine } from '../StageLine.tsx';
@@ -267,6 +268,7 @@ function SetView({ setId }: { setId: number }) {
         ))}
       </div>
       <p className="muted small">찍은 브라우저: {set.cards[0]?.render.browser}{set.cards[0] && !set.cards[0].render.reference && ' · 기준 브라우저 아님'}</p>
+      <ChatPanel setId={setId} cardCount={set.cards.length} pngOf={(i) => `/api/cards/sets/${setId}/png/${set.cards[i]?.pngFile}?v=${rev}`} onChanged={() => void load()} />
       <PublishPanel setId={setId} cardUnchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} onChanged={() => void load()} />
     </>
   );

@@ -18,6 +18,7 @@ import { applyCoverImage, CoverImageError } from './cover-image.ts';
 import { AssetError } from '../brand/assets.ts';
 import { addSource, getSet, getSource, listSets, rendersDir, setJobIds } from './store.ts';
 import { rewriteHistory } from '../ai/history.ts';
+import { applyChat, CHAT_PNG, ChatError, discardChat, listChat, proposeChat, revertChat } from './chat.ts';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
@@ -114,6 +115,43 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
     .get('/sets/:id/png/:file', (c) => {
       const file = c.req.param('file');
       if (!/^\d{2}-(cover|body|closing)\.png$/.test(file)) return c.json(bad('파일 이름이 맞지 않습니다.'), 400);
+      const p = path.join(rendersDir(dataDir, Number(c.req.param('id'))), file);
+      if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
+      return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
+    })
+    // 채팅으로 고치기(FR-MK-3): 지시 → AI 제안(작업 ID) → 전/후 보고 적용 · 버리기 · 되돌리기
+    .get('/sets/:id/chat', (c) => c.json({ items: listChat(db, Number(c.req.param('id'))) }))
+    .post(
+      '/sets/:id/chat',
+      validator('json', (v, c) => {
+        const b = z.object({ message: z.string().trim().min(2).max(500), targets: z.array(z.number().int().min(0).max(20)).max(20).nullable().optional() }).safeParse(v);
+        return b.success ? b.data : c.json(bad('고칠 내용을 2자 이상 500자 이하로 써 주세요.'), 400);
+      }),
+      (c) => {
+        const setId = Number(c.req.param('id'));
+        if (!getSet(db, setId)) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
+        const { message, targets } = c.req.valid('json');
+        return c.json({ jobId: jobs.start('card_chat', (j) => proposeChat(ai, BRAND_ID, setId, message, targets?.length ? targets : null, j, dataDir)) });
+      },
+    )
+    .post('/sets/:id/chat/:cid/:action', (c) => {
+      const setId = Number(c.req.param('id'));
+      const cid = Number(c.req.param('cid'));
+      try {
+        const a = c.req.param('action');
+        if (a === 'apply') applyChat(db, dataDir, setId, cid);
+        else if (a === 'discard') discardChat(db, setId, cid);
+        else if (a === 'revert') revertChat(db, dataDir, setId, cid);
+        else return c.json(bad('알 수 없는 동작입니다.'), 400);
+        return c.json({ ok: true });
+      } catch (err) {
+        if (err instanceof ChatError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    .get('/sets/:id/chat-png/:file', (c) => {
+      const file = c.req.param('file');
+      if (!CHAT_PNG.test(file)) return c.json(bad('파일 이름이 맞지 않습니다.'), 400);
       const p = path.join(rendersDir(dataDir, Number(c.req.param('id'))), file);
       if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
       return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });

@@ -54,6 +54,8 @@ export const DEFAULTS = {
     // 30일 뒤 미리보기의 시리즈 계획 — 제목 카피라 표지 제목과 같은 모델 (FR-BR-6)
     series_plan: 'opus',
     card_body: 'opus',
+    // 카드뉴스 채팅으로 고치기(FR-MK-3) — 카드 글을 다시 쓰는 일이라 본문과 같은 모델
+    card_chat: 'opus',
     reel_script: 'opus',
     caption_set: 'opus',
     // 중간 발표용 최소 캡션 (결정 2026-10-18 · FR-PB-1)
@@ -89,6 +91,7 @@ export const DEFAULTS = {
     cover_titles: 300_000,
     // 본문은 카드 N장 + 그림 프롬프트를 한 번에 써서 출력이 길다
     card_body: 480_000,
+    card_chat: 360_000,
     caption_min: 240_000,
   } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */

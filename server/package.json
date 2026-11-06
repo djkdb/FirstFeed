@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./app-type": "./src/app.ts"
+    "./app-type": "./src/app.ts",
+    "./reels/*": "./src/reels/*"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -15,10 +16,13 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",
+    "@remotion/bundler": "4.0.541",
+    "@remotion/renderer": "4.0.541",
     "hono": "^4.13.13",
     "jsonrepair": "^3.15.0",
     "playwright": "1.64.0",
     "qrcode-generator": "2.0.4",
+    "remotion": "4.0.541",
     "zod": "^4.6.7"
   }
 }

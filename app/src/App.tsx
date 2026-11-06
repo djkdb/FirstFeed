@@ -9,12 +9,13 @@ import { TemplatePage } from './templates/TemplatePage.tsx';
 import { MakePage } from './cards/MakePage.tsx';
 import { PreviewPage } from './preview/PreviewPage.tsx';
 import { HomePage } from './home/HomePage.tsx';
+import { ReelsPage } from './reels/ReelsPage.tsx';
 import { ConsoleFab, ConsolePanel, type Feed } from './console/ConsolePanel.tsx';
 
 type ServerState = { kind: 'checking' } | { kind: 'ok'; brandName: string | null } | { kind: 'error'; message: string };
 
-type Tab = 'home' | 'identity' | 'brand' | 'template' | 'make' | 'preview' | 'check';
-const TABS: Tab[] = ['home', 'identity', 'brand', 'template', 'make', 'preview', 'check'];
+type Tab = 'home' | 'identity' | 'brand' | 'template' | 'make' | 'reels' | 'preview' | 'check';
+const TABS: Tab[] = ['home', 'identity', 'brand', 'template', 'make', 'reels', 'preview', 'check'];
 // 「#/make?slot=3」처럼 뒤에 값이 붙어도 그 탭으로. 첫 화면은 「오늘 올릴 것」(설계서 1장 — 계획이 없으면 그 화면이 할 일을 안내)
 const tabFromHash = (): Tab => TABS.find((t) => window.location.hash.split('?')[0] === `#/${t}`) ?? 'home';
 
@@ -36,6 +37,7 @@ const NAV: Array<{
     group: '만들기',
     items: [
       { tab: 'make', label: '카드뉴스 만들기', step: '4' },
+      { tab: 'reels', label: '릴스 만들기' },
       { tab: 'preview', label: '30일 뒤 미리보기' },
     ],
   },
@@ -93,7 +95,8 @@ export function App() {
   }, []);
 
   return (
-    <div className="layout">
+    // 릴스 편집 화면은 넓게 — 작업 콘솔은 단추로 여는 덮개로 접는다(좁은 화면과 같은 모양)
+    <div className={`layout${tab === 'reels' ? ' wide' : ''}`}>
       <aside className="sidebar">
         <a href="#/home" className="account">
           {account?.image ? <img className="account-avatar" src={`/api/brand/assets/${account.image}`} alt="" /> : <span className="account-avatar empty">{(account?.name ?? '퍼').slice(0, 1)}</span>}
@@ -135,6 +138,7 @@ export function App() {
         {tab === 'brand' && <BrandPage />}
         {tab === 'template' && <TemplatePage />}
         {tab === 'make' && <MakePage />}
+      {tab === 'reels' && <ReelsPage />}
         {tab === 'preview' && <PreviewPage />}
         {tab === 'check' && (
           <>

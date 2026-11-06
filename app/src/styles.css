@@ -440,3 +440,11 @@ a.button.primary:hover { background: var(--accent-fill-hover); border-color: var
 .chip-toggle.on{background:var(--accent-fill);border-color:var(--accent-fill);color:var(--on-fill)}
 .chat-input{display:flex;gap:8px;align-items:flex-end}
 .chat-input textarea{flex:1;min-width:0;resize:vertical;font:inherit}
+
+/* 릴스 편집 화면(넓게): 본문 폭 제한을 풀고 작업 콘솔은 덮개로 */
+.layout.wide { grid-template-columns: 232px minmax(0, 1fr); }
+.layout.wide .shell { max-width: none; padding: 16px 20px 16px; }
+.layout.wide .console:not(.open), .layout.wide .console.collapsed { display: none; }
+.layout.wide .console.open { display: flex; position: fixed; z-index: 30; right: 0; top: 0; width: min(360px, 100vw); align-items: stretch; padding: var(--s-5) var(--s-4); box-shadow: -8px 0 24px rgba(17, 19, 24, 0.12); }
+.layout.wide .console-scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgba(17, 19, 24, 0.25); }
+.layout.wide .console-fab { display: inline-flex; align-items: center; position: fixed; z-index: 20; right: 16px; bottom: 16px; box-shadow: 0 4px 16px rgba(17, 19, 24, 0.18); }

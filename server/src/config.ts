@@ -222,6 +222,15 @@ export const DEFAULTS = {
   'preview.titleOverlapThreshold': 0.4,
   /** 캐러셀 최대 장수 — **확인됨**: 인스타 도움말 원문 "You can upload up to 20 photos and videos … as a single post"(help.instagram.com/269314186824048). 넘으면 업로드 폴더를 안 만든다(결정 2026-10-18) */
   'publish.maxCarousel': 20,
+  /** 릴스에 올리는 영상 · 사진 · 소리 한 개의 최대 크기 — 휴대폰 세로 영상 1분이 보통 100~300MB 라 넉넉히 */
+  'reels.maxUploadBytes': 2 * 1024 * 1024 * 1024,
+  /**
+   * 뽑은 릴스의 최종 음량 목표(LUFS, ffmpeg loudnorm). **외부 자료 등급** — 「인스타 기준 약 −14」는 공식 원문을 확인 못 함(결정 2026-11-05 · 0-10).
+   * ffmpeg 가 없거나 소리가 없으면 맞추지 않고 그대로 둔다
+   */
+  'reels.targetLufs': -14,
+  /** 선택 기능 받아쓰기(faster-whisper) 모델 — 클수록 정확하고 느리다(결정 2026-11-06) */
+  'reels.whisperModel': 'small',
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**

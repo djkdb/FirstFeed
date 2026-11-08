@@ -1,7 +1,7 @@
 // 인터뷰 다양화 측정(2026-11-08): 꼬리질문 판(v2 · v3)마다 같은 사람을 처음부터 N턴 인터뷰한다.
 // 답은 **가상 응답자(sonnet, prompts/eval_persona_answer)가 만든 AI 생성 답** — 고정 세트 사람의 설문 · 고정 질문 답을 바탕으로.
 // 그래서 이 측정은 「질문이 얼마나 다양한가 · 개성을 묻는가」만 본다(근거 품질은 보지 않는다).
-//   npm run eval:interview -- --turns=6 --label=v2-v3 [--profile] [--only=minji] [--versions=v2:v2,v3:v3] [--cloud-session]
+//   npm run eval:interview -- --turns=6 --label=v2-v3 [--profile | --until-profile] [--only=minji] [--versions=v2:v2,v3:v3] [--cloud-session]
 // 결과: tests/results/<날짜>-interview-sim-<label>.md · .json
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,7 +23,9 @@ const arg = (k: string) => args.find((a) => a.startsWith(`--${k}=`))?.slice(k.le
 const turnsN = Number(arg('turns') ?? 6);
 const label = arg('label') ?? 'run';
 const only = arg('only');
-const withProfile = args.includes('--profile');
+const withProfile = args.includes('--profile') || args.includes('--until-profile');
+/** 앱처럼: 프로필이 「근거 있는 축 3개 미만」이면 질문 2개를 더 하고 다시 만든다 — 최대 질문 수까지 */
+const untilProfile = args.includes('--until-profile');
 const cloud = args.includes('--cloud-session');
 if (cloud && process.env.CLAUDE_CODE_REMOTE !== 'true') throw new Error('--cloud-session 은 Claude Code 원격 세션 컨테이너(CLAUDE_CODE_REMOTE=true)에서만 씁니다');
 const acceptAuth = cloud ? (a: AuthStatus, e: NodeJS.ProcessEnv) => isSubscriptionAuth(a, e) || (a.loggedIn === true && a.apiProvider === 'firstParty' && a.authMethod === 'oauth_token') : undefined;
@@ -62,6 +64,10 @@ function describeQuestion(t: Turn): string {
 }
 
 interface Row {
+  /** 프로필을 만든 횟수(--until-profile 이면 저장될 때까지) */
+  attempts: number;
+  /** needs_more 때 부족하다고 한 것 */
+  missing: string[];
   persona: string;
   kind: string;
   version: string;
@@ -85,12 +91,12 @@ for (const p of PERSONAS) {
     const sid = createSession(db, 1, p.survey);
     const t0 = Date.now();
     let failed = 0;
-    for (let i = 0; i < turnsN; i++) {
+    const askOne = async (): Promise<boolean> => {
       const r = await askNext(ai, sid);
       if (r.kind !== 'asked') {
         failed++;
         console.log(`  ${p.id} ${v.followup}: 질문 실패 ${r.kind === 'failed' ? r.errors.map((e) => e.code).join(',') : r.kind}`);
-        break;
+        return false;
       }
       const t = listTurns(db, sid).at(-1)!;
       const pr = loadPrompt(db, 'eval_persona_answer', { persona, question: describeQuestion(t) });
@@ -104,26 +110,42 @@ for (const p of PERSONAS) {
         console.log(`  ${p.id} ${v.followup}: 답 저장 실패 → 모름으로 (${(e as Error).message})`);
       }
       console.log(`  ${p.id} ${v.followup} A${t.turnNo} [${t.lens ?? '-'}/${t.format}] ${t.question}`);
-    }
+      return true;
+    };
+    for (let i = 0; i < turnsN; i++) if (!(await askOne())) break;
     const turns = listTurns(db, sid);
     const rewrites = (db.prepare("SELECT COUNT(*) AS n FROM ai_runs WHERE task = 'identity_followup' AND kind = 'rewrite'").get() as { n: number }).n;
     let maxSim = 0;
     for (let i = 0; i < turns.length; i++) for (let j = i + 1; j < turns.length; j++) maxSim = Math.max(maxSim, similarity(turns[i]!.question, turns[j]!.question));
     let profile: Row['profile'] = null;
+    let attempts = 0;
+    const missing: string[] = [];
     if (withProfile) {
-      try {
-        const pr = await makeProfile(ai, sid);
-        const st = getSessionState(db, sid);
-        profile = { outcome: pr.outcome, voiceRules: st?.profile?.voiceRules.map((x) => x.text) ?? [], pillars: st?.profile?.pillars.map((x) => `${x.name} — ${x.description}`) ?? [], accountLine: st?.profile?.accountLine ?? null };
-      } catch (e) {
-        profile = { outcome: `오류: ${(e as Error).message}`, voiceRules: [], pillars: [], accountLine: null };
+      const max = getSetting(db, 'identity.maxTurns');
+      for (;;) {
+        attempts++;
+        try {
+          const pr = await makeProfile(ai, sid);
+          const st = getSessionState(db, sid);
+          if (pr.outcome === 'needs_more') missing.push(`${listTurns(db, sid).length}턴 뒤: ${st?.note?.missing.join(' / ') ?? ''}`);
+          profile = { outcome: pr.outcome, voiceRules: st?.profile?.voiceRules.map((x) => x.text) ?? [], pillars: st?.profile?.pillars.map((x) => `${x.name} — ${x.description}`) ?? [], accountLine: st?.profile?.accountLine ?? null };
+          if (!untilProfile || pr.outcome !== 'needs_more' || listTurns(db, sid).length >= max) break;
+          // 앱처럼 인터뷰로 돌아가 더 묻는다(2개씩 — 한 개씩이면 프로필 opus 호출이 질문마다 붙는다)
+          for (let k = 0; k < 2 && listTurns(db, sid).length < max; k++) if (!(await askOne())) break;
+        } catch (e) {
+          profile = { outcome: `오류: ${(e as Error).message}`, voiceRules: [], pillars: [], accountLine: null };
+          break;
+        }
       }
     }
+    const finalTurns = listTurns(db, sid);
     rows.push({
+      attempts,
+      missing,
       persona: p.id,
       kind: p.kind,
       version: v.followup,
-      questions: turns.map((t) => ({
+      questions: finalTurns.map((t) => ({
         no: t.turnNo,
         lens: t.lens,
         format: t.format,
@@ -153,9 +175,9 @@ const md: string[] = [
   '- 사람: me(실제·공개 자료를 바탕으로 한 시뮬레이션) · doyun · seoyeon · minji(AI 생성 페르소나). 실제·비공개 자료는 쓰지 않음',
   `- 규칙 기준: identity.variety ${JSON.stringify(getSetting(null, 'identity.variety'))}`,
   '',
-  '| 사람 | 판 | 질문 | 질문 실패 | 재작성 | 서로 다른 각도 | 방식 | 질문끼리 최대 유사도 | 시간 | 프로필 |',
+  '| 사람 | 판 | 질문 | 질문 실패 | 재작성 | 서로 다른 각도 | 방식 | 질문끼리 최대 유사도 | 시간 | 프로필(만든 횟수) |',
   '|---|---|---|---|---|---|---|---|---|---|',
-  ...rows.map((r) => `| ${r.persona}(${r.kind}) | ${r.version} | ${r.questions.length} | ${r.followupFailed} | ${r.rewrites} | ${r.distinctLenses ?? '모름(v2 는 각도 없음)'} | ${r.formats.map((f) => FORMAT_LABEL[f as keyof typeof FORMAT_LABEL]).join(' · ')} | ${r.maxSimilarity} | ${r.seconds}초 | ${r.profile?.outcome ?? '안 만듦'} |`),
+  ...rows.map((r) => `| ${r.persona}(${r.kind}) | ${r.version} | ${r.questions.length} | ${r.followupFailed} | ${r.rewrites} | ${r.distinctLenses ?? '모름(v2 는 각도 없음)'} | ${r.formats.map((f) => FORMAT_LABEL[f as keyof typeof FORMAT_LABEL]).join(' · ')} | ${r.maxSimilarity} | ${r.seconds}초 | ${r.profile?.outcome ?? '안 만듦'}${r.attempts ? `(${r.attempts})` : ''} |`),
   '',
 ];
 for (const r of rows) {
@@ -163,6 +185,7 @@ for (const r of rows) {
   for (const q of r.questions) {
     md.push(`${q.no}. ${q.lens ? `[${LENS_LABEL[q.lens as keyof typeof LENS_LABEL]} · ${FORMAT_LABEL[q.format as keyof typeof FORMAT_LABEL]}] ` : ''}${q.question}${q.extra ? `  \n   ${q.extra}` : ''}  \n   → (가상 답${q.answerKind && q.answerKind !== 'text' ? ` · ${q.answerKind}` : ''}) ${q.answer ?? ''}`);
   }
+  if (r.missing.length) md.push('', ...r.missing.map((m) => `- 근거 부족(${m})`));
   if (r.profile) {
     md.push('', `- 계정 한 줄: ${r.profile.accountLine ?? '-'}`, `- 축: ${r.profile.pillars.join(' / ') || '-'}`, `- 말투 규칙: ${r.profile.voiceRules.join(' / ') || '-'}`);
   }

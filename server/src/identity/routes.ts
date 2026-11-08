@@ -12,7 +12,15 @@ import { chooseDirection, runAlternatives, type AlternativesResult } from './alt
 import { SURVEY, SurveyAnswers, validateSurvey } from './survey.ts';
 
 const BRAND_ID = 1; // 브랜드 여러 개(FR-AC-3)는 F 범위 — 지금은 로컬 브랜드 하나
-const Answer = z.object({ turnNo: z.number().int().positive(), answer: z.string().max(1000).default(''), unknown: z.boolean().default(false) });
+const Answer = z.object({
+  turnNo: z.number().int().positive(),
+  answer: z.string().max(1000).default(''),
+  unknown: z.boolean().default(false),
+  /** 둘 중 고르기에서 고른 쪽 */
+  pick: z.string().max(40).nullable().default(null),
+  /** 말투 척도에서 고른 칸 1~5 */
+  scale: z.number().int().min(1).max(5).nullable().default(null),
+});
 
 const bad = (message: string) => ({ error: message });
 
@@ -52,9 +60,9 @@ export function identityRoutes(ai: AiService, jobs: JobStore) {
       }),
       (c) => {
         const id = Number(c.req.param('id'));
-        const { turnNo, answer, unknown } = c.req.valid('json');
+        const { turnNo, answer, unknown, pick, scale } = c.req.valid('json');
         try {
-          answerTurn(ai, id, turnNo, answer, unknown);
+          answerTurn(ai, id, turnNo, answer, unknown, pick, scale);
         } catch (err) {
           if (err instanceof FlowError) return c.json(bad(`${err.message} ${err.hint}`), 400);
           throw err;

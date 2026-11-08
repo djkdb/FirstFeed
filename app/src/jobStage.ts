@@ -15,6 +15,7 @@ export const TASK_LABEL: Record<string, string> = {
   identity_alternatives: '다른 방향 두 개',
   brand_words: '아이디 · 이름 · 바이오 후보',
   brand_visual: '색 · 글꼴 · 그림 프롬프트',
+  character_suggest: '개성 캐릭터 추천',
   cover_titles: '표지 제목 후보',
   card_body: '카드뉴스 본문',
   card_chat: '채팅으로 고치기',
@@ -32,6 +33,7 @@ const WRITING: Record<string, string> = {
   identity_alternatives: '다른 방향 두 개 찾는 중',
   brand_words: '아이디 · 이름 · 바이오 후보 쓰는 중',
   brand_visual: '색 · 글꼴 · 그림 프롬프트 고르는 중',
+  character_suggest: '프로필에 맞는 캐릭터 세 가지 고르는 중',
   cover_titles: '표지 제목 후보 쓰는 중',
   card_body: '본문 카드 쓰는 중',
   card_chat: '말한 대로 카드 고치는 중',
@@ -44,8 +46,9 @@ const WRITING: Record<string, string> = {
 /** 코드 규칙 단계에서 과제마다 무엇을 대조하는지 */
 const CHECKING: Record<string, string> = {
   identity_profile: '근거 확인 중 — 축마다 붙은 인용이 내 답에 실제로 있는지',
-  identity_followup: '규칙 확인 중 — 앞 질문과 겹치지 않는지',
   brand_visual: '규칙 확인 중 — 명암비 · 앱에 있는 글꼴 · 그림 프롬프트 규칙',
+  character_suggest: '규칙 확인 중 — 선택지 표 안인지 · 이름 · 세 안이 서로 다른지 · 설명의 숫자 근거',
+  identity_followup: '규칙 확인 중 — 앞 질문과 겹치지 않는지 · 각도 · 답하는 방식',
   series_plan: '규칙 확인 중 — 글자 수 · 축 · 숫자 근거 · 거의 같은 제목',
   reel_motion: '규칙 확인 중 — 프레임마다 격자 가이드 안인지 · 읽을 틈 · 강조 명암비',
 };

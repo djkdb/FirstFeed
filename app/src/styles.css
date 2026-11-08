@@ -448,3 +448,45 @@ a.button.primary:hover { background: var(--accent-fill-hover); border-color: var
 .layout.wide .console.open { display: flex; position: fixed; z-index: 30; right: 0; top: 0; width: min(360px, 100vw); align-items: stretch; padding: var(--s-5) var(--s-4); box-shadow: -8px 0 24px rgba(17, 19, 24, 0.12); }
 .layout.wide .console-scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgba(17, 19, 24, 0.25); }
 .layout.wide .console-fab { display: inline-flex; align-items: center; position: fixed; z-index: 20; right: 16px; bottom: 16px; box-shadow: 0 4px 16px rgba(17, 19, 24, 0.18); }
+
+/* 인터뷰 다양화(2026-11-08): 둘 중 고르기 · 말투 척도 · 고쳐 쓰기 — 앱 공통 무채색 토큰만 */
+.tag.lens { background: var(--surface); border: 1px solid var(--line); }
+.pick-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.pick { text-align: left; min-height: 56px; border-radius: var(--r-md); background: var(--surface); font-weight: 600; justify-content: flex-start; }
+.pick.on { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
+.pick-side { display: inline-block; min-width: 1.6em; opacity: 0.6; }
+.scale { display: flex; align-items: center; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+.scale-end { font-size: 14px; font-weight: 600; }
+.scale-dot { width: 40px; min-height: 40px; padding: 0; border-radius: 50%; justify-content: center; }
+.scale-dot.on { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
+.sample { margin: 10px 0 4px; padding: 10px 14px; border-left: 3px solid var(--line-strong, var(--line)); background: var(--surface); border-radius: 0 var(--r-md) var(--r-md) 0; }
+@media (max-width: 560px) {
+  .pick-two { grid-template-columns: 1fr; }
+}
+
+/* 내 캐릭터 만들기(2026-11-08) — 화면은 무채색, 색은 견본 점 · 프롬프트 안에만 */
+.character .ch-top { flex-wrap: wrap; gap: 8px; }
+.character .ch-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-3); align-items: start; }
+.character .ch-steps { display: flex; flex-direction: column; gap: 10px; }
+.character .ch-step { display: flex; flex-direction: column; gap: 4px; }
+.character .ch-label { font-size: 13px; font-weight: 600; }
+.character .ch-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--line); vertical-align: -1px; }
+.character .ch-result { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.character .ch-prompt { white-space: pre-wrap; word-break: break-word; font-size: 13px; line-height: 1.5; background: var(--surface-2); border-radius: var(--r-md); padding: 12px; margin: 0; max-height: 320px; overflow: auto; }
+.character .ch-suggest { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.character .ch-card { border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.character .ch-card p { margin: 0; }
+.character .ch-issues { margin: 0; padding-left: 16px; }
+.character .ch-issues .error { color: var(--error); }
+.character .ch-check { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 3px; }
+.character .ch-check code { display: block; margin-left: 18px; color: var(--muted); font-size: 12px; }
+.character .ch-check .ok { color: var(--ink); }
+.character .ch-check .miss { color: var(--error); }
+@media (max-width: 860px) {
+  .character .ch-grid { grid-template-columns: 1fr; }
+  .character .ch-result { position: static; }
+  .character .ch-suggest { grid-template-columns: 1fr; }
+}
+.character .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; align-self: flex-start; }
+.character .seg button { border: 0; border-radius: 0; min-height: 32px; padding: 0 12px; font-size: 13px; background: var(--surface); }
+.character .seg button.on { background: var(--accent-fill); color: var(--on-fill); }

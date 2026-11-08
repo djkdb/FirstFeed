@@ -82,12 +82,12 @@ export function IdentityPage() {
     }
   };
 
-  const answer = async (turnNo: number, text: string, unknown: boolean) => {
+  const answer = async (turnNo: number, text: string, unknown: boolean, pick: string | null = null, scale: number | null = null) => {
     if (!current?.state) return;
     setBusy(true);
     setError(null);
     try {
-      const r = await api.api.identity.sessions[':id'].answer.$post({ param: { id: String(current.state.id) }, json: { turnNo, answer: text, unknown } });
+      const r = await api.api.identity.sessions[':id'].answer.$post({ param: { id: String(current.state.id) }, json: { turnNo, answer: text, unknown, pick, scale } });
       const body = await r.json();
       if ('error' in body) throw new Error(body.error);
       setCurrent(body);
@@ -146,7 +146,7 @@ export function IdentityPage() {
       )}
 
       {state && state.status !== 'profiled' && (
-        <Interview state={state} minTurns={current.minTurns} maxTurns={current.maxTurns} busy={busy || running} onAnswer={(n, a, u) => void answer(n, a, u)} />
+        <Interview state={state} minTurns={current.minTurns} maxTurns={current.maxTurns} busy={busy || running} onAnswer={(n, a, u, p, sc) => void answer(n, a, u, p, sc)} />
       )}
 
       {running && job && (

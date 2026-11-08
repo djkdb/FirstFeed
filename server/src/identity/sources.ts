@@ -26,6 +26,8 @@ export interface EvidenceSource {
   /** "사용자가 직접 입력한 문장"(허용 출처 4) — 숫자·영문 대조에 쓴다. 주 근거만 해당 */
   countsAsUserInput: boolean;
   question?: string;
+  /** 답하는 방식이 글이 아니었을 때 무엇을 보였고 무엇을 골랐는지(인터뷰 다양화 v3) — 프롬프트에 같이 보인다 */
+  context?: string;
 }
 
 export interface TurnLike {
@@ -33,6 +35,19 @@ export interface TurnLike {
   question: string;
   answer: string | null;
   answerKind: AnswerKind | null;
+  format?: 'open' | 'this_or_that' | 'rewrite' | 'scale';
+  options?: string[];
+  sample?: string | null;
+  scale?: { left: string; right: string } | null;
+  pick?: string | null;
+}
+
+/** 글이 아닌 방식의 답 — 무엇을 보였고 무엇을 골랐는지 한 줄 */
+function turnContext(t: TurnLike): string | undefined {
+  if (t.format === 'this_or_that') return `둘 중 고르기 「${t.options?.[0] ?? ''}」 / 「${t.options?.[1] ?? ''}」 → 「${t.pick ?? ''}」를 고름${t.answerKind === 'choice' ? '' : ' · 아래는 고른 이유'}`;
+  if (t.format === 'scale' && t.scale) return `말투 척도 「${t.scale.left}」 1~5 「${t.scale.right}」 → ${t.pick ?? '?'}${t.answerKind === 'choice' ? '' : ' · 아래는 덧붙인 말'}`;
+  if (t.format === 'rewrite') return `예시 문장 「${t.sample ?? ''}」을 내 말투로 고쳐 쓴 답 — 말투 규칙의 근거`;
+  return undefined;
 }
 
 /**
@@ -76,6 +91,7 @@ export function buildSources(survey: SurveyAnswers, turns: TurnLike[]): Evidence
       weight: t.answerKind === 'example' ? 'none' : t.answerKind === 'choice' ? 'supporting' : 'primary',
       countsAsUserInput: t.answerKind === 'text',
       question: t.question,
+      context: turnContext(t),
     });
   }
   return out;
@@ -92,7 +108,7 @@ export function formatSourcesForPrompt(sources: EvidenceSource[]): string {
           : s.kind === 'choice'
             ? ' (※ 선택지를 고른 답 — 보조 근거, 이것만으로는 근거가 되지 않음)'
             : '';
-      return `[${s.id}] 질문: ${s.question}\n     답${mark}: ${s.text}`;
+      return `[${s.id}] 질문: ${s.question}${s.context ? `\n     (${s.context})` : ''}\n     답${mark}: ${s.text}`;
     })
     .join('\n');
 }

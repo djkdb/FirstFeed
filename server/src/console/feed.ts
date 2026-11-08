@@ -49,6 +49,7 @@ const RESULT_HREF: Record<string, string> = {
   identity_alternatives: '#/identity',
   brand_words: '#/brand',
   brand_visual: '#/brand',
+  character_suggest: '#/brand',
   series_plan: '#/preview',
   cover_titles: '#/make',
   card_body: '#/make',

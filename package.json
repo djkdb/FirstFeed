@@ -34,7 +34,9 @@
     "eval:gloss-review": "node scripts/eval-gloss-review.ts",
     "eval:feeling-review": "node scripts/eval-feeling-review.ts",
     "eval:tokens": "node scripts/eval-tokens.ts",
-    "eval:motion": "node scripts/eval-reel-motion.ts"
+    "eval:motion": "node scripts/eval-reel-motion.ts",
+    "eval:interview": "node scripts/eval-interview-sim.ts",
+    "eval:character": "node scripts/eval-character.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

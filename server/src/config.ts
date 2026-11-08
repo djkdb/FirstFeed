@@ -50,6 +50,8 @@ export const DEFAULTS = {
     // 브랜딩 키트는 글·시각 두 호출 (결정 2026-10-14 · 브랜딩 키트 설계)
     brand_words: 'opus',
     brand_visual: 'opus',
+    // 개성 캐릭터 추천 3안(2026-11-08) — 브랜딩과 같은 모델. 고르는 값은 표 안에서만, 자기 평가 없음
+    character_suggest: 'opus',
     cover_titles: 'opus',
     // 30일 뒤 미리보기의 시리즈 계획 — 제목 카피라 표지 제목과 같은 모델 (FR-BR-6)
     series_plan: 'opus',
@@ -111,6 +113,11 @@ export const DEFAULTS = {
   'identity.maxTurns': 10,
   /** 지난 질문과 글자 유사도가 이 값 이상이면 같은 질문으로 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
   'identity.duplicateQuestionThreshold': 0.6,
+  /**
+   * 인터뷰 다양화(2026-11-08, 꼬리질문 v3) — 각도를 아는 최근 질문 window 개 안에서 각도 minDistinctLenses 가지 이상,
+   * 각도를 아는 질문이 formatBy 개가 될 때까지 모두 글로 답하기면 다른 방식을 하나 섞게. 첫 값은 감 — 측정 뒤 바꾼다
+   */
+  'identity.variety': { window: 5, minDistinctLenses: 4, formatBy: 4 },
   /** 축끼리 글자 유사도가 이 값 이상이면 겹친다고 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
   'identity.pillarOverlapThreshold': 0.5,
   /** 인용 최소 글자 수(공백·문장부호 제외). 너무 짧은 조각은 근거가 약해서 (CLAUDE.md 근거 규칙의 알려진 한계) */

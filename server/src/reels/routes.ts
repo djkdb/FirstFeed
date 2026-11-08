@@ -5,12 +5,15 @@ import { Hono, type Context } from 'hono';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
 import { env, getSetting } from '../config.ts';
+import type { AiService } from '../ai/adapter.ts';
+import type { JobStore } from '../ai/jobs.ts';
 import type { Db } from '../db/index.ts';
 import { FONTS } from '../brand/fonts.ts';
 import { FONT_ORIGIN, fontFaceCss, fontFileFor } from '../render/fonts-css.ts';
 import { fontIdOf, type ReelDoc } from './model.ts';
 import { MediaError, mediaPath, saveMedia } from './media.ts';
 import { cancelRender, remotionBrowser, renderJob, renderPath, startRender, type Quality } from './render.ts';
+import { proposeMotion } from './motionPlan.ts';
 import { createReel, deleteReel, getReel, listReels, reelBrand, saveReel } from './store.ts';
 import { hasWhisper, transcribe } from './transcribe.ts';
 
@@ -63,12 +66,13 @@ const DocShape = z
   })
   .passthrough();
 
-export function reelRoutes(db: Db, dataDir = env.dataDir) {
+export function reelRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir) {
+  const db: Db = ai.db;
   const id = (c: Context) => Number(c.req.param('id'));
   const guide = () => getSetting(db, 'render.safeArea').reel;
   return new Hono()
     .get('/', async (c) =>
-      c.json({ reels: listReels(db, BRAND_ID), brand: reelBrand(db, BRAND_ID), guide: guide(), fonts: FONTS.map((f) => ({ id: f.id, name: f.name })), whisper: await hasWhisper(), browser: remotionBrowser() !== null }),
+      c.json({ reels: listReels(db, BRAND_ID), brand: reelBrand(db, BRAND_ID), guide: guide(), fonts: FONTS.map((f) => ({ id: f.id, name: f.name })), whisper: await hasWhisper(), browser: remotionBrowser() !== null, motionLimits: getSetting(db, 'reels.motion') }),
     )
     .post(
       '/',
@@ -167,6 +171,12 @@ export function reelRoutes(db: Db, dataDir = env.dataDir) {
         return c.json({ jobId: startRender(db, dataDir, r.id, r.doc, brand, guide(), c.req.valid('json').quality as Quality).id });
       },
     )
+    // 모션 제안(결정 2026-11-08) — 편집 내용은 바꾸지 않고 제안만 돌려준다. 화면이 전 · 후를 보여 주고 「적용」해야 바뀐다
+    .post('/:id/motion', (c) => {
+      const r = getReel(db, BRAND_ID, id(c));
+      if (!r) return c.json(bad('릴스를 찾지 못했어요.'), 404);
+      return c.json({ jobId: jobs.start('reel_motion', (job) => proposeMotion(ai, BRAND_ID, r.id, job)) });
+    })
     .get('/:id/renders/:file', (c) => {
       const full = renderPath(dataDir, id(c), c.req.param('file'));
       if (!full) return c.json(bad('뽑은 영상을 찾지 못했어요.'), 404);

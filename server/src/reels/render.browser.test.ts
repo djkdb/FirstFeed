@@ -60,4 +60,54 @@ describe('릴스 영상 뽑기', () => {
       delete process.env.FIRSTFEED_RENDER_BASE;
     }
   }, 300_000);
+
+  it('모션: rise 로 들어오는 제목은 0프레임에 안 보이고, 등장이 끝나면 보인다(영상에서 프레임을 꺼내 잰다)', async () => {
+    const db = openDb(':memory:');
+    saveSelection(db, 1, null, { palette: { name: '시험', colors: { primary: '#2fa8e0', secondary: '#1e293b', accent: '#fde047', background: '#f4f8fb', text: '#111318' }, why: '' }, titleFont: 'suit', bodyFont: 'pretendard' });
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ff-reels-motion-'));
+    const { serve } = await import('@hono/node-server');
+    const app = createApp({ db, ai: new AiService({ db, provider: new FakeProvider([]) }), dataDir });
+    const server = await new Promise<ReturnType<typeof serve>>((res) => {
+      const s = serve({ fetch: app.fetch, hostname: '127.0.0.1', port: 0 }, (info) => {
+        process.env.FIRSTFEED_RENDER_BASE = `http://127.0.0.1:${info.port}`;
+        res(s);
+      });
+    });
+    try {
+      const r = (await (await app.request('/api/reels', { method: 'POST', headers: J, body: JSON.stringify({ name: '모션 시험' }) })).json()) as { id: number; doc: ReelDoc };
+      const title = r.doc.texts[0]!;
+      const doc: ReelDoc = {
+        ...r.doc,
+        bg: { kind: 'solid', color: '#0b1220' },
+        progress: 'accent',
+        scenes: [{ ...r.doc.scenes[0]!, start: 0, duration: 30, camera: 'zoom-in' }],
+        texts: [{ ...title, start: 0, duration: 30, motion: { enter: 'rise', enterFrames: 12, exit: 'none', exitFrames: 0, emphasis: [{ word: '결과', style: 'highlight' }], accent: 'bar', accentColor: 'accent', loop: 'none' } }],
+      };
+      await app.request(`/api/reels/${r.id}`, { method: 'PUT', headers: J, body: JSON.stringify({ doc }) });
+      const { jobId } = (await (await app.request(`/api/reels/${r.id}/render`, { method: 'POST', headers: J, body: JSON.stringify({ quality: '720' }) })).json()) as { jobId: string };
+      type Job = { phase: string; file: string | null; error: string | null };
+      let job: Job | null = null;
+      for (let i = 0; i < 600; i++) {
+        job = (await (await app.request(`/api/reels/jobs/${jobId}`, { headers: H })).json()) as Job;
+        if (['done', 'failed', 'cancelled'].includes(job.phase)) break;
+        await new Promise((res) => setTimeout(res, 500));
+      }
+      expect(job?.error ?? null).toBeNull();
+      const out = path.join(dataDir, 'reels', `reel-${r.id}`, 'renders', job!.file!);
+      // 프레임 n 의 밝기 퍼짐(표준편차) — 단색 배경만 있으면 거의 0, 글자가 보이면 커진다
+      const spread = (n: number) => {
+        const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', out, '-vf', `select=eq(n\\,${n}),scale=180:320`, '-vframes', '1', '-f', 'rawvideo', '-pix_fmt', 'gray', '-']);
+        const px = [...raw];
+        const mean = px.reduce((a, b) => a + b, 0) / px.length;
+        return Math.sqrt(px.reduce((a, b) => a + (b - mean) ** 2, 0) / px.length);
+      };
+      const first = spread(0);
+      const after = spread(25);
+      expect(first).toBeLessThan(3);
+      expect(after).toBeGreaterThan(first + 10);
+    } finally {
+      server.close();
+      delete process.env.FIRSTFEED_RENDER_BASE;
+    }
+  }, 300_000);
 });

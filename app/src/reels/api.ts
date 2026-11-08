@@ -21,6 +21,7 @@ export const reelApi = {
   job: (jobId: string) =>
     api.api.reels.jobs[':jobId'].$get({ param: { jobId } }).then((r) => j<{ phase: string; progress: number; file: string | null; error: string | null; hint: string | null; lufs: number | null; seconds: number | null }>(r as unknown as Response)),
   cancel: (jobId: string) => api.api.reels.jobs[':jobId'].cancel.$post({ param: { jobId } }),
+  motion: (id: number) => api.api.reels[':id'].motion.$post({ param: { id: String(id) } }).then((r) => j<{ jobId: string }>(r as unknown as Response)),
   transcribe: (id: number, file: string) =>
     api.api.reels[':id'].transcribe.$post({ param: { id: String(id) }, json: { file } }).then((r) => j<{ segments: Array<{ start: number; end: number; text: string }> }>(r as unknown as Response)),
 };

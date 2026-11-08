@@ -20,6 +20,7 @@ export const TASK_LABEL: Record<string, string> = {
   card_chat: '채팅으로 고치기',
   caption_min: '캡션',
   series_plan: '첫 9개 게시물 계획',
+  reel_motion: '릴스 모션 제안',
   smoke_extract: 'AI 시험 호출',
 };
 export const taskLabel = (task: string) => TASK_LABEL[task] ?? task;
@@ -36,6 +37,7 @@ const WRITING: Record<string, string> = {
   card_chat: '말한 대로 카드 고치는 중',
   caption_min: '캡션 쓰는 중',
   series_plan: '첫 9개 게시물 제목 계획하는 중',
+  reel_motion: '글자 · 장면마다 움직임 고르는 중',
   smoke_extract: '원문에서 사실 뽑는 중',
 };
 
@@ -45,6 +47,7 @@ const CHECKING: Record<string, string> = {
   identity_followup: '규칙 확인 중 — 앞 질문과 겹치지 않는지',
   brand_visual: '규칙 확인 중 — 명암비 · 앱에 있는 글꼴 · 그림 프롬프트 규칙',
   series_plan: '규칙 확인 중 — 글자 수 · 축 · 숫자 근거 · 거의 같은 제목',
+  reel_motion: '규칙 확인 중 — 프레임마다 격자 가이드 안인지 · 읽을 틈 · 강조 명암비',
 };
 
 /** 이유 한 줄은 이만큼만 — 화면 한 줄에 들어가게 */

@@ -6,6 +6,8 @@ import type { Box, ReelBrand } from '../../../server/src/reels/model.ts';
 import { reelApi } from './api.ts';
 import { EditorCtx, type Ctx, type Sel } from './context.ts';
 import { Inspector } from './Inspector.tsx';
+import { MotionPanel } from './MotionPanel.tsx';
+import type { MotionLimits } from '../../../server/src/reels/motionCheck.ts';
 import { outsideItems } from './outside.ts';
 import { BgTab } from './panels/BgTab.tsx';
 import { FilesTab } from './panels/FilesTab.tsx';
@@ -34,6 +36,7 @@ interface PageState {
   fonts: Array<{ id: string; name: string }>;
   whisper: boolean;
   browser: boolean;
+  motionLimits: MotionLimits;
 }
 
 type Job = { id: string; phase: string; progress: number; file: string | null; error: string | null; hint: string | null; lufs: number | null; seconds: number | null };
@@ -105,6 +108,7 @@ export function ReelsPage() {
   const [sel, setSel] = useState<Sel | null>(null);
   const [scope, setScope] = useState<'one' | 'all'>('one');
   const [guideOn, setGuideOn] = useState(true);
+  const [motionOpen, setMotionOpen] = useState(false);
   const [measured] = useState(() => new Map<string, { sig: string; box: Box }>());
   const editRef = useRef<PlayerRef | null>(null);
   const outRef = useRef<PlayerRef | null>(null);
@@ -162,7 +166,7 @@ export function ReelsPage() {
   const ctx: Ctx | null = useMemo(
     () =>
       doc && reelId != null && page
-        ? { ed, p: doc, reelId, brand: page.brand, guide: page.guide, fonts: page.fonts, whisper: page.whisper, frame, seek, sel, setSel, scope, setScope, measured, guideOn, media: (f: string) => `/api/reels/${reelId}/media/${f}` }
+        ? { ed, p: doc, reelId, brand: page.brand, guide: page.guide, fonts: page.fonts, whisper: page.whisper, frame, seek, sel, setSel, scope, setScope, measured, guideOn, motionLimits: page.motionLimits, media: (f: string) => `/api/reels/${reelId}/media/${f}` }
         : null,
     [ed, doc, reelId, page, frame, seek, sel, scope, measured, guideOn],
   );
@@ -202,11 +206,15 @@ export function ReelsPage() {
               ⚠ 격자 밖 {outside.length}개
             </button>
           )}
+          <button className="small" onClick={() => setMotionOpen((v) => !v)} aria-expanded={motionOpen}>
+            ✨ 모션 제안(AI)
+          </button>
           <label className="check small">
             <input type="checkbox" checked={guideOn} onChange={(e) => setGuideOn(e.target.checked)} /> 가이드
           </label>
           <RenderButton key={reelId} reelId={reelId} browser={page.browser} />
         </header>
+        {motionOpen && <MotionPanel key={reelId} onClose={() => setMotionOpen(false)} />}
         {!page.brand.ready && <p className="note">브랜딩 키트에서 색을 아직 고르지 않아 중립 색으로 보여요. 「브랜드」에서 팔레트 · 글꼴을 고르면 릴스 색 · 글꼴이 따라 바뀌어요.</p>}
         {!page.browser && <p className="note error">영상을 찍을 브라우저가 없어요. 터미널에서 <code>npx playwright install chromium</code> 을 실행한 뒤 다시 여세요(앱은 브라우저를 내려받지 않아요).</p>}
         <div className="reels-grid">

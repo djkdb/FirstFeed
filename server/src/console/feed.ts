@@ -54,6 +54,7 @@ const RESULT_HREF: Record<string, string> = {
   card_body: '#/make',
   card_chat: '#/make',
   caption_min: '#/make',
+  reel_motion: '#/reels',
   smoke_extract: '#/check',
 };
 

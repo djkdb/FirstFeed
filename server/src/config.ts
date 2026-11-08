@@ -57,6 +57,8 @@ export const DEFAULTS = {
     // 카드뉴스 채팅으로 고치기(FR-MK-3) — 카드 글을 다시 쓰는 일이라 본문과 같은 모델
     card_chat: 'opus',
     reel_script: 'opus',
+    // 릴스 모션그래픽(결정 2026-11-08) — 사용자가 「오퍼스 5.5로」라고 지정. 별칭 opus 가 지금 Opus 5.5 로 간다(11-04 토큰 측정의 실제 모델 이름)
+    reel_motion: 'opus',
     caption_set: 'opus',
     // 중간 발표용 최소 캡션 (결정 2026-10-18 · FR-PB-1)
     caption_min: 'opus',
@@ -229,6 +231,15 @@ export const DEFAULTS = {
    * ffmpeg 가 없거나 소리가 없으면 맞추지 않고 그대로 둔다
    */
   'reels.targetLufs': -14,
+  /**
+   * 릴스 모션 규칙(결정 2026-11-08). 단위는 프레임(30fps).
+   * - minHoldFrames: 등장이 끝나고 퇴장이 시작되기 전, 글자가 다 보이는 시간의 최소 — 0.4초. 읽을 틈 없이 움직이기만 하면 모션이 글을 가린다
+   * - subtitleMaxEnter · subtitleMaxExit: 자막은 말과 같이 가야 해서 등장 · 퇴장을 짧게(0.27초 · 0.2초)
+   * - maxEnterFrames · maxExitFrames · maxTransitionFrames: 1초 · 0.67초 · 0.67초 — 그보다 길면 릴스 속도에 비해 늘어진다
+   * - maxEmphasis: 글자 하나에 강조 낱말 수
+   * 감으로 정한 첫 값이다 — 측정(tests/results/2026-11-08-reel-motion.md) 뒤 바꾼다
+   */
+  'reels.motion': { minHoldFrames: 12, subtitleMaxEnter: 8, subtitleMaxExit: 6, maxEnterFrames: 30, maxExitFrames: 20, maxTransitionFrames: 20, maxEmphasis: 2 },
   /** 선택 기능 받아쓰기(faster-whisper) 모델 — 클수록 정확하고 느리다(결정 2026-11-06) */
   'reels.whisperModel': 'small',
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
@@ -262,6 +273,7 @@ export const DEFAULTS = {
     // ~~v3~~ → v4(사용자 결정 2026-10-24): 이미 만든 세트의 표지 제목을 넣고 같은 소재·표현 반복 금지. 데모 브랜드 v3 · v4 1회씩 — 겹침 규칙
     // (preview.titleOverlapThreshold) 위반 둘 다 0, 사람이 읽고 만든 카드 소재 반복 v3 1 → v4 0 (devlog 2026-10-24-01)
     series_plan: 'v4',
+    reel_motion: 'v1',
   } as Record<string, string>,
 };
 

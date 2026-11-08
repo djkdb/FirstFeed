@@ -1,6 +1,7 @@
 // 릴스 편집 화면 상태 — 화면 조각들이 같이 쓴다
 import { createContext, useContext } from 'react';
 import type { Box, ReelBrand, ReelDoc, Track } from '../../../server/src/reels/model.ts';
+import type { MotionLimits } from '../../../server/src/reels/motionCheck.ts';
 import type { ReelEditor } from './store.ts';
 
 export interface Sel {
@@ -27,6 +28,8 @@ export interface Ctx {
   /** 편집 화면에서 실제로 잰 글 상자 — 가림 경고에 씀 */
   measured: Map<string, { sig: string; box: Box }>;
   guideOn: boolean;
+  /** 모션 규칙 기준(서버 설정 reels.motion) */
+  motionLimits: MotionLimits;
   media: (file: string) => string;
 }
 export const EditorCtx = createContext<Ctx | null>(null);

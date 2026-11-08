@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { fmtTime, FPS, H, STYLE_PRESETS, SUBTITLE_Y, W, type Preset, type TextStyle } from '../../../server/src/reels/model.ts';
 import { textColor, toneBehind } from '../../../server/src/reels/textColor.ts';
 import { textTargets, useCtx } from './context.ts';
+import { ProgressProps, SceneMotionProps, TextMotionProps } from './MotionProps.tsx';
 
 function Num({ label, value, onChange, min, max, step = 1 }: { label: string; value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }) {
   const c = useCtx();
@@ -232,10 +233,21 @@ export function Inspector() {
         <>
           <p className="muted small pad">화면이나 타임라인에서 글자 · 장면 · 그림 · 소리를 고르면 여기서 바꿔요.</p>
           <GuideProps />
+          <ProgressProps />
         </>
       )}
-      {tab === 'props' && s?.track === 'texts' && <TextProps id={s.id} />}
-      {tab === 'props' && s?.track === 'scenes' && <SceneProps id={s.id} />}
+      {tab === 'props' && s?.track === 'texts' && (
+        <>
+          <TextProps id={s.id} />
+          <TextMotionProps id={s.id} />
+        </>
+      )}
+      {tab === 'props' && s?.track === 'scenes' && (
+        <>
+          <SceneProps id={s.id} />
+          <SceneMotionProps id={s.id} />
+        </>
+      )}
       {tab === 'props' && s?.track === 'overlays' && <OverlayProps id={s.id} />}
       {tab === 'props' && s?.track === 'audio' && <AudioProps id={s.id} />}
     </aside>

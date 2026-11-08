@@ -42,6 +42,28 @@ export interface Media {
   trim: number;
 }
 
+/** 모션그래픽(결정 2026-11-08) — 프리셋 이름만 저장하고, 그리는 것은 motion.ts 의 순수 함수 하나(화면 = 영상 = 규칙 검사) */
+export type Enter = 'none' | 'fade' | 'rise' | 'drop' | 'pop' | 'slide-left' | 'slide-right' | 'wipe' | 'typewriter' | 'blur';
+export type Exit = 'none' | 'fade' | 'sink' | 'shrink' | 'slide-left' | 'slide-right';
+export type Emphasis = 'highlight' | 'underline' | 'color';
+export type Accent = 'none' | 'bar' | 'ring' | 'sweep';
+export type LoopMotion = 'none' | 'float' | 'pulse';
+export type Transition = 'cut' | 'fade' | 'slide-up' | 'zoom' | 'wipe';
+export type Camera = 'none' | 'zoom-in' | 'zoom-out' | 'pan-up' | 'pan-down';
+
+export interface TextMotion {
+  enter: Enter;
+  enterFrames: number;
+  exit: Exit;
+  exitFrames: number;
+  /** 강조할 낱말 — 글자 안에 실제로 있어야 한다(규칙) */
+  emphasis: Array<{ word: string; style: Emphasis }>;
+  accent: Accent;
+  /** 강조 · 장식 색 — 팔레트 칸 이름(팔레트를 바꾸면 따라간다) */
+  accentColor: PaletteRole;
+  loop: LoopMotion;
+}
+
 export interface Scene {
   id: string;
   name: string;
@@ -50,6 +72,11 @@ export interface Scene {
   media: Media | null;
   /** null 이면 릴스 기본 배경 */
   bg: Bg | null;
+  /** 앞 장면에서 이 장면으로 넘어오는 방식(없으면 컷) */
+  transition?: Transition;
+  transitionFrames?: number;
+  /** 장면 안의 느린 확대 · 이동(없으면 멈춤) */
+  camera?: Camera;
 }
 
 export type Preset = 'plain' | 'glow' | 'softbox' | 'stroke' | 'blackbox' | 'title';
@@ -78,6 +105,8 @@ export interface TextClip {
   /** 「자막 전체」 일괄 수정에 들어가는가 */
   subtitle: boolean;
   style: TextStyle;
+  /** 없으면 움직임 없음(예전 릴스 그대로) */
+  motion?: TextMotion;
 }
 
 export interface Overlay {
@@ -130,6 +159,8 @@ export interface ReelDoc {
   memo: string;
   /** 처음 본 글자의 문구 · 색 — 「원본 문구·색」 탭 */
   original: Record<string, { text: string; color: string }>;
+  /** 아래 진행 막대 색(팔레트 칸). 없거나 null 이면 막대 없음 */
+  progress?: PaletteRole | null;
 }
 
 export type Track = 'texts' | 'overlays' | 'scenes' | 'audio';

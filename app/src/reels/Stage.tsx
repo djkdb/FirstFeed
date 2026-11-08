@@ -104,7 +104,7 @@ export function Stage({ editRef, outRef, onFrame }: { editRef: React.RefObject<P
   const selText = c.sel?.track === 'texts' ? p.texts.find((t) => t.id === c.sel!.id) : null;
 
   return (
-    <div className="stage">
+    <div className="reel-stage">
       <div className="stage-views">
         <div className="view">
           <div className="view-label">편집 화면{c.guideOn ? ' · 가이드 박스' : ''}</div>

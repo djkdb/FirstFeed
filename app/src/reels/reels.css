@@ -79,7 +79,7 @@
 .reels .photo { aspect-ratio: 9 / 16; min-height: 0; background-size: cover; background-position: center; padding: 0; border-radius: var(--r-sm); }
 .reels .photo.add { display: flex; align-items: center; justify-content: center; border: 1px dashed var(--line); cursor: pointer; color: var(--muted); font-size: 12px; }
 
-.reels .stage { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 8px; gap: 6px; background: var(--surface-3); }
+.reels .reel-stage { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 8px; gap: 6px; background: var(--surface-3); }
 .reels .stage-views { flex: 1; min-height: 0; display: flex; gap: 12px; justify-content: center; align-items: flex-start; }
 .reels .view { height: 100%; aspect-ratio: 9 / 16.6; display: flex; flex-direction: column; max-width: calc(50% - 6px); }
 .reels .view-label { font-size: 12px; color: var(--muted-strong); text-align: center; margin-bottom: 4px; }
@@ -130,3 +130,23 @@
 .reels .tl-tools button { white-space: nowrap; }
 .reels .tl-tools input[type='range'] { width: 160px; flex: none; accent-color: var(--ink); }
 .reels .tl-tools .check { font-size: 13px; }
+
+/* 모션 제안 · 움직임 속성(결정 2026-11-08) — 화면은 무채색, 색은 영상 · 색 견본 안에만 */
+/* 편집 화면을 밀어내지 않게 위 막대 아래에 떠 있는 판으로 — 처음엔 편집 화면이 쪼그라들었다(화면 확인 2026-11-08) */
+.reels { position: relative; }
+.reels .motion-panel { position: absolute; top: 44px; right: 0; z-index: 20; width: min(620px, 100%); max-height: calc(100% - 52px); overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14); padding: var(--s-3); display: flex; flex-direction: column; gap: var(--s-2); }
+.reels .motion-head { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.reels .motion-wait { display: flex; align-items: center; gap: var(--s-2); }
+.reels .motion-result { display: flex; gap: var(--s-3); align-items: flex-start; flex-wrap: wrap; }
+.reels .motion-player { display: flex; flex-direction: column; gap: 6px; }
+.reels .motion-side { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
+.reels .motion-side p { margin: 0; }
+.reels .motion-side .row { display: flex; gap: var(--s-2); align-items: center; }
+.reels .props .swatch { display: inline-block; width: 22px; height: 22px; aspect-ratio: auto; border: 1px solid var(--line); }
+.reels .emph-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.reels .emph-list .chip { display: inline-flex; align-items: center; gap: 4px; }
+.reels .emph-list .chip select { min-height: 22px; font-size: 11px; padding: 0 2px; }
+.reels .emph-list input { width: 120px; }
+.reels .motion-issues { margin: 4px 0 0; padding-left: 16px; }
+.reels .motion-issues .error { color: var(--error); }
+.reels .motion-issues .warn { color: var(--warn-ink); }

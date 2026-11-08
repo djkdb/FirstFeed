@@ -15,6 +15,9 @@ import { contrastRatio, handleProblems, instagramLength, URL_IN_TEXT } from './l
 import { currentSelection, latestKit, saveSelection, selectionHistory } from './store.ts';
 import type { Selection, VisualCandidates, WordsCandidates } from './types.ts';
 import { generateVisual } from './visual.ts';
+import { CHARACTER_OPTIONS, characterIssues, defaultCharacter, type CharacterSpec } from './character.ts';
+import { deleteCharacter, getCharacter, listCharacters, saveCharacter, useAsAccountCharacter } from './characterStore.ts';
+import { suggestCharacters } from './characterSuggest.ts';
 import { generateWords } from './words.ts';
 
 const BRAND_ID = 1; // 브랜드 여러 개(FR-AC-3)는 F 범위 — 지금은 로컬 브랜드 하나
@@ -98,6 +101,35 @@ export function brandRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir
       });
     })
     .post('/words', (c) => c.json({ jobId: jobs.start('brand_words', (job) => generateWords(ai, BRAND_ID, job)) }))
+    // 개성 캐릭터 프롬프트 기계(2026-11-08). 프롬프트는 화면이 같은 함수로 바로 조립하고, 서버는 고른 값만 저장한다
+    .get('/characters', (c) => c.json({ characters: listCharacters(db, BRAND_ID), options: CHARACTER_OPTIONS, fallback: defaultCharacter() }))
+    .post('/characters/suggest', (c) => c.json({ jobId: jobs.start('character_suggest', (job) => suggestCharacters(ai, BRAND_ID, job)) }))
+    .post(
+      '/characters',
+      validator('json', (v, c) => {
+        const b = z.object({ id: z.number().int().positive().nullable().default(null), spec: z.record(z.string(), z.unknown()) }).safeParse(v);
+        return b.success ? b.data : c.json({ error: '캐릭터 모양이 맞지 않아요. 화면을 새로고침한 뒤 다시 저장하세요.' }, 400);
+      }),
+      (c) => {
+        const { id, spec: raw } = c.req.valid('json');
+        const spec = { ...defaultCharacter(), ...raw } as CharacterSpec;
+        const errors = characterIssues(spec).filter((e) => e.level === 'error');
+        if (errors.length) return c.json({ error: errors.map((e) => e.message).join(' ') }, 400);
+        if (!spec.name) return c.json({ error: '이름(영문 한 낱말)을 정한 뒤 저장하세요.' }, 400);
+        if (id != null && !getCharacter(db, BRAND_ID, id)) return c.json({ error: '저장된 캐릭터를 찾지 못했어요. 새로 저장하세요.' }, 404);
+        return c.json({ id: saveCharacter(db, BRAND_ID, spec, id), characters: listCharacters(db, BRAND_ID) });
+      },
+    )
+    .delete('/characters/:id', (c) => c.json({ ok: deleteCharacter(db, BRAND_ID, Number(c.req.param('id'))), characters: listCharacters(db, BRAND_ID) }))
+    .post('/characters/:id/use', (c) => {
+      const ch = getCharacter(db, BRAND_ID, Number(c.req.param('id')));
+      if (!ch) return c.json({ error: '캐릭터를 찾지 못했어요.' }, 404);
+      try {
+        return c.json({ profileId: useAsAccountCharacter(db, BRAND_ID, ch) });
+      } catch (e) {
+        return c.json({ error: e instanceof Error ? `${e.message}${'hint' in e ? ` ${String((e as { hint: unknown }).hint)}` : ''}` : String(e) }, 400);
+      }
+    })
     .post('/visual', (c) => c.json({ jobId: jobs.start('brand_visual', (job) => generateVisual(ai, BRAND_ID, job)) }))
     // 고른 것 저장: 바뀐 칸만 보낸다. 고정 규칙에 걸리면 저장하지 않는다
     .put(

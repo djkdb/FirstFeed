@@ -10,6 +10,7 @@ import { ProfileImage } from './ProfileImage.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { countNote } from './countNote.ts';
 import { StageLine } from '../StageLine.tsx';
+import { CharacterBuilder } from './CharacterBuilder.tsx';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -383,6 +384,7 @@ export function BrandPage() {
       </section>
 
       <ProfileImage selection={selection} fonts={fonts} save={save} />
+      <CharacterBuilder palette={selection.palette?.colors ?? null} hasProfile={!!activeProfile} />
     </>
   );
 }

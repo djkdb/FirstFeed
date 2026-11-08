@@ -20,12 +20,30 @@ const SURVEY = {
   S6: { choices: ['안 한다'], text: '직접 만든 캐릭터로 대신한다' },
 };
 
+// 꼬리질문 v4(활성) 모양 — 각도를 차례로 돌려 같은 각도 연달아 규칙에 걸리지 않게, 말투를 먼저 물어 ready 규칙도 통과(이 파일은 흐름만 본다)
+const LENS_CYCLE = ['voice', 'experience', 'opinion', 'reason', 'quirk', 'struggle', 'audience', 'others_view'];
+let lensAt = 0;
 const q = (question: string, ready = false, examples = ['예시 답 하나입니다', '전혀 다른 방향의 예시']) => ({
-  structured: { question, why: '이유', examples, options: [], target: '빈칸', ready_for_profile: ready },
+  structured: {
+    question,
+    why: '이유',
+    lens: LENS_CYCLE[lensAt++ % LENS_CYCLE.length],
+    format: 'open',
+    examples,
+    options: [],
+    sample: '',
+    scale_left: '',
+    scale_right: '',
+    target: '빈칸',
+    ready_for_profile: ready,
+  },
 });
 
 function setup(steps: FakeStep[]) {
   const db = openDb(':memory:');
+  lensAt = 0;
+  // 방식 섞기 규칙은 interview-formats.test.ts · followup.test.ts 가 본다 — 여기서는 글로 답하기만 쓰는 흐름 시험이라 끈다
+  setSetting(db, 'identity.variety', { window: 5, minDistinctLenses: 1, formatBy: 99 });
   const app = createApp({ db, ai: new AiService({ db, provider: new FakeProvider(steps) }) });
   const post = async (path: string, body?: unknown) => app.request(`/api/identity${path}`, { method: 'POST', headers: H, body: body === undefined ? undefined : JSON.stringify(body) });
   const job = async (jobId: string): Promise<JobState> => {

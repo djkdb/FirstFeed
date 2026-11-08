@@ -259,8 +259,11 @@ export const DEFAULTS = {
    */
   'prompts.activeVersions': {
     self_review: 'v2',
-    identity_profile: 'v2',
-    identity_followup: 'v2',
+    // identity_followup v2 → v4 · identity_profile v2 → v3 (인터뷰 다양화, 사용자 지시 2026-11-08). 가상 응답자 시뮬레이션(AI 생성 답) 4명:
+    // 각도 5~6가지 · 방식 3가지(v2 는 글만) · 질문끼리 최대 유사도 낮음, 앱처럼 모자라면 더 묻게 하니 프로필 저장 v2 3/4(minji 10턴 실패) · v4 4/4(minji 8턴).
+    // 6턴 한 번만 재면 v3 · v4 가 needs_more 1/4 저장이라 흔들림이 크다(1회씩) — tests/results/2026-11-08-interview-sim-*.md, devlog 2026-11-08-02
+    identity_profile: 'v3',
+    identity_followup: 'v4',
     brand_visual: 'v2',
     brand_words_review: 'v2',
     // 첫 실제 실행에서 v1 의 "인용 밖 사실 = fact" 가 소재의 다른 곳에 있는 사실까지 막아 세트가 실패 (devlog 2026-10-15-02)

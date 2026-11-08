@@ -1,0 +1,158 @@
+{
+ "note": "AI 생성 예시 문장(개인정보 없음) — 모션 제안 측정용 고정 입력(2026-11-08). id 는 고정",
+ "doc": {
+  "version": 1,
+  "name": "정보형 3단계",
+  "bg": {
+   "kind": "themed",
+   "look": "deep"
+  },
+  "scenes": [
+   {
+    "id": "s1",
+    "name": "훅",
+    "start": 0,
+    "duration": 75,
+    "media": null,
+    "bg": null
+   },
+   {
+    "id": "s2",
+    "name": "본론",
+    "start": 75,
+    "duration": 210,
+    "media": null,
+    "bg": null
+   },
+   {
+    "id": "s3",
+    "name": "마무리",
+    "start": 285,
+    "duration": 75,
+    "media": null,
+    "bg": null
+   }
+  ],
+  "texts": [
+   {
+    "id": "h9",
+    "start": 0,
+    "duration": 75,
+    "text": "에러 메시지,\n세 줄만 읽으면 돼요",
+    "subtitle": false,
+    "style": {
+     "preset": "title",
+     "font": "title",
+     "size": 120,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 520,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t4",
+    "start": 75,
+    "duration": 50,
+    "text": "첫 줄은 무엇이 틀렸는지",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t5",
+    "start": 125,
+    "duration": 50,
+    "text": "둘째 줄은 어느 파일인지",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t6",
+    "start": 175,
+    "duration": 50,
+    "text": "셋째 줄은 몇 번째 줄인지",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t7",
+    "start": 225,
+    "duration": 66,
+    "text": "이 세 가지면 어디를 볼지 보여요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t8",
+    "start": 291,
+    "duration": 69,
+    "text": "저장해 두고 다음에 꺼내 보세요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   }
+  ],
+  "overlays": [],
+  "audio": [],
+  "assets": [],
+  "memo": "",
+  "original": {}
+ }
+}

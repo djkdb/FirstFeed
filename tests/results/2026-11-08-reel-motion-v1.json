@@ -1,0 +1,327 @@
+[
+ {
+  "run": 1,
+  "reel": "info",
+  "brand": "me",
+  "kind": "실제·공개",
+  "ok": true,
+  "rewrites": 0,
+  "calls": 1,
+  "seconds": 15,
+  "reasons": [],
+  "error": null,
+  "input": 2,
+  "cacheWrite": 5484,
+  "cacheRead": 0,
+  "output": 1391,
+  "model": "claude-opus-5-5",
+  "plan": {
+   "texts": [
+    {
+     "id": "h9",
+     "enter": "typewriter",
+     "enter_frames": 27,
+     "exit": "fade",
+     "exit_frames": 12,
+     "emphasis": [
+      {
+       "word": "세 줄",
+       "style": "color"
+      }
+     ],
+     "accent": "bar",
+     "accent_color": "accent",
+     "loop": "none"
+    },
+    {
+     "id": "t4",
+     "enter": "rise",
+     "enter_frames": 8,
+     "exit": "fade",
+     "exit_frames": 6,
+     "emphasis": [],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t5",
+     "enter": "rise",
+     "enter_frames": 8,
+     "exit": "fade",
+     "exit_frames": 6,
+     "emphasis": [],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t6",
+     "enter": "rise",
+     "enter_frames": 8,
+     "exit": "fade",
+     "exit_frames": 6,
+     "emphasis": [],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t7",
+     "enter": "rise",
+     "enter_frames": 8,
+     "exit": "fade",
+     "exit_frames": 6,
+     "emphasis": [
+      {
+       "word": "세 가지",
+       "style": "highlight"
+      }
+     ],
+     "accent": "none",
+     "accent_color": "accent",
+     "loop": "none"
+    },
+    {
+     "id": "t8",
+     "enter": "rise",
+     "enter_frames": 8,
+     "exit": "fade",
+     "exit_frames": 6,
+     "emphasis": [
+      {
+       "word": "저장해",
+       "style": "highlight"
+      }
+     ],
+     "accent": "none",
+     "accent_color": "accent",
+     "loop": "none"
+    }
+   ],
+   "scenes": [
+    {
+     "id": "s1",
+     "transition": "cut",
+     "transition_frames": 0,
+     "camera": "zoom-in"
+    },
+    {
+     "id": "s2",
+     "transition": "fade",
+     "transition_frames": 12,
+     "camera": "zoom-in"
+    },
+    {
+     "id": "s3",
+     "transition": "slide-up",
+     "transition_frames": 12,
+     "camera": "zoom-in"
+    }
+   ],
+   "progress": "none",
+   "note": "제목은 타자기로 한 글자씩 강하게 열고, 자막은 짧은 rise로 통일했으며, 강조는 '세 줄·세 가지·저장해'에만 두었습니다."
+  },
+  "warnings": []
+ },
+ {
+  "run": 1,
+  "reel": "hook",
+  "brand": "doyun",
+  "kind": "AI 생성",
+  "ok": true,
+  "rewrites": 0,
+  "calls": 1,
+  "seconds": 11,
+  "reasons": [],
+  "error": null,
+  "input": 2,
+  "cacheWrite": 3679,
+  "cacheRead": 1533,
+  "output": 1011,
+  "model": "claude-opus-5-5",
+  "plan": {
+   "texts": [
+    {
+     "id": "h6",
+     "enter": "typewriter",
+     "enter_frames": 18,
+     "exit": "fade",
+     "exit_frames": 10,
+     "emphasis": [
+      {
+       "word": "늦어요",
+       "style": "highlight"
+      }
+     ],
+     "accent": "bar",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t3",
+     "enter": "rise",
+     "enter_frames": 6,
+     "exit": "fade",
+     "exit_frames": 4,
+     "emphasis": [
+      {
+       "word": "먼저",
+       "style": "underline"
+      }
+     ],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t4",
+     "enter": "rise",
+     "enter_frames": 6,
+     "exit": "fade",
+     "exit_frames": 4,
+     "emphasis": [],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t5",
+     "enter": "rise",
+     "enter_frames": 6,
+     "exit": "fade",
+     "exit_frames": 4,
+     "emphasis": [
+      {
+       "word": "5분",
+       "style": "highlight"
+      }
+     ],
+     "accent": "none",
+     "accent_color": "secondary",
+     "loop": "none"
+    }
+   ],
+   "scenes": [
+    {
+     "id": "s1",
+     "transition": "cut",
+     "transition_frames": 0,
+     "camera": "zoom-in"
+    },
+    {
+     "id": "s2",
+     "transition": "fade",
+     "transition_frames": 12,
+     "camera": "zoom-in"
+    }
+   ],
+   "progress": "none",
+   "note": "훅 제목은 아래 여유가 좁아 타자기로 힘 있게 열고, 자막은 짧은 rise로 통일해 '먼저'와 '5분'만 강조했다."
+  },
+  "warnings": []
+ },
+ {
+  "run": 1,
+  "reel": "photo",
+  "brand": "seoyeon",
+  "kind": "AI 생성",
+  "ok": true,
+  "rewrites": 0,
+  "calls": 1,
+  "seconds": 13,
+  "reasons": [],
+  "error": null,
+  "input": 2,
+  "cacheWrite": 3711,
+  "cacheRead": 1533,
+  "output": 1200,
+  "model": "claude-opus-5-5",
+  "plan": {
+   "texts": [
+    {
+     "id": "h7",
+     "enter": "typewriter",
+     "enter_frames": 18,
+     "exit": "fade",
+     "exit_frames": 10,
+     "emphasis": [
+      {
+       "word": "하나만",
+       "style": "color"
+      }
+     ],
+     "accent": "bar",
+     "accent_color": "secondary",
+     "loop": "none"
+    },
+    {
+     "id": "t4",
+     "enter": "fade",
+     "enter_frames": 6,
+     "exit": "fade",
+     "exit_frames": 4,
+     "emphasis": [],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t5",
+     "enter": "fade",
+     "enter_frames": 6,
+     "exit": "fade",
+     "exit_frames": 4,
+     "emphasis": [
+      {
+       "word": "케이블 정리함",
+       "style": "underline"
+      }
+     ],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    },
+    {
+     "id": "t6",
+     "enter": "fade",
+     "enter_frames": 6,
+     "exit": "fade",
+     "exit_frames": 4,
+     "emphasis": [
+      {
+       "word": "서랍",
+       "style": "color"
+      }
+     ],
+     "accent": "none",
+     "accent_color": "primary",
+     "loop": "none"
+    }
+   ],
+   "scenes": [
+    {
+     "id": "s1",
+     "transition": "cut",
+     "transition_frames": 0,
+     "camera": "none"
+    },
+    {
+     "id": "s2",
+     "transition": "fade",
+     "transition_frames": 12,
+     "camera": "zoom-in"
+    },
+    {
+     "id": "s3",
+     "transition": "slide-up",
+     "transition_frames": 12,
+     "camera": "zoom-in"
+    }
+   ],
+   "progress": "none",
+   "note": "첫 제목은 typewriter와 bar로 강하게 열고, 자막은 짧은 fade로 통일해 말에 맞췄으며, 강조는 '하나만', '케이블 정리함', '서랍' 세 곳에만 두었습니다."
+  },
+  "warnings": []
+ }
+]

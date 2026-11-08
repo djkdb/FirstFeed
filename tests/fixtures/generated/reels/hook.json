@@ -1,0 +1,112 @@
+{
+ "note": "AI 생성 예시 문장(개인정보 없음) — 모션 제안 측정용 고정 입력(2026-11-08). id 는 고정",
+ "doc": {
+  "version": 1,
+  "name": "짧은 훅",
+  "bg": {
+   "kind": "solid",
+   "color": "#f7f3ea"
+  },
+  "scenes": [
+   {
+    "id": "s1",
+    "name": "훅",
+    "start": 0,
+    "duration": 60,
+    "media": null,
+    "bg": null
+   },
+   {
+    "id": "s2",
+    "name": "본론",
+    "start": 60,
+    "duration": 120,
+    "media": null,
+    "bg": null
+   }
+  ],
+  "texts": [
+   {
+    "id": "h6",
+    "start": 0,
+    "duration": 60,
+    "text": "물부터 끓이면\n늦어요",
+    "subtitle": false,
+    "style": {
+     "preset": "title",
+     "font": "title",
+     "size": 120,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1500,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t3",
+    "start": 60,
+    "duration": 46,
+    "text": "원두를 먼저 갈아 두세요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t4",
+    "start": 106,
+    "duration": 36,
+    "text": "물은 그동안 끓어요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t5",
+    "start": 142,
+    "duration": 38,
+    "text": "아침 5분이 남아요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   }
+  ],
+  "overlays": [],
+  "audio": [],
+  "assets": [],
+  "memo": "",
+  "original": {}
+ }
+}

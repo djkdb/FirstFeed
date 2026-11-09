@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { onChanged } from './changed.ts';
 import { api } from './api.ts';
 import { AiConnection } from './AiConnection.tsx';
 import { SmokeTest } from './SmokeTest.tsx';
@@ -52,6 +53,7 @@ export function App() {
   const [running, setRunning] = useState(0);
   // 단계마다 끝냈는가(작업 콘솔이 같이 읽어 온다) — 끝낸 단계는 번호 대신 ✓
   const [progress, setProgress] = useState<Feed['progress'] | null>(null);
+  const [changedAt, setChangedAt] = useState(0);
   // 왼쪽 위 계정 칸 — 브랜딩 키트에서 고른 이름 · 아이디 · 프로필 사진(없으면 첫 글자). 탭을 옮길 때마다 다시 읽어 방금 고른 것이 바로 보이게
   const [account, setAccount] = useState<{
     name: string | null;
@@ -70,7 +72,9 @@ export function App() {
         }),
       )
       .catch(() => setAccount(null));
-  }, [tab]);
+  }, [tab, changedAt]);
+  // 다른 화면에서 고른 것이 왼쪽 계정 칸에 바로 보이게(탭을 옮기지 않아도)
+  useEffect(() => onChanged(() => setChangedAt(Date.now())), []);
 
   useEffect(() => {
     const onHash = () => setTab(tabFromHash());

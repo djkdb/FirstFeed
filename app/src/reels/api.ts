@@ -19,7 +19,7 @@ export const reelApi = {
   removeMedia: (id: number, file: string) => api.api.reels[':id'].media[':file'].$delete({ param: { id: String(id), file } }).then((r) => j<{ ok: boolean; doc: ReelDoc }>(r as unknown as Response)),
   render: (id: number, quality: '720' | '1080' | '4k') => api.api.reels[':id'].render.$post({ param: { id: String(id) }, json: { quality } }).then((r) => j<{ jobId: string }>(r as unknown as Response)),
   job: (jobId: string) =>
-    api.api.reels.jobs[':jobId'].$get({ param: { jobId } }).then((r) => j<{ phase: string; progress: number; file: string | null; error: string | null; hint: string | null; lufs: number | null; seconds: number | null }>(r as unknown as Response)),
+    api.api.reels.jobs[':jobId'].$get({ param: { jobId } }).then((r) => j<{ phase: string; progress: number; file: string | null; error: string | null; hint: string | null; lufs: number | null; loudnessNote: string | null; seconds: number | null }>(r as unknown as Response)),
   cancel: (jobId: string) => api.api.reels.jobs[':jobId'].cancel.$post({ param: { jobId } }),
   motion: (id: number) => api.api.reels[':id'].motion.$post({ param: { id: String(id) } }).then((r) => j<{ jobId: string }>(r as unknown as Response)),
   transcribe: (id: number, file: string) =>

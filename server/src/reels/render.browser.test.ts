@@ -44,7 +44,7 @@ describe('릴스 영상 뽑기', () => {
         await new Promise((res) => setTimeout(res, 500));
       }
       expect((job as Job | null)?.error ?? null).toBeNull();
-      expect(job).toMatchObject({ phase: 'done', seconds: 1, lufs: null });
+      expect(job).toMatchObject({ phase: 'done', seconds: 1, lufs: null, loudnessNote: '소리가 없는 영상이라 음량은 맞추지 않았어요' });
       const out = path.join(dataDir, 'reels', `reel-${r.id}`, 'renders', job!.file!);
       expect(fs.statSync(out).size).toBeGreaterThan(1000);
       try {

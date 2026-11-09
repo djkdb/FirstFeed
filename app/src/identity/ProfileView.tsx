@@ -1,6 +1,7 @@
 // 브랜드 프로필 초안 (FR-ID-4): 축마다 원문 인용과 출처. 근거 부족으로 뺀 축도 숨기지 않고 보여 준다.
 import { PremadeBadge } from '../premade.tsx';
 import type { Profile } from './types.ts';
+import { NextStep } from '../NextStep.tsx';
 
 export function ProfileView({ profile, active, busy, onConfirm }: { profile: Profile; active: boolean; busy: boolean; onConfirm: () => void }) {
   return (
@@ -25,6 +26,7 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
         )}
       </div>
 
+      {active && <NextStep after="identity" />}
       {profile.presence && (
         <p>
           <span className="muted">보여 주는 방식 · </span>

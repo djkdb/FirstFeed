@@ -283,3 +283,46 @@ export function sceneSpan(scenes: Scene[], s: Scene): number {
   const next = scenes.find((x) => x.id !== s.id && x.start === end && x.transition && x.transition !== 'cut' && (x.transitionFrames ?? 0) > 0);
   return Math.max(1, s.duration + (next ? (next.transitionFrames ?? 0) : 0));
 }
+
+// 같은 이름이 등장과 장면 전환에 다 있으면(fade · wipe) 더 흔한 등장 이름으로 — 등장을 뒤에 둬 덮게
+const NOTE_WORDS: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(TRANSITION_LABEL).map(([k, v]) => [k, `${v} 전환`])),
+  ...Object.fromEntries(Object.entries(CAMERA_LABEL).map(([k, v]) => [k, `카메라 ${v}`])),
+  ...ENTER_LABEL,
+  sink: EXIT_LABEL.sink,
+  shrink: EXIT_LABEL.shrink,
+  highlight: '형광펜',
+  underline: '밑줄',
+  bar: '아래 막대',
+  ring: '퍼지는 고리',
+  sweep: '뒤 띠',
+  float: '둥둥',
+  pulse: '숨쉬기',
+  progress: '진행 막대',
+};
+/**
+ * AI 의 「어떤 리듬으로 골랐는지」 한 줄에 섞인 프리셋 이름(pop · fade · slide-up …)을 화면 이름으로 —
+ * 사용자에게 영어 이름이 그대로 보였다(사용자 시뮬레이션 2026-11-09). 'none' 같은 흔한 낱말은 바꾸지 않는다
+ */
+export function humanizeMotionNote(note: string): string {
+  // 영어 이름 뒤 조사는 영어 발음에 맞춰 붙어 있다(「pop과」) — 바꾼 한국어 이름의 끝 글자 받침에 맞춰 다시 고른다
+  return note.replace(
+    /(?<![A-Za-z-])(slide-left|slide-right|slide-up|zoom-in|zoom-out|pan-up|pan-down|typewriter|highlight|underline|progress|shrink|sweep|float|pulse|blur|wipe|rise|drop|fade|pop|sink|zoom|ring|bar|cut)(?![A-Za-z-])(으로|과|와|을|를|이|가|은|는|로)?/g,
+    (_, w: string, particle: string | undefined) => {
+      const label = NOTE_WORDS[w] ?? w;
+      return `「${label}」${particle ? fixParticle(label, particle) : ''}`;
+    },
+  );
+}
+
+/** 끝 글자 받침에 맞는 조사(과/와 · 을/를 · 이/가 · 은/는 · 으로/로 — ㄹ 받침은 「로」) */
+function fixParticle(word: string, particle: string): string {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  if (code < 0 || code > 11171) return particle;
+  const jong = code % 28;
+  const has = jong !== 0;
+  const pairs: Array<[string, string]> = [['과', '와'], ['을', '를'], ['이', '가'], ['은', '는']];
+  for (const [a, b] of pairs) if (particle === a || particle === b) return has ? a : b;
+  if (particle === '으로' || particle === '로') return has && jong !== 8 ? '으로' : '로';
+  return particle;
+}

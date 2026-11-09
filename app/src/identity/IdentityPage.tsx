@@ -1,5 +1,6 @@
 // 정체성 찾기: 설문 → 인터뷰 → 프로필 초안 → 확정. 진행 상태는 서버(DB)에 있어 새로고침해도 이어서 한다.
 import { useEffect, useState } from 'react';
+import { notifyChanged } from '../changed.ts';
 import { api } from '../api.ts';
 import { useJob, type JobView } from '../useJob.ts';
 import { Interview } from './Interview.tsx';
@@ -109,6 +110,7 @@ export function IdentityPage() {
     await api.api.identity.profiles[':id'].confirm.$post({ param: { id: String(profileId) } });
     await refresh();
     setBusy(false);
+    notifyChanged();
   };
 
   if (!current) return <section className="card">{error ? <p className="status error">{error}</p> : <p className="muted">불러오는 중…</p>}</section>;

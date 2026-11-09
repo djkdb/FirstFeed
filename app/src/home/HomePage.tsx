@@ -1,6 +1,8 @@
 // 「오늘 올릴 것」 홈 (FR-HM-1~3 · 결정 2026-10-24): 30일 계획에서 오늘 할 칸 → 만들기 · 업로드 준비 → 「올렸어요」.
 // 「올렸어요」는 사용자 표시일 뿐이라 화면에도 「내가 표시」로 적는다(인스타에 실제로 올라갔는지 확인하지 않음)
 import { useCallback, useEffect, useState } from 'react';
+import { api } from '../api.ts';
+import { StartChecklist } from '../NextStep.tsx';
 
 type SlotState = 'plan' | 'made' | 'posted';
 interface Slot {
@@ -44,6 +46,15 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState<string>('');
+  // 처음 쓰는 사람의 단계 목록 — 작업 콘솔과 같은 판정(progressOf)
+  const [progress, setProgress] = useState<Record<string, boolean> | null>(null);
+  useEffect(() => {
+    api.api.console
+      .$get()
+      .then((r) => r.json())
+      .then((f) => setProgress({ ...f.progress, preview: false }))
+      .catch(() => setProgress(null));
+  }, []);
   /** 칸마다 작은 표지 — 만든 칸은 세트 표지, 계획 칸은 미리보기와 같은 계획 칸 표지(AI 없음, 서버가 그린 것을 다시 씀) */
   const [thumbs, setThumbs] = useState<Record<number, string | null>>({});
 
@@ -91,9 +102,8 @@ export function HomePage() {
     return (
       <section className="card">
         <h2>오늘 올릴 것</h2>
-        <p className="note">
-          아직 30일 계획이 없어요. 정체성 → 브랜드 → 템플릿을 정한 뒤 <a href="#/preview">30일 뒤 미리보기</a>에서 「첫 9개 게시물 계획 만들기」를 누르세요.
-        </p>
+        <p className="muted">아직 30일 계획이 없어요. 아래 순서대로 하면 여기에 「오늘 올릴 것」이 생겨요 — 끝낸 단계는 ✓.</p>
+        <StartChecklist progress={progress} />
       </section>
     );
 

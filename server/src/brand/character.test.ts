@@ -130,7 +130,19 @@ describe('캐릭터 추천 · 저장 · 계정 캐릭터로 쓰기(API)', () => 
     const used = (await (await app.request(`/api/brand/characters/${r.id}/use`, { method: 'POST', headers: H })).json()) as { profileId: number };
     expect(used.profileId).toBeGreaterThan(0);
     const brand = (await (await app.request('/api/brand', { headers: H })).json()) as { activeProfile: { presence: string } };
-    expect(brand.activeProfile.presence).toBe(presenceFor('Coco'));
+    expect(brand.activeProfile.presence).toBe(`${presenceFor('Coco')} · 사진은 안 한다`);
     expect(cardPeopleRule(brand.activeProfile.presence)).toBe('character');
+  });
+});
+
+describe('계정 캐릭터로 쓰기 — 원래 보여 주는 방식을 남긴다', () => {
+  it('촬영 방식은 뒤에 남기고, 다른 캐릭터로 바꾸면 캐릭터 부분만 바뀐다 · 100자를 넘지 않는다', async () => {
+    const { presenceWithCharacter } = await import('./characterStore.ts');
+    const a = presenceWithCharacter('Puff', '일부만(손·뒷모습) — 손이랑 컵만 나오게');
+    expect(a).toBe(`${presenceFor('Puff')} · 사진은 일부만(손·뒷모습) — 손이랑 컵만 나오게`);
+    expect(cardPeopleRule(a)).toBe('character');
+    expect(presenceWithCharacter('Mochi', a)).toBe(`${presenceFor('Mochi')} · 사진은 일부만(손·뒷모습) — 손이랑 컵만 나오게`);
+    expect([...presenceWithCharacter('Puff', '가'.repeat(200))].length).toBeLessThanOrEqual(100);
+    expect(presenceWithCharacter('Puff', null)).toBe(presenceFor('Puff'));
   });
 });

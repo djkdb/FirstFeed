@@ -490,3 +490,13 @@ a.button.primary:hover { background: var(--accent-fill-hover); border-color: var
 .character .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; align-self: flex-start; }
 .character .seg button { border: 0; border-radius: 0; min-height: 32px; padding: 0 12px; font-size: 13px; background: var(--surface); }
 .character .seg button.on { background: var(--accent-fill); color: var(--on-fill); }
+
+/* 다음 단계 · 처음 쓰는 사람의 홈(사용자 시뮬레이션 2026-11-09) */
+.next-step { margin: var(--s-3) 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.next-step a { font-weight: 700; }
+.start-list ol { list-style: none; padding: 0; margin: 0 0 var(--s-3); display: flex; flex-direction: column; gap: 8px; }
+.start-list li { display: flex; gap: 10px; align-items: baseline; }
+.start-list li.done a { color: var(--muted-strong); }
+.start-list li.now a { font-weight: 700; }
+.start-mark { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); align-items: center; justify-content: center; font-size: 12px; flex: none; }
+.start-list li.done .start-mark { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }

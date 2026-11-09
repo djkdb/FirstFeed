@@ -1,6 +1,8 @@
 // 템플릿 고정 (FR-TP-1·3). 시안 3개를 지금 브랜드로 그려 나란히 보여 주고, 하나를 고정한다.
 // 그리기는 서버(Playwright)가 한다 — 화면은 PNG 를 받아 보여 줄 뿐이라 화면과 결과물이 어긋나지 않는다
 import { useCallback, useEffect, useState } from 'react';
+import { notifyChanged } from '../changed.ts';
+import { NextStep } from '../NextStep.tsx';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
@@ -88,6 +90,7 @@ export function TemplatePage() {
       const b = (await r.json().catch(() => ({ error: `서버 오류(HTTP ${r.status})로 고정하지 못했습니다.` }))) as { version?: number; error?: string };
       setNotice(b.version ? `시안 ${draftId} 를 v${b.version} 로 고정했어요. 이제 모든 카드가 이 틀로 나와요.` : (b.error ?? '고정하지 못했습니다.'));
       await refresh();
+      if (b.version) notifyChanged();
     } finally {
       setBusy(false);
     }
@@ -112,8 +115,9 @@ export function TemplatePage() {
             {budget?.body?.text?.maxChars && ` · 본문 약 ${budget.body.text.maxChars}자`}
           </p>
         )}
+        {state.fixed && <NextStep after="template" />}
         {notice && <p className="status ok small">{notice}</p>}
-        <p className="muted small">표지·릴스 표지는 인스타 격자에서 잘리는 자리를 피해야 해요 — 그 숫자는 아직 앱에서 확인 전이라 엄하게 잡아 두었어요.</p>
+        <p className="muted small">표지·릴스 표지는 인스타 프로필 격자(3:4)에서 잘리는 자리를 피해서 그려요 — 카드 좌우 34px · 릴스 위아래 240px(실제 계정으로 확인한 값).</p>
         <PillarVariant />
       </section>
 

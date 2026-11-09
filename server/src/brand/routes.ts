@@ -8,7 +8,7 @@ import type { JobStore } from '../ai/jobs.ts';
 import fs from 'node:fs';
 import { env, getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
-import { activeProfile } from '../identity/store.ts';
+import { activeProfile, getProfile, type SavedProfile } from '../identity/store.ts';
 import { AssetError, assetPath, MIME, saveAsset, type ImageType } from './assets.ts';
 import { FONTS, fontById } from './fonts.ts';
 import { contrastRatio, handleProblems, instagramLength, URL_IN_TEXT } from './limits.ts';
@@ -37,6 +37,19 @@ export const SelectionPatch = z
   })
   .partial();
 export type SelectionPatch = z.infer<typeof SelectionPatch>;
+
+/**
+ * 키트를 만든 뒤 프로필이 「그 생성이 쓰는 부분」까지 바뀌었는가. 판 번호만 비교하면 「보여 주는 방식」만 바꿔도(계정 캐릭터로 쓰기)
+ * 아이디 · 바이오까지 다시 만들라고 했다(사용자 시뮬레이션 2026-11-09) — 글 후보는 보여 주는 방식을 쓰지 않는다, 시각 후보(그림 프롬프트)는 쓴다
+ */
+export function kitStale(db: Db, kitProfileId: number, active: SavedProfile | null, usesPresence: boolean): boolean {
+  if (!active || kitProfileId === active.id) return false;
+  const old = getProfile(db, kitProfileId);
+  if (!old) return true;
+  const key = (p: SavedProfile) =>
+    JSON.stringify([p.accountLine, p.audience, p.pillars.map((x) => [x.name, x.description]), p.voiceRules.map((x) => x.text), p.avoid.map((x) => x.text), usesPresence ? (p.presence?.text ?? null) : null]);
+  return key(old) !== key(active);
+}
 
 export function brandLimits(db: Db) {
   const bioMax = getSetting(db, 'brand.bioMax');
@@ -90,10 +103,14 @@ export function brandRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir
   return new Hono()
     .get('/', (c) => {
       const active = activeProfile(db, BRAND_ID);
+      const words = latestKit<WordsCandidates>(db, BRAND_ID, 'words');
+      const visual = latestKit<VisualCandidates>(db, BRAND_ID, 'visual');
       return c.json({
+        wordsStale: words ? kitStale(db, words.profileId, active, false) : false,
+        visualStale: visual ? kitStale(db, visual.profileId, active, true) : false,
         activeProfile: active ? { id: active.id, version: active.version, accountLine: active.accountLine, presence: active.presence?.text ?? null } : null,
-        words: latestKit<WordsCandidates>(db, BRAND_ID, 'words'),
-        visual: latestKit<VisualCandidates>(db, BRAND_ID, 'visual'),
+        words,
+        visual,
         selection: currentSelection(db, BRAND_ID),
         history: selectionHistory(db, BRAND_ID),
         fonts: FONTS,
@@ -125,7 +142,7 @@ export function brandRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir
       const ch = getCharacter(db, BRAND_ID, Number(c.req.param('id')));
       if (!ch) return c.json({ error: '캐릭터를 찾지 못했어요.' }, 404);
       try {
-        return c.json({ profileId: useAsAccountCharacter(db, BRAND_ID, ch) });
+        return c.json(useAsAccountCharacter(db, BRAND_ID, ch));
       } catch (e) {
         return c.json({ error: e instanceof Error ? `${e.message}${'hint' in e ? ` ${String((e as { hint: unknown }).hint)}` : ''}` : String(e) }, 400);
       }

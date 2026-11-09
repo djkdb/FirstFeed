@@ -2,6 +2,7 @@
 // 어느 화면에서 시작했든 여기서 보이고, 다른 화면으로 옮겨도 진행 상황 · 취소가 남는다. 줄을 누르면 그 결과가 있는 화면으로.
 // 시간은 실제로 흐른 시간만 보인다(남은 시간 짐작 없음 — 결정 2026-10-24)
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { onChanged } from '../changed.ts';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { stageText, taskLabel, type Stage } from '../jobStage.ts';
@@ -112,7 +113,9 @@ export function ConsolePanel({ open, onClose, onRunning, onProgress }: { open: b
     const onFocus = () => void load();
     window.addEventListener('focus', onFocus);
     window.addEventListener('hashchange', onFocus);
+    const off = onChanged(onFocus);
     return () => {
+      off();
       clearInterval(t);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('hashchange', onFocus);

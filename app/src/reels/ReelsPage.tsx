@@ -39,7 +39,7 @@ interface PageState {
   motionLimits: MotionLimits;
 }
 
-type Job = { id: string; phase: string; progress: number; file: string | null; error: string | null; hint: string | null; lufs: number | null; seconds: number | null };
+type Job = { id: string; phase: string; progress: number; file: string | null; error: string | null; hint: string | null; lufs: number | null; loudnessNote?: string | null; seconds: number | null };
 
 function RenderButton({ reelId, browser }: { reelId: number; browser: boolean }) {
   const [quality, setQuality] = useState<'720' | '1080' | '4k'>('1080');
@@ -87,7 +87,7 @@ function RenderButton({ reelId, browser }: { reelId: number; browser: boolean })
           <a className="button small" href={`/api/reels/${reelId}/renders/${encodeURIComponent(job.file)}`}>
             ⬇ 받기
           </a>
-          <span className="small muted">{job.seconds?.toFixed(1)}초 · {job.lufs != null ? `음량 ${job.lufs.toFixed(1)} LUFS` : '음량 맞춤 없음(소리 없음 · ffmpeg 없음)'}</span>
+          <span className="small muted">{job.seconds?.toFixed(1)}초 · {job.lufs != null ? `음량 ${job.lufs.toFixed(1)} LUFS` : (job.loudnessNote ?? '음량은 맞추지 않았어요')}</span>
         </>
       )}
       {job?.phase === 'failed' && (

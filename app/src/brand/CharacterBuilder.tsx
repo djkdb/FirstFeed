@@ -6,6 +6,7 @@ import { CHARACTER_OPTIONS, characterIssues, characterPrompts, defaultCharacter,
 import { api } from '../api.ts';
 import { StageLine } from '../StageLine.tsx';
 import { useJob } from '../useJob.ts';
+import { notifyChanged } from '../changed.ts';
 
 const C = CHARACTER_OPTIONS;
 const ROLES: Array<[PaletteRole, string]> = [
@@ -159,8 +160,10 @@ export function CharacterBuilder({ palette: brandPalette, hasProfile }: { palett
   const applyAsAccount = async () => {
     if (savedId == null) return;
     const r = await api.api.brand.characters[':id'].use.$post({ param: { id: String(savedId) } });
-    const b = (await r.json()) as { profileId?: number; error?: string };
+    const b = (await r.json()) as { profileId?: number; changed?: boolean; error?: string };
     if (!r.ok) return setError(b.error ?? '적용하지 못했어요.');
+    if (b.changed === false) return setNotice(`「${spec.name}」는 이미 계정 캐릭터예요.`);
+    notifyChanged();
     setNotice(`프로필 「보여 주는 방식」을 「${spec.name}」 캐릭터로 바꿨어요(새 판 — 「정체성」에서 되돌릴 수 있어요). 카드 그림 프롬프트가 사람 대신 이 캐릭터를 불러요.`);
   };
 

@@ -171,3 +171,18 @@ describe('모션 제안', () => {
     expect((JSON.parse(saved.doc_json) as ReelDoc).texts[0]!.motion).toBeUndefined();
   });
 });
+
+describe('모션 한 줄 설명을 화면 이름으로', () => {
+  it('프리셋 이름만 바꾸고 다른 영어 · 한국어는 그대로', async () => {
+    const { humanizeMotionNote } = await import('./motion.ts');
+    expect(humanizeMotionNote('첫 제목은 pop과 16클릭 강조, 자막은 짧은 fade, 장면은 slide-up으로')).toBe('첫 제목은 「톡 튀어나오기」와 16클릭 강조, 자막은 짧은 「서서히」, 장면은 「아래에서 밀어 올리기 전환」으로');
+    expect(humanizeMotionNote('V60 드립과 popular 원두')).toBe('V60 드립과 popular 원두');
+  });
+});
+
+describe('바꾼 이름 뒤 조사', () => {
+  it('받침에 맞춰 과/와 · 을/를 · 으로/로', async () => {
+    const { humanizeMotionNote } = await import('./motion.ts');
+    expect(humanizeMotionNote('fade로 넘기고 cut을 쓰고 bar를 넣음')).toBe('「서서히」로 넘기고 「컷 전환」을 쓰고 「아래 막대」를 넣음');
+  });
+});

@@ -27,6 +27,8 @@ export interface RenderJob {
   hint: string | null;
   /** 맞춘 뒤 잰 음량(LUFS) — 소리가 없거나 ffmpeg 가 없으면 null */
   lufs: number | null;
+  /** 음량을 맞추지 않은 이유 — 「소리 없음 · ffmpeg 없음」을 함께 보여 어느 쪽인지 몰랐다(사용자 시뮬레이션 2026-11-09) */
+  loudnessNote: string | null;
   seconds: number | null;
 }
 
@@ -73,9 +75,10 @@ const run = (cmd: string, args: string[]) =>
   new Promise<{ ok: boolean; out: string }>((res) => execFile(cmd, args, { maxBuffer: 16 * 1024 * 1024, timeout: 10 * 60 * 1000 }, (e, so, se) => res({ ok: !e, out: `${so}${se}` })));
 
 /** 음량 맞추기 + 끝 시각 고정. 소리가 없거나 ffmpeg 가 없으면 원래 파일 그대로(그 경우 lufs = null) */
-async function loudness(file: string, seconds: number, target: number): Promise<number | null> {
+async function loudness(file: string, seconds: number, target: number): Promise<{ lufs: number | null; note: string | null }> {
   const probe = await run('ffprobe', ['-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=index', '-of', 'csv=p=0', file]);
-  if (!probe.ok || !probe.out.trim()) return null;
+  if (!probe.ok) return { lufs: null, note: '이 컴퓨터에 ffmpeg 가 없어 음량을 맞추지 않았어요(설치하면 −14 LUFS 로 맞춰요)' };
+  if (!probe.out.trim()) return { lufs: null, note: '소리가 없는 영상이라 음량은 맞추지 않았어요' };
   const tmp = `${file}.loud.mp4`;
   // 두 번에 나눠: 먼저 재고(measured_*), 그 값으로 한 번에 같은 만큼 올린다(linear). 한 번에 하는 loudnorm 은
   // 목표에 못 미쳤다(첫 실측 −22.6 LUFS, 목표 −14 — 편집 화면 확인 2026-11-06)
@@ -89,18 +92,18 @@ async function loudness(file: string, seconds: number, target: number): Promise<
   const r = await run('ffmpeg', ['-y', '-loglevel', 'error', '-i', file, '-af', filter, '-ar', '48000', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-t', seconds.toFixed(3), '-movflags', '+faststart', tmp]);
   if (!r.ok) {
     fs.rmSync(tmp, { force: true });
-    return null;
+    return { lufs: null, note: '음량 맞추기가 실패해 원래 소리 그대로 두었어요' };
   }
   fs.renameSync(tmp, file);
   const m = await run('ffmpeg', ['-hide_banner', '-nostats', '-i', file, '-af', 'ebur128', '-f', 'null', '-']);
   const i = /I:\s+(-?[\d.]+) LUFS/.exec(m.out.split('Summary:').pop() ?? '');
-  return i ? Number(i[1]) : null;
+  return { lufs: i ? Number(i[1]) : null, note: i ? null : '음량을 맞췄지만 다시 재지 못했어요' };
 }
 
 export function startRender(db: Db, dataDir: string, reelId: number, doc: ReelDoc, brand: ReelBrand, guide: Box, quality: Quality): RenderJob {
   const id = Math.random().toString(36).slice(2, 10);
   let cancelSignal: (() => void) | null = null;
-  const job: RenderJob & { cancel: () => void } = { id, reelId, quality, phase: 'bundling', progress: 0, file: null, error: null, hint: null, lufs: null, seconds: null, cancel: () => cancelSignal?.() };
+  const job: RenderJob & { cancel: () => void } = { id, reelId, quality, phase: 'bundling', progress: 0, file: null, error: null, hint: null, lufs: null, loudnessNote: null, seconds: null, cancel: () => cancelSignal?.() };
   jobs.set(id, job);
   void (async () => {
     try {
@@ -120,7 +123,9 @@ export function startRender(db: Db, dataDir: string, reelId: number, doc: ReelDo
       await renderMedia({ serveUrl, composition, inputProps, codec: 'h264', scale: SCALE[quality], outputLocation: out, cancelSignal: c.cancelSignal, onProgress: ({ progress }) => (job.progress = progress), ...browser });
       job.phase = 'loudness';
       job.seconds = totalFrames(doc) / FPS;
-      job.lufs = await loudness(out, job.seconds, getSetting(db, 'reels.targetLufs'));
+      const loud = await loudness(out, job.seconds, getSetting(db, 'reels.targetLufs'));
+      job.lufs = loud.lufs;
+      job.loudnessNote = loud.note;
       job.phase = 'done';
       job.progress = 1;
       job.file = file;

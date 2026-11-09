@@ -2,6 +2,8 @@
 // 2회 재작성 뒤에도 넘친 카드는 어느 칸이 약 몇 자 넘쳤는지 보이고 직접 줄이게 한다(줄여야 저장).
 // 긴 AI 작업은 진행·취소를 보이고, 새로고침해도 이어서 보도록 작업 ID 를 이 브라우저에 임시 저장한다
 import { useCallback, useEffect, useState } from 'react';
+import { cardImageName, withCharacter } from '../../../server/src/cards/imageName.ts';
+import { notifyChanged } from '../changed.ts';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
@@ -11,6 +13,9 @@ import { PremadeBadge } from '../premade.tsx';
 import { useJob, type JobView } from '../useJob.ts';
 import { StageLine } from '../StageLine.tsx';
 import { fieldOf, reasonLines, wordDiff } from './rewriteText.ts';
+
+/** 강조 표시(**)를 뺀 제목 — 화면 글 · 단추 이름에 */
+const plain = (t: string) => t.replace(/\*\*/g, '').replace(/\s*\n\s*/g, ' ');
 
 type State = InferResponseType<typeof api.api.cards.$get>;
 interface Candidate {
@@ -152,7 +157,10 @@ function RewriteLine({ setId }: { setId: number }) {
   const steps = [...r.cover.map((x) => ({ ...x, part: 'cover' as const })), ...r.body.map((x) => ({ ...x, part: 'body' as const }))];
   return (
     <details className="small rewrites">
-      <summary>AI 가 고친 곳 {steps.length}개{steps.length === 0 ? ' (한 번에 규칙 통과, 또는 기록 기능 전에 만든 세트)' : ''}</summary>
+      {/* 다시 쓴 횟수와 고친 곳 수가 달라 「고친 곳 1개」 아래 세 줄이 보였다(사용자 시뮬레이션 2026-11-09) — 횟수로 센다 */}
+      <summary>
+        {steps.length === 0 ? 'AI 가 다시 쓴 것 없음 (한 번에 규칙 통과, 또는 기록 기능 전에 만든 세트)' : `AI 가 규칙에 걸려 다시 쓴 것 ${steps.length}번 · 고친 곳 ${steps.reduce((n, st) => n + reasonLines(st.issues, st.part).length, 0)}곳`}
+      </summary>
       <ul>
         {steps.map((st, i) => (
           <li key={i}>
@@ -191,6 +199,8 @@ function SetView({ setId }: { setId: number }) {
     createdAt: string;
     cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
   } | null>(null);
+  /** 계정 캐릭터(있으면) — 그림 프롬프트를 복사할 때 고정 설명을 앞에 붙인다 */
+  const [character, setCharacter] = useState<{ name: string; dna: string } | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   // 같은 주소의 PNG 를 다시 그렸을 때 화면이 옛 그림을 보이지 않게
   const [rev, setRev] = useState(0);
@@ -203,6 +213,7 @@ function SetView({ setId }: { setId: number }) {
         .then((r) => r.json() as Promise<{ set?: unknown; draftId?: string | null }>)
         .then((b) => {
           setSet((b.set as never) ?? null);
+          setCharacter((b as { character?: { name: string; dna: string } | null }).character ?? null);
           setDraftId(b.draftId ?? null);
           setRev((n) => n + 1);
         }),
@@ -256,19 +267,23 @@ function SetView({ setId }: { setId: number }) {
               {c.edited && <span className="tag">직접 고침</span>}
             </figcaption>
             {c.glosses?.map((g) => (
-              <GlossItem key={g.sentence} setId={setId} idx={c.idx} gloss={g} onChanged={() => void load()} />
+              <GlossItem key={g.sentence} setId={setId} idx={c.idx} gloss={g} onChanged={() => (void load(), notifyChanged())} />
             ))}
             {c.image && (
               <details className="small">
-                <summary>그림 프롬프트 · {c.image.filename}</summary>
-                <pre>{c.image.prompt}</pre>
+                <summary>그림 프롬프트 · {cardImageName(c.idx, c.image.filename)}</summary>
+                <pre>{withCharacter(c.image.prompt, character)}</pre>
+                {character && <p className="muted">캐릭터 {character.name} 의 고정 설명을 앞에 붙였어요 — 그림 도구가 생김새를 알게. 캐릭터 시트 그림이 있으면 참고 그림으로 같이 넣으세요.</p>}
+                <button type="button" className="small" onClick={() => void navigator.clipboard.writeText(withCharacter(c.image!.prompt, character)).then(() => setMsg({ ok: true, text: '그림 프롬프트를 복사했어요.' }))}>
+                  복사
+                </button>
               </details>
             )}
           </figure>
         ))}
       </div>
       <p className="muted small">찍은 브라우저: {set.cards[0]?.render.browser}{set.cards[0] && !set.cards[0].render.reference && ' · 기준 브라우저 아님'}</p>
-      <ChatPanel setId={setId} cardCount={set.cards.length} pngOf={(i) => `/api/cards/sets/${setId}/png/${set.cards[i]?.pngFile}?v=${rev}`} onChanged={() => void load()} />
+      <ChatPanel setId={setId} cardCount={set.cards.length} pngOf={(i) => `/api/cards/sets/${setId}/png/${set.cards[i]?.pngFile}?v=${rev}`} onChanged={() => (void load(), notifyChanged())} />
       <PublishPanel setId={setId} cardUnchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} onChanged={() => void load()} />
     </>
   );
@@ -500,10 +515,11 @@ export function MakePage() {
           <div className="frames">
             {covers.candidates.map((c) => (
               <figure key={c.index} className="frame">
-                <button type="button" className="pick-cover" disabled={bodyRunning} onClick={() => void choose(c.index)}>
-                  <img src={c.png} alt={c.headline} />
+                {/* 단추 이름이 비어 화면 읽기 · 자동화가 표지를 고르지 못했고, 그림 설명에 강조 표시(**)가 그대로 보였다(사용자 시뮬레이션 2026-11-09) */}
+                <button type="button" className="pick-cover" disabled={bodyRunning} aria-label={`표지 「${plain(c.headline)}」로 본문 만들기`} onClick={() => void choose(c.index)}>
+                  <img src={c.png} alt="" />
                 </button>
-                <figcaption className="small">{c.headline.replace(/\*\*/g, '')}</figcaption>
+                <figcaption className="small">{plain(c.headline)}</figcaption>
               </figure>
             ))}
           </div>

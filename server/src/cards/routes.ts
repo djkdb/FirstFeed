@@ -1,6 +1,7 @@
 // 카드뉴스 API (FR-MK-1). AI 단계(표지 후보·본문)는 작업 ID 를 먼저 돌려주고 화면이 상태를 묻는다(취소 가능).
 // 고른 표지·직접 줄일 초안은 화면이 보낸 내용이 아니라 서버가 기억한 작업 결과에서 꺼낸다
 import fs from 'node:fs';
+import { accountCharacter } from '../brand/characterStore.ts';
 import path from 'node:path';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
@@ -104,7 +105,7 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
     .get('/sets/:id', (c) => {
       const set = getSet(db, Number(c.req.param('id')));
       if (!set) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
-      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null });
+      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null, character: accountCharacter(db, BRAND_ID) });
     })
     // 재작성 기록(결정 2026-10-21 · C): 이 세트를 만든 표지 · 본문 작업에서 걸린 규칙과 바뀐 칸 전/후
     .get('/sets/:id/rewrites', (c) => {

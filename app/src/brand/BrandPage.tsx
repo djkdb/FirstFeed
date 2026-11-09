@@ -11,6 +11,8 @@ import { PremadeBadge } from '../premade.tsx';
 import { countNote } from './countNote.ts';
 import { StageLine } from '../StageLine.tsx';
 import { CharacterBuilder } from './CharacterBuilder.tsx';
+import { notifyChanged } from '../changed.ts';
+import { NextStep } from '../NextStep.tsx';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -261,12 +263,12 @@ export function BrandPage() {
     }
     setNotice('저장했어요.');
     await refresh();
+    notifyChanged();
     return true;
   };
 
   if (!state) return <section className="card">{error ?? '불러오는 중…'}</section>;
-  const { activeProfile, words, visual, selection, fonts, limits } = state;
-  const stale = (kit: { profileId: number } | null) => kit !== null && activeProfile !== null && kit.profileId !== activeProfile.id;
+  const { activeProfile, words, visual, selection, fonts, limits, wordsStale, visualStale } = state;
   const font = (id: string) => fonts.find((f) => f.id === id);
 
   return (
@@ -282,13 +284,14 @@ export function BrandPage() {
         )}
         {notice && <p className="status ok small">{notice}</p>}
         {error && <p className="status error">{error}</p>}
+        {selection.handle && selection.palette && selection.titleFont && <NextStep after="brand" />}
       </section>
 
       <section className="card">
         <h2>
           아이디 · 표시 이름 · 바이오 <PremadeBadge createdAt={words?.createdAt} />
         </h2>
-        {stale(words) && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
+        {wordsStale && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
         <KitJob kind="words" label={words ? '글 후보 다시 만들기' : '글 후보 만들기'} onDone={() => void refresh()} />
         {words && (
           <>
@@ -323,7 +326,7 @@ export function BrandPage() {
         <h2>
           색 · 폰트 · 그림 <PremadeBadge createdAt={visual?.createdAt} />
         </h2>
-        {stale(visual) && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
+        {visualStale && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
         <KitJob kind="visual" label={visual ? '시각 후보 다시 만들기' : '시각 후보 만들기'} onDone={() => void refresh()} />
         {visual && (
           <>

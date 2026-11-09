@@ -4,6 +4,7 @@ import { Player } from '@remotion/player';
 import { useMemo, useState } from 'react';
 import { FPS, H, totalFrames, W } from '../../../server/src/reels/model.ts';
 import { applyMotion, type MotionPlan } from '../../../server/src/reels/motionCheck.ts';
+import { humanizeMotionNote } from '../../../server/src/reels/motion.ts';
 import { StageLine } from '../StageLine.tsx';
 import { useJob } from '../useJob.ts';
 import { reelApi } from './api.ts';
@@ -102,7 +103,7 @@ export function MotionPanel({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="motion-side">
-            <p>{proposal.plan.note}</p>
+            <p>{humanizeMotionNote(proposal.plan.note)}</p>
             <p className="muted small">
               AI 호출 {proposal.calls}번 · 규칙 때문에 다시 쓴 것 {proposal.rewrites}번 · 글자 {proposal.plan.texts.filter((t) => t.enter !== 'none').length}/{proposal.plan.texts.length}개가 움직여요
             </p>

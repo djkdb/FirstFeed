@@ -263,7 +263,9 @@ export const DEFAULTS = {
     // 각도 5~6가지 · 방식 3가지(v2 는 글만) · 질문끼리 최대 유사도 낮음, 앱처럼 모자라면 더 묻게 하니 프로필 저장 v2 3/4(minji 10턴 실패) · v4 4/4(minji 8턴).
     // 6턴 한 번만 재면 v3 · v4 가 needs_more 1/4 저장이라 흔들림이 크다(1회씩) — tests/results/2026-11-08-interview-sim-*.md, devlog 2026-11-08-02
     identity_profile: 'v3',
-    identity_followup: 'v4',
+    // ~~v4~~ → v5(사용자 시뮬레이션 2026-11-09): 「왜 묻나요?」가 사용자를 「이 사람」으로 불렀다. 가상 응답자 4명 × 6질문에서
+    // v4 는 why_third_person 재작성 5번(질문 24개) · v5 는 0번(재작성 0) — tests/results/2026-11-09-interview-sim-why-v*.md
+    identity_followup: 'v5',
     brand_visual: 'v2',
     brand_words_review: 'v2',
     // 첫 실제 실행에서 v1 의 "인용 밖 사실 = fact" 가 소재의 다른 곳에 있는 사실까지 막아 세트가 실패 (devlog 2026-10-15-02)

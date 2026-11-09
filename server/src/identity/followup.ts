@@ -165,6 +165,11 @@ function v3Rules(ctx: FollowupContext, prev: Array<{ lens: Lens | null; format: 
       }
       return [];
     },
+    // 화면에 보이는 「왜 묻나요?」는 사용자에게 하는 말 — 3인칭(「이 사람」)으로 부르면 다시 쓰게(사용자 시뮬레이션 2026-11-09)
+    (d) => {
+      const m = /이 사람|이분|사용자|계정 주인/.exec(d.why);
+      return m ? [err('why_third_person', `「왜 묻나요?」에 「${m[0]}」 — 화면에서 사용자가 읽는 글이에요. 사용자에게 직접 말하듯(「~하려고 물어요」) 쓰세요.`, 'why')] : [];
+    },
     // 「잘 모르겠어요」 뒤에는 글로 답하기 + 선택지
     (d) => (ctx.lastAnswerUnknown && d.format !== 'open' ? [err('unknown_needs_open', '직전 답이 "잘 모르겠어요"였습니다. 같은 빈칸을 글로 답하기(format open) + 선택지로 더 쉽게 다시 물으세요.', 'format')] : []),
     // 같은 각도를 연달아 묻지 않는다

@@ -64,6 +64,8 @@ function describeQuestion(t: Turn): string {
 }
 
 interface Row {
+  /** 꼬리질문 재작성 사유(규칙 코드) */
+  reasons: string[];
   /** 프로필을 만든 횟수(--until-profile 이면 저장될 때까지) */
   attempts: number;
   /** needs_more 때 부족하다고 한 것 */
@@ -71,7 +73,7 @@ interface Row {
   persona: string;
   kind: string;
   version: string;
-  questions: Array<{ no: number; lens: string | null; format: string; question: string; extra: string; answer: string | null; answerKind: string | null }>;
+  questions: Array<{ no: number; lens: string | null; format: string; question: string; why: string | null; extra: string; answer: string | null; answerKind: string | null }>;
   followupFailed: number;
   rewrites: number;
   seconds: number;
@@ -115,6 +117,14 @@ for (const p of PERSONAS) {
     for (let i = 0; i < turnsN; i++) if (!(await askOne())) break;
     const turns = listTurns(db, sid);
     const rewrites = (db.prepare("SELECT COUNT(*) AS n FROM ai_runs WHERE task = 'identity_followup' AND kind = 'rewrite'").get() as { n: number }).n;
+    // 재작성 사유(규칙 코드) — 판끼리 무엇 때문에 다시 썼는지 비교하려고
+    const reasons = (db.prepare("SELECT issues_json FROM ai_runs WHERE task = 'identity_followup' AND issues_json IS NOT NULL").all() as Array<{ issues_json: string }>).flatMap((r) => {
+      try {
+        return (JSON.parse(r.issues_json) as Array<{ level: string; code: string }>).filter((i) => i.level === 'error').map((i) => i.code);
+      } catch {
+        return [];
+      }
+    });
     let maxSim = 0;
     for (let i = 0; i < turns.length; i++) for (let j = i + 1; j < turns.length; j++) maxSim = Math.max(maxSim, similarity(turns[i]!.question, turns[j]!.question));
     let profile: Row['profile'] = null;
@@ -140,6 +150,7 @@ for (const p of PERSONAS) {
     }
     const finalTurns = listTurns(db, sid);
     rows.push({
+      reasons,
       attempts,
       missing,
       persona: p.id,
@@ -150,6 +161,7 @@ for (const p of PERSONAS) {
         lens: t.lens,
         format: t.format,
         question: t.question,
+        why: t.why,
         extra: t.format === 'this_or_that' ? `「${t.options.join('」 / 「')}」 → ${t.pick}` : t.format === 'rewrite' ? `예시 문장: ${t.sample}` : t.format === 'scale' && t.scale ? `${t.scale.left} ↔ ${t.scale.right} → ${t.pick}` : '',
         answer: t.answer,
         answerKind: t.answerKind,
@@ -175,15 +187,15 @@ const md: string[] = [
   '- 사람: me(실제·공개 자료를 바탕으로 한 시뮬레이션) · doyun · seoyeon · minji(AI 생성 페르소나). 실제·비공개 자료는 쓰지 않음',
   `- 규칙 기준: identity.variety ${JSON.stringify(getSetting(null, 'identity.variety'))}`,
   '',
-  '| 사람 | 판 | 질문 | 질문 실패 | 재작성 | 서로 다른 각도 | 방식 | 질문끼리 최대 유사도 | 시간 | 프로필(만든 횟수) |',
+  '| 사람 | 판 | 질문 | 질문 실패 | 재작성(사유) | 서로 다른 각도 | 방식 | 질문끼리 최대 유사도 | 시간 | 프로필(만든 횟수) |',
   '|---|---|---|---|---|---|---|---|---|---|',
-  ...rows.map((r) => `| ${r.persona}(${r.kind}) | ${r.version} | ${r.questions.length} | ${r.followupFailed} | ${r.rewrites} | ${r.distinctLenses ?? '모름(v2 는 각도 없음)'} | ${r.formats.map((f) => FORMAT_LABEL[f as keyof typeof FORMAT_LABEL]).join(' · ')} | ${r.maxSimilarity} | ${r.seconds}초 | ${r.profile?.outcome ?? '안 만듦'}${r.attempts ? `(${r.attempts})` : ''} |`),
+  ...rows.map((r) => `| ${r.persona}(${r.kind}) | ${r.version} | ${r.questions.length} | ${r.followupFailed} | ${r.rewrites}${r.reasons.length ? `(${r.reasons.join(', ')})` : ''} | ${r.distinctLenses ?? '모름(v2 는 각도 없음)'} | ${r.formats.map((f) => FORMAT_LABEL[f as keyof typeof FORMAT_LABEL]).join(' · ')} | ${r.maxSimilarity} | ${r.seconds}초 | ${r.profile?.outcome ?? '안 만듦'}${r.attempts ? `(${r.attempts})` : ''} |`),
   '',
 ];
 for (const r of rows) {
   md.push(`## ${r.persona} · ${r.version}`, '');
   for (const q of r.questions) {
-    md.push(`${q.no}. ${q.lens ? `[${LENS_LABEL[q.lens as keyof typeof LENS_LABEL]} · ${FORMAT_LABEL[q.format as keyof typeof FORMAT_LABEL]}] ` : ''}${q.question}${q.extra ? `  \n   ${q.extra}` : ''}  \n   → (가상 답${q.answerKind && q.answerKind !== 'text' ? ` · ${q.answerKind}` : ''}) ${q.answer ?? ''}`);
+    md.push(`${q.no}. ${q.lens ? `[${LENS_LABEL[q.lens as keyof typeof LENS_LABEL]} · ${FORMAT_LABEL[q.format as keyof typeof FORMAT_LABEL]}] ` : ''}${q.question}${q.why ? `  \n   왜: ${q.why}` : ''}${q.extra ? `  \n   ${q.extra}` : ''}  \n   → (가상 답${q.answerKind && q.answerKind !== 'text' ? ` · ${q.answerKind}` : ''}) ${q.answer ?? ''}`);
   }
   if (r.missing.length) md.push('', ...r.missing.map((m) => `- 근거 부족(${m})`));
   if (r.profile) {

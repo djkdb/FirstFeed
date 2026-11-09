@@ -89,3 +89,12 @@ describe('인터뷰 다양화 — 각도 · 방식 규칙 (꼬리질문 v3, 2026
     expect(codes(base)).toEqual([]);
   });
 });
+
+describe('「왜 묻나요?」는 사용자에게 하는 말(사용자 시뮬레이션 2026-11-09)', () => {
+  it('「이 사람」 · 「사용자」로 부르면 다시 쓰게, 직접 말하면 통과', () => {
+    const c: FollowupContext = { ...ctx, previous: [], variety: { window: 5, minDistinctLenses: 4, formatBy: 4 } };
+    const q: Followup = { ...base, lens: 'experience', format: 'open' };
+    expect(codes({ ...q, why: '이 사람이 직접 겪은 한 장면을 모으려고' }, c)).toContain('why_third_person');
+    expect(codes({ ...q, why: '직접 겪은 한 장면이 첫 콘텐츠 축의 근거가 돼서 물어요' }, c)).toEqual([]);
+  });
+});

@@ -1,6 +1,7 @@
 // 업로드 준비 (FR-PB-1 · 결정 2026-10-18): 최소 캡션 → 표시된 풀이를 모두 확인 → 업로드 폴더 만들기 → 폴더 열기.
 // 확인하지 않은 「소재에 없는 설명」이 있으면 폴더를 만들 수 없다 — 지나칠 수 있으면 「사람이 확인한다」는 결정이 의미가 없다
 import { useCallback, useEffect, useState } from 'react';
+import { onChanged as onDataChanged } from '../changed.ts';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
 import { PhoneShare } from './PhoneShare.tsx';
@@ -14,7 +15,7 @@ interface Gloss {
 interface PublishState {
   caption: { hook: string; lines: string[]; hashtags: string[]; glosses: Gloss[]; edited: boolean; text: string } | null;
   unchecked: number;
-  exports: Array<{ id: number; path: string; files: number; createdAt: string }>;
+  exports: Array<{ id: number; path: string; files: number; createdAt: string; stale: boolean }>;
 }
 interface Settings {
   uploadRoot: string;
@@ -51,6 +52,8 @@ export function PublishPanel({ setId, cardUnchecked, onChanged }: { setId: numbe
   );
   useEffect(() => {
     void load();
+    // 채팅으로 고치기 · 직접 고치기 뒤 「폴더를 다시 만드세요」가 바로 보이게
+    return onDataChanged(() => void load());
   }, [load]);
 
   const job = useJob(
@@ -235,6 +238,12 @@ export function PublishPanel({ setId, cardUnchecked, onChanged }: { setId: numbe
         </p>
         {st.exports.map((e) => (
           <p key={e.id} className="small">
+            {e.stale && (
+              <span className="status error">
+                이 폴더를 만든 뒤 카드나 캡션이 바뀌었어요 — 옛 그림이 들어 있어요. 「업로드 폴더 만들기」로 새로 만드세요.
+                <br />
+              </span>
+            )}
             <code>{e.path}</code> · 파일 {e.files}개{' '}
             <button type="button" disabled={busy} onClick={() => void run(async () => void (await post(`/api/publish/exports/${e.id}/open`, {})))}>
               폴더 열기

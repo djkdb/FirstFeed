@@ -51,15 +51,17 @@ export interface ExportRow {
   path: string;
   files: number;
   createdAt: string;
+  /** 만들 때의 세트 지문(없으면 null — 019 전에 만든 폴더) */
+  fingerprint: string | null;
 }
 
-export function addExport(db: Db, setId: number, dir: string, files: number): number {
-  return Number(db.prepare('INSERT INTO exports (set_id, path, files) VALUES (?, ?, ?)').run(setId, dir, files).lastInsertRowid);
+export function addExport(db: Db, setId: number, dir: string, files: number, fingerprint: string | null = null): number {
+  return Number(db.prepare('INSERT INTO exports (set_id, path, files, fingerprint) VALUES (?, ?, ?, ?)').run(setId, dir, files, fingerprint).lastInsertRowid);
 }
 
 export function getExport(db: Db, id: number): ExportRow | null {
   const r = db.prepare('SELECT * FROM exports WHERE id = ?').get(id) as Row | undefined;
-  return r ? { id: Number(r.id), setId: Number(r.set_id), path: String(r.path), files: Number(r.files), createdAt: String(r.created_at) } : null;
+  return r ? { id: Number(r.id), setId: Number(r.set_id), path: String(r.path), files: Number(r.files), createdAt: String(r.created_at), fingerprint: (r.fingerprint as string | null) ?? null } : null;
 }
 
 export function listExports(db: Db, setId: number): ExportRow[] {
@@ -69,5 +71,6 @@ export function listExports(db: Db, setId: number): ExportRow[] {
     path: String(r.path),
     files: Number(r.files),
     createdAt: String(r.created_at),
+    fingerprint: (r.fingerprint as string | null) ?? null,
   }));
 }

@@ -510,7 +510,7 @@ export function MakePage() {
               ))}
             </select>
           </label>
-          <button type="button" className="primary" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
+          <button type="button" className="primary big" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
             표지 제목 후보 만들기
           </button>
           <span className="muted small">보통 1분 · AI 2번(규칙에 걸리면 더)</span>

@@ -159,7 +159,7 @@ export function HomePage() {
           <div className="actions">
             {today.state === 'plan' && (
               <>
-                <a className="button primary" href={`#/make?slot=${today.idx}`}>
+                <a className="button primary big" href={`#/make?slot=${today.idx}`}>
                   이 칸으로 만들기
                 </a>
                 {home.freeSets.length > 0 && (

@@ -36,7 +36,7 @@ export function StartChecklist({ progress }: { progress: Partial<Record<StepKey,
         ))}
       </ol>
       {firstTodo && (
-        <a className="button primary" href={firstTodo.href}>
+        <a className="button primary big" href={firstTodo.href}>
           {progress?.identity ? `이어서 · ${firstTodo.label}` : '정체성부터 시작하기'}
         </a>
       )}

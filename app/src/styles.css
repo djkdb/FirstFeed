@@ -5,22 +5,23 @@
    카드 렌더링(server/src/templates)은 이 파일과 상관없다 — 브랜드 키트의 색 · 글꼴로 그린다 */
 :root {
   /* 밝은 판 — 무채색(zinc 계열). 흐린 글자도 모든 면 위에서 4.5:1 이상 */
-  --ground: #ffffff;
-  --panel: #fafafa;
+  /* 바탕 층(토스 TDS 비교 2026-11-17 반영): 회색 바탕(--ground) 위에 흰 판(--surface), 판 안의 묶음은 옅은 면(--surface-2) */
+  --ground: #f2f2f4;
+  --panel: #ffffff;
   --ink: #18181b;
   --muted-strong: #3f3f46;
-  --muted: #62626b;
+  --muted: #5f5f68;
   --accent: #18181b;
   --accent-fill: #18181b;
   --on-fill: #ffffff;
   --accent-fill-hover: #3f3f46;
   --accent-soft: #f4f4f5;
   --accent-ink: #18181b;
-  --line: #e4e4e7;
+  --line: #e7e7ea;
   --line-strong: #d4d4d8;
   --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --surface-3: #e9e9ec;
+  --surface-2: #f4f4f6;
+  --surface-3: #e9e9ed;
   --focus: rgba(24, 24, 27, 0.18);
   --shadow: 0 1px 2px rgba(24, 24, 27, 0.06), 0 8px 24px rgba(24, 24, 27, 0.06);
   --scrim: rgba(24, 24, 27, 0.32);
@@ -73,9 +74,9 @@
 /* 어두운 판 — 컴퓨터 설정이 어두움이고 사용자가 밝게를 고르지 않았을 때, 또는 어둡게를 골랐을 때 */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --ground: #0b0b0d; --panel: #101012; --ink: #f4f4f5; --muted-strong: #d4d4d8; --muted: #a1a1aa;
-    --accent: #f4f4f5; --accent-fill: #f4f4f5; --on-fill: #111113; --accent-fill-hover: #ffffff; --accent-soft: #1b1b1f; --accent-ink: #f4f4f5;
-    --line: #26262b; --line-strong: #3a3a41; --surface: #141417; --surface-2: #1b1b1f; --surface-3: #26262b;
+    --ground: #0e0e11; --panel: #16161a; --ink: #f4f4f5; --muted-strong: #d4d4d8; --muted: #a1a1aa;
+    --accent: #f4f4f5; --accent-fill: #f4f4f5; --on-fill: #111113; --accent-fill-hover: #ffffff; --accent-soft: #222228; --accent-ink: #f4f4f5;
+    --line: #2a2a31; --line-strong: #3d3d46; --surface: #18181d; --surface-2: #222228; --surface-3: #2d2d35;
     --focus: rgba(244, 244, 245, 0.22); --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35); --scrim: rgba(0, 0, 0, 0.55);
     --ok: #6ee7a0; --ok-soft: rgba(110, 231, 160, 0.12); --on-ok: #0b0b0d; --error: #ff8a80; --error-soft: rgba(255, 138, 128, 0.12); --on-error: #0b0b0d;
     --warn-ink: #f5c451; --warn-soft: rgba(245, 196, 81, 0.12); --warn-line: #d97706; --warn-mark: rgba(245, 196, 81, 0.35);
@@ -84,9 +85,9 @@
   }
 }
 :root[data-theme='dark'] {
-  --ground: #0b0b0d; --panel: #101012; --ink: #f4f4f5; --muted-strong: #d4d4d8; --muted: #a1a1aa;
-  --accent: #f4f4f5; --accent-fill: #f4f4f5; --on-fill: #111113; --accent-fill-hover: #ffffff; --accent-soft: #1b1b1f; --accent-ink: #f4f4f5;
-  --line: #26262b; --line-strong: #3a3a41; --surface: #141417; --surface-2: #1b1b1f; --surface-3: #26262b;
+  --ground: #0e0e11; --panel: #16161a; --ink: #f4f4f5; --muted-strong: #d4d4d8; --muted: #a1a1aa;
+  --accent: #f4f4f5; --accent-fill: #f4f4f5; --on-fill: #111113; --accent-fill-hover: #ffffff; --accent-soft: #222228; --accent-ink: #f4f4f5;
+  --line: #2a2a31; --line-strong: #3d3d46; --surface: #18181d; --surface-2: #222228; --surface-3: #2d2d35;
   --focus: rgba(244, 244, 245, 0.22); --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35); --scrim: rgba(0, 0, 0, 0.55);
   --ok: #6ee7a0; --ok-soft: rgba(110, 231, 160, 0.12); --on-ok: #0b0b0d; --error: #ff8a80; --error-soft: rgba(255, 138, 128, 0.12); --on-error: #0b0b0d;
   --warn-ink: #f5c451; --warn-soft: rgba(245, 196, 81, 0.12); --warn-line: #d97706; --warn-mark: rgba(245, 196, 81, 0.35);
@@ -192,9 +193,10 @@ h3 { letter-spacing: -0.015em; }
   .shell { padding: 24px 16px 56px; }
 }
 
-/* 칸(.card) — 상자 안의 상자를 없앤다: 본문 칸은 테두리 없이 얇은 선과 여백으로 나누고, 첫 칸의 제목이 화면 제목 */
-.card { background: none; border: 0; border-radius: 0; padding: 0; box-shadow: none; }
-.card + .card { margin-top: 40px; padding-top: 40px; border-top: 1px solid var(--line); }
+/* 칸(.card) — 회색 바탕 위의 흰 판 한 겹(토스 TDS 비교 2026-11-17 반영). 판 안의 묶음은 옅은 면으로 한 겹만, 테두리 상자를 겹치지 않는다. 첫 칸의 제목이 화면 제목 */
+.card { background: var(--surface); border: 0; border-radius: 20px; padding: 28px 32px; box-shadow: none; }
+.card + .card { margin-top: 12px; }
+@media (max-width: 560px) { .card { border-radius: 16px; padding: 20px; } }
 .card h2 { margin: 0 0 6px; font-size: 18px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.4; }
 .shell > :first-child > .card:first-child > h2, .shell > .card:first-child > h2, .shell > :first-child > .card:first-child > .card-head h2, .shell > .card:first-child > .card-head h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.3; margin-bottom: 8px; }
 .card > p.muted:first-of-type { max-width: 44em; }
@@ -208,10 +210,12 @@ h3 { letter-spacing: -0.015em; }
 .small { font-size: 13px; }
 
 /* 단추 — 단색 · 모서리 8px · 높이 두 단(40 / 32). 주 단추는 잉크 바탕, 보조는 옅은 면(테두리 없음) */
-button { font: inherit; font-size: 14px; font-weight: 600; min-height: var(--tap); padding: 0 var(--s-4); border-radius: 8px; border: 1px solid transparent; background: var(--surface-2); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.12s, color 0.12s, border-color 0.12s; }
+button { font: inherit; font-size: 14px; font-weight: 600; min-height: var(--tap); padding: 0 var(--s-4); border-radius: 10px; border: 1px solid transparent; background: var(--surface-2); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.12s, color 0.12s, border-color 0.12s; }
 button:hover:not(:disabled) { background: var(--surface-3); }
 button:active:not(:disabled) { transform: translateY(0.5px); }
-button.small, .history button { min-height: 32px; padding: 0 var(--s-3); font-size: 13px; }
+button.small, .history button { min-height: 32px; padding: 0 var(--s-3); font-size: 13px; border-radius: 8px; }
+/* 큰 단추 — 화면마다 하나뿐인 주요 동작에만(오늘 할 칸 · 시작하기 · 표지 만들기 · 설문 · 확정). 클수록 모서리도 크게 */
+button.big, a.button.big { min-height: 52px; padding: 0 22px; font-size: 16px; border-radius: 14px; }
 button:disabled { opacity: 0.45; cursor: default; }
 button.primary { background: var(--accent-fill); color: var(--on-fill); }
 button.primary:hover:not(:disabled) { background: var(--accent-fill-hover); }
@@ -220,7 +224,7 @@ button.ghost:hover:not(:disabled) { background: var(--surface-2); }
 button.link { background: none; border: none; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 0; min-height: 0; font-weight: 500; border-radius: 0; }
 button.link:hover:not(:disabled) { background: none; color: var(--muted-strong); }
 /* 버튼 모양 링크(다른 탭으로 가는 「이 칸으로 만들기」 등) */
-a.button { display: inline-flex; align-items: center; justify-content: center; min-height: var(--tap); padding: 0 var(--s-4); border-radius: 8px; background: var(--surface-2); color: var(--ink); font-size: 14px; font-weight: 600; text-decoration: none; }
+a.button { display: inline-flex; align-items: center; justify-content: center; min-height: var(--tap); padding: 0 var(--s-4); border-radius: 10px; background: var(--surface-2); color: var(--ink); font-size: 14px; font-weight: 600; text-decoration: none; }
 a.button:hover { background: var(--surface-3); color: var(--ink); }
 a.button.primary { background: var(--accent-fill); color: var(--on-fill); }
 a.button.primary:hover { background: var(--accent-fill-hover); color: var(--on-fill); }
@@ -279,7 +283,7 @@ input[type='range'], input[type='color'] { box-shadow: none; }
 .account-line { font-size: 22px; margin: 2px 0 6px; }
 .badge.ok { background: var(--ok-soft); color: var(--ok); border-radius: 999px; padding: 4px 12px; font-size: 13px; white-space: nowrap; }
 .pillars { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.pillar { border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-4); background: var(--surface); }
+.pillar { border: 0; border-radius: 16px; padding: var(--s-4); background: var(--surface-2); }
 .pillar p { margin: 4px 0 8px; font-size: 14px; }
 .pillar blockquote { margin: 6px 0 0; padding-left: var(--s-2); border-left: 2px solid var(--line-strong); font-size: 13px; color: var(--muted-strong); }
 .source { display: block; margin-top: 2px; font-size: 11px; color: var(--muted); }
@@ -316,13 +320,13 @@ h4 { margin: 18px 0 8px; font-size: 14px; }
 .font-title { font-size: 20px; }
 .font-body { font-size: 14px; }
 .prompts { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 10px; }
-.prompts li { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 12px 14px; }
+.prompts li { border-radius: 14px; padding: 12px 14px; background: var(--surface-2); }
 .prompt-head { display: flex; align-items: center; gap: 8px; }
 .prompt-head button { margin-left: auto; }
 .prompts pre { margin: 8px 0 0; }
 /* 빈 상태 — 제목만 남지 않게 할 일 한 줄 */
 .empty-state { margin: 4px 0 0; padding: 14px 16px; border: 1px dashed var(--line-strong); border-radius: var(--r-md); color: var(--muted); font-size: 14px; }
-.prompts pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px; background: var(--surface-2); padding: 10px 12px; border-radius: var(--r-md); }
+.prompts pre { white-space: pre-wrap; font-family: var(--mono); font-size: 12.5px; background: var(--surface); padding: 10px 12px; border-radius: var(--r-md); }
 .profile-image { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
 .avatar { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; display: block; border: 1px solid var(--line); }
 .avatar.empty { display: flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--muted); }
@@ -440,7 +444,7 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
 @media (prefers-reduced-motion: reduce) { .stage-dot { animation: none; } }
 
 /* 오늘 올릴 것 (FR-HM-1~3) */
-.home-today { margin: var(--s-4) 0 var(--s-5); padding: var(--s-5); border: 1px solid var(--line-strong); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+.home-today { margin: var(--s-4) 0 var(--s-5); padding: var(--s-5); border-radius: 16px; background: var(--surface-2); overflow: hidden; }
 /* 오늘 칸 표지 — 격자처럼 3:4(카드 양옆이 잘리는 모양) */
 .home-today-thumb { float: right; width: 132px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: var(--r-md); margin: 0 0 var(--s-2) var(--s-4); }
 .home-progress { margin: var(--s-2) 0 var(--s-3); }
@@ -473,6 +477,8 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
   .home-due { grid-column: 2 / -1; }
   .home-slot-actions { grid-column: 1 / -1; }
   .home-today-thumb { width: 96px; }
+  .home-today { padding: var(--s-4); }
+  .home-title { font-size: 20px; }
 }
 
 /* 「AI 가 고친 곳」 (결정 2026-10-25) — 카드 번호 · 이유 한 줄, 바뀐 낱말만 지움(취소선) · 더함(밑줄) */
@@ -583,3 +589,10 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
 .stepper-n { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); color: var(--muted-strong); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .stepper li.now .stepper-n { background: var(--on-fill); color: var(--accent-fill); }
 .stepper li.done .stepper-n { background: var(--ok); color: var(--on-ok); }
+
+/* 회색 바탕 위 흰 판 구조에서(2026-11-17): 옅은 면 묶음 안의 보조 단추는 흰 바탕으로 — 같은 옅은 면이면 단추가 바탕에 묻힌다 */
+:is(.home-today, .current, .chat-panel, .next-step, .pillar, .prompts li, .slot-editor) button:not(.primary):not(.link):not(.chip):not(.pick):not(.scale-dot):not(.example) { background: var(--surface); }
+:is(.home-today, .current, .chat-panel, .next-step, .pillar, .prompts li, .slot-editor) button:not(.primary):not(.link):not(.chip):not(.pick):not(.scale-dot):not(.example):hover:not(:disabled) { background: var(--surface-3); }
+/* 판 밖(회색 바탕)에 바로 놓이는 진행 표시 · 안내는 흰 판으로 */
+.shell > :is(.job, .note, .status) { background: var(--surface); border-radius: 20px; padding: 18px 32px; margin: 12px 0; }
+.shell > .note { background: var(--warn-soft); }

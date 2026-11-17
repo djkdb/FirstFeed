@@ -92,7 +92,7 @@ export function SurveyForm({ onSubmit, busy }: { onSubmit: (s: SurveyAnswers) =>
         </fieldset>
       ))}
       <div className="actions">
-        <button type="submit" className="primary" disabled={busy || missing.length > 0 || questions.length === 0}>
+        <button type="submit" className="primary big" disabled={busy || missing.length > 0 || questions.length === 0}>
           {busy ? '시작하는 중…' : '인터뷰 시작'}
         </button>
         {missing.length > 0 && <span className="muted">남은 필수 문항: {missing.map((q) => q.id).join(', ')}</span>}

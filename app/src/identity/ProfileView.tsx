@@ -20,7 +20,7 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
         {active ? (
           <span className="badge ok">적용 중</span>
         ) : (
-          <button type="button" className="primary" disabled={busy} onClick={onConfirm}>
+          <button type="button" className="primary big" disabled={busy} onClick={onConfirm}>
             이 프로필로 확정
           </button>
         )}

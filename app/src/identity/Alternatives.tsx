@@ -88,7 +88,7 @@ export function Alternatives({ baseId, onChosen }: { baseId: number; onChosen: (
           <button type="button" onClick={() => void start()}>
             다른 방향 2개 더 보기
           </button>
-          <span className="muted small">같은 답으로 다른 축 조합을 만들어 봐요 · AI 호출 2번(재작성하면 더) · 보통 1~3분</span>
+          <span className="muted small">같은 답으로 다른 축 조합을 만들어 봐요 · 보통 1~3분 · AI 2번(규칙에 걸리면 더)</span>
         </div>
       )}
       {running && (

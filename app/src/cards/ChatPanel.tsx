@@ -175,7 +175,7 @@ export function ChatPanel({ setId, cardCount, pngOf, onChanged }: { setId: numbe
         {jobId && (
           <div className="chat-ai">
             <StageLine stage={job?.stage} />
-            <span className="small muted">고치는 중… (AI 호출 · 규칙 검사 · 다시 그리기, 보통 30초~1분) </span>
+            <span className="small muted">고치는 중… 보통 30초~1분 </span>
             <button type="button" className="small" onClick={() => void cancel()}>
               취소
             </button>

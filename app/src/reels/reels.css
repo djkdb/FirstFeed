@@ -11,7 +11,7 @@
 .reels .save.error { color: var(--error); }
 .reels .warn { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn-ink); }
 .reels .render { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.reels .button { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--s-3); border: 1px solid var(--line); border-radius: var(--r-pill); text-decoration: none; color: var(--ink); font-weight: 600; }
+.reels .button { display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--s-3); border-radius: 8px; background: var(--surface-2); text-decoration: none; color: var(--ink); font-weight: 600; font-size: 13px; }
 
 .reels-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr) 290px; grid-template-rows: minmax(0, 1fr) 280px; grid-template-areas: 'left center right' 'bottom bottom bottom'; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--surface); }
 .reels-left { grid-area: left; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; background: var(--surface-2); }

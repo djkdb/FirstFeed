@@ -91,7 +91,7 @@ export function PublishPanel({ setId, cardUnchecked, onChanged }: { setId: numbe
 
       <div className="pub-step">
         <strong>1. 캡션</strong>{' '}
-        <span className="muted small">첫 줄 + 핵심 몇 줄 + 해시태그 {settings.maxHashtags}개 이내(중간 발표용 최소 캡션 · AI 호출 2번)</span>
+        <span className="muted small">첫 줄 + 핵심 몇 줄 + 해시태그 {settings.maxHashtags}개 이내 · 보통 30초 · AI 2번</span>
         {jobId ? (
           <>
             <p className="small">

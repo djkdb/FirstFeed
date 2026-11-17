@@ -21,8 +21,8 @@ type Patch = Parameters<typeof api.api.brand.selection.$put>[0]['json'];
 const RUN_LABEL: Record<string, string> = { generate: '생성', json_retry: 'JSON 재요청', rewrite: '재작성', review: '자기 평가' };
 // 시간은 측정값(tests/results/2026-10-14-brand-v1-v1.md, 3명 × 2회 평균: 글 58~82초, 시각 37~44초)
 const COST: Record<Kind, string> = {
-  words: 'AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1~1.5분',
-  visual: 'AI 호출 1번(규칙에 걸려 다시 쓰면 더) · 보통 40초 안팎',
+  words: '보통 1~1.5분 · AI 2번(규칙에 걸리면 더)',
+  visual: '보통 40초 · AI 1번(규칙에 걸리면 더)',
 };
 const jobKey = (k: Kind) => `firstfeed.brandJob.${k}`;
 
@@ -331,13 +331,43 @@ export function BrandPage() {
         {visual && (
           <>
             <h3>색 팔레트</h3>
-            <div className="palettes">
-              {visual.candidates.palettes.map((p) => (
-                <PaletteCard key={p.name} p={p} on={selection.palette?.name === p.name} min={limits.minContrast} save={save} />
-              ))}
-            </div>
+            {/* 후보가 없어도(예: 직접 고른 팔레트만 있음) 제목만 덩그러니 남지 않게 — 지금 쓰는 것을 보이거나 할 일을 알린다 */}
+            {visual.candidates.palettes.length === 0 ? (
+              selection.palette ? (
+                <div className="palettes">
+                  <PaletteCard
+                    p={{
+                      ...selection.palette,
+                      // 직접 고른 팔레트에는 서버가 잰 명암비가 없어 화면에서 같은 식으로 잰다(보이기만 — 저장 규칙은 서버가)
+                      contrast: {
+                        textOnBackground: contrast(selection.palette.colors.text, selection.palette.colors.background),
+                        bestOnPrimary: Math.max(contrast(selection.palette.colors.text, selection.palette.colors.primary), contrast(selection.palette.colors.background, selection.palette.colors.primary)),
+                      },
+                    }}
+                    on
+                    min={limits.minContrast}
+                    save={save}
+                  />
+                </div>
+              ) : (
+                <p className="empty-state">팔레트 후보가 없어요. 위 「시각 후보 다시 만들기」로 만들어 보세요.</p>
+              )
+            ) : (
+              <div className="palettes">
+                {visual.candidates.palettes.map((p) => (
+                  <PaletteCard key={p.name} p={p} on={selection.palette?.name === p.name} min={limits.minContrast} save={save} />
+                ))}
+              </div>
+            )}
 
             <h3>폰트 짝 (제목 + 본문)</h3>
+            {visual.candidates.fontPairs.length === 0 && (
+              <p className="empty-state">
+                {selection.titleFont && selection.bodyFont
+                  ? `지금 쓰는 짝: ${font(selection.titleFont)?.name ?? selection.titleFont} + ${font(selection.bodyFont)?.name ?? selection.bodyFont}. 다른 짝을 보려면 「시각 후보 다시 만들기」.`
+                  : '폰트 짝 후보가 없어요. 위 「시각 후보 다시 만들기」로 만들어 보세요.'}
+              </p>
+            )}
             <div className="fontpairs">
               {visual.candidates.fontPairs.map((f) => {
                 const t = font(f.title);
@@ -373,11 +403,13 @@ export function BrandPage() {
             <ul className="prompts">
               {visual.candidates.imagePrompts.map((p) => (
                 <li key={p.filename}>
-                  <strong>{p.target === 'profile' ? '프로필 사진' : `하이라이트 커버 · ${p.label}`}</strong> <span className="muted small">{p.filename}</span>
+                  <div className="prompt-head">
+                    <strong>{p.target === 'profile' ? '프로필 사진' : `하이라이트 커버 · ${p.label}`}</strong> <span className="muted small">{p.filename}</span>
+                    <button type="button" className="small ghost" onClick={() => void navigator.clipboard.writeText(p.prompt).then(() => setNotice('프롬프트를 복사했어요.'))}>
+                      복사
+                    </button>
+                  </div>
                   <pre>{p.prompt}</pre>
-                  <button type="button" className="small" onClick={() => void navigator.clipboard.writeText(p.prompt).then(() => setNotice('프롬프트를 복사했어요.'))}>
-                    복사
-                  </button>
                 </li>
               ))}
             </ul>

@@ -448,11 +448,21 @@ export function MakePage() {
   const notReady = !state.ready.profile ? '「정체성」에서 프로필을 먼저 확정하세요.' : !state.ready.template ? '「템플릿」에서 틀을 먼저 고정하세요. 카드 글자 수는 고정한 틀에서 정해져요.' : null;
   const coverRunning = coverJobId !== null && !covers && (coverJob.job === null || coverJob.job.phase === 'running');
   const bodyRunning = bodyJobId !== null && !bodyResult && (bodyJob.job === null || bodyJob.job.phase === 'running');
+  // 지금 어느 단계인가 — 실제 상태(작업 · 결과 · 연 세트)에서만 정한다(가짜 진행 표시 금지, 결정 2026-10-24)
+  const step = bodyRunning || bodyResult?.status === 'needs_edit' ? 2 : coverRunning || (covers && !bodyResult) ? 1 : viewSet !== null ? 3 : 0;
 
   return (
     <>
       <section className="card">
         <h2>카드뉴스 만들기</h2>
+        <ol className="stepper" aria-label="만드는 단계">
+          {['소재 붙여 넣기', '표지 고르기', '본문 카드', '다듬기 · 캡션', '업로드 폴더'].map((label, i) => (
+            <li key={label} className={i < step ? 'done' : i === step ? 'now' : ''} aria-current={i === step ? 'step' : undefined}>
+              <span className="stepper-n">{i < step ? '✓' : i + 1}</span>
+              {label}
+            </li>
+          ))}
+        </ol>
         {notReady ? (
           <p className="note">{notReady}</p>
         ) : (
@@ -476,12 +486,16 @@ export function MakePage() {
           </p>
         )}
         {slotNotice && <p className="status ok small">{slotNotice}</p>}
-        <label className="block small">
-          소재 원문 (메모·공식 문서·릴리스 노트 등 — 숫자·이름은 여기 있는 것만 카드에 들어가요)
-          <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} />
+        <label className="field">
+          <span className="field-label">소재 원문</span>
+          <span className="field-hint">메모 · 공식 문서 · 릴리스 노트를 그대로 붙여 넣으세요. 숫자 · 이름은 여기 있는 것만 카드에 들어가요.</span>
+          <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} placeholder="예) 직접 써 본 도구의 공식 발표문이나, 써 보며 적어 둔 메모" />
         </label>
-        <label className="block small">
-          메모 (선택 — 내가 직접 쓴 말이라 카드에 써도 되는 사실이 돼요)
+        <label className="field">
+          <span className="field-label">
+            메모 <span className="muted">(선택)</span>
+          </span>
+          <span className="field-hint">내가 직접 쓴 말이라 카드에 써도 되는 사실이 돼요.</span>
           <input value={memo} onChange={(e) => setMemo(e.target.value)} disabled={!!notReady} />
         </label>
         <div className="actions">
@@ -499,7 +513,7 @@ export function MakePage() {
           <button type="button" className="primary" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
             표지 제목 후보 만들기
           </button>
-          <span className="muted small">AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1분 안쪽</span>
+          <span className="muted small">보통 1분 · AI 2번(규칙에 걸리면 더)</span>
         </div>
         {error && <p className="status error">{error}</p>}
       </section>
@@ -510,7 +524,9 @@ export function MakePage() {
         <section className="card">
           <h2>표지 고르기</h2>
           <p className="muted small">
-            AI 호출 {covers.calls}번 · 재작성 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개. 표지를 누르면 본문을 만들어요(AI 호출 2번, 재작성하면 2번씩 더 · 보통 1~2분, 재작성이 겹치면 5분 넘게 걸리기도 해요).
+            표지를 누르면 그 표지로 본문 카드를 만들어요 — 보통 1~2분, 다시 쓰기가 겹치면 5분 넘게 걸리기도 해요.
+            <br />
+            AI {covers.calls}번 · 다시 쓴 것 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개
           </p>
           <div className="frames">
             {covers.candidates.map((c) => (

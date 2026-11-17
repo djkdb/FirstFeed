@@ -12,6 +12,13 @@ import { PreviewPage } from './preview/PreviewPage.tsx';
 import { HomePage } from './home/HomePage.tsx';
 import { ReelsPage } from './reels/ReelsPage.tsx';
 import { ConsoleFab, ConsolePanel, type Feed } from './console/ConsolePanel.tsx';
+import { useTheme, type ThemeChoice } from './theme.ts';
+
+const THEMES: Array<{ id: ThemeChoice; label: string }> = [
+  { id: 'system', label: '시스템' },
+  { id: 'light', label: '밝게' },
+  { id: 'dark', label: '어둡게' },
+];
 
 type ServerState = { kind: 'checking' } | { kind: 'ok'; brandName: string | null } | { kind: 'error'; message: string };
 
@@ -47,6 +54,7 @@ const NAV: Array<{
 
 export function App() {
   const [server, setServer] = useState<ServerState>({ kind: 'checking' });
+  const [theme, setTheme] = useTheme();
   const [tab, setTab] = useState<Tab>(tabFromHash);
   // 좁은 화면에서 작업 콘솔을 덮개로 열었는가(넓은 화면에선 늘 오른쪽에 있다)
   const [consoleOpen, setConsoleOpen] = useState(false);
@@ -129,7 +137,16 @@ export function App() {
             </div>
           ))}
         </nav>
-        <p className="side-foot muted small">"나는 누구인가"에서 "무엇이 먹혔나"까지</p>
+        <div className="side-foot">
+          <div className="theme-switch" role="radiogroup" aria-label="화면 밝기">
+            {THEMES.map((t) => (
+              <button key={t.id} type="button" role="radio" aria-checked={theme === t.id} className={theme === t.id ? 'on' : ''} onClick={() => setTheme(t.id)}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted small" style={{ margin: 0 }}>"나는 누구인가"에서 "무엇이 먹혔나"까지</p>
+        </div>
       </aside>
       <main className="shell">
         {server.kind === 'error' && (
@@ -142,12 +159,13 @@ export function App() {
         {tab === 'brand' && <BrandPage />}
         {tab === 'template' && <TemplatePage />}
         {tab === 'make' && <MakePage />}
-      {tab === 'reels' && <ReelsPage />}
+        {tab === 'reels' && <ReelsPage />}
         {tab === 'preview' && <PreviewPage />}
         {tab === 'check' && (
           <>
             <section className="card" aria-live="polite">
-              <h2>로컬 서버</h2>
+              <h2>점검</h2>
+              <p className="muted">이 컴퓨터에서 앱이 제대로 도는지 봐요 — 로컬 서버 · Claude Code 연결 · AI 시험 호출.</p>
               {server.kind === 'checking' && <p>연결 확인 중…</p>}
               {server.kind === 'ok' && (
                 <p className="status ok">

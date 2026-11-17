@@ -569,12 +569,25 @@ button.ig-cell:hover:not(:disabled) { border-color: inherit; }
 /* 다음 단계 · 처음 쓰는 사람의 홈(사용자 시뮬레이션 2026-11-09) */
 .next-step { margin: var(--s-4) 0 0; padding: 12px 16px; border-radius: var(--r-md); background: var(--surface-2); font-size: 14px; }
 .next-step a { font-weight: 700; }
-.start-list ol { list-style: none; padding: 0; margin: 0 0 var(--s-3); display: flex; flex-direction: column; gap: 8px; }
-.start-list li { display: flex; gap: 10px; align-items: baseline; }
-.start-list li.done a { color: var(--muted-strong); }
-.start-list li.now a { font-weight: 700; }
-.start-mark { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); align-items: center; justify-content: center; font-size: 12px; flex: none; }
-.start-list li.done .start-mark { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
+.start-list { margin-top: var(--s-4); }
+.start-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; font-size: 15px; }
+.start-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 10px 0 var(--s-4); }
+.start-bar i { height: 6px; border-radius: var(--r-pill); background: var(--surface-3); }
+.start-bar i.done { background: var(--ok); }
+.start-bar i.now { background: var(--ink); }
+.start-list ol { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.start-list li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; }
+.start-list li.now { background: var(--surface-2); padding: 18px; }
+.start-list li.done .start-label, .start-list li.done .start-what { color: var(--muted); }
+.start-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.start-label { font-weight: 650; text-decoration: none; font-size: 15.5px; }
+.start-label:hover { text-decoration: underline; }
+.start-list li.now .start-label { font-size: 18px; }
+.start-what { color: var(--muted); font-size: 14px; }
+.start-list li.now .button { margin-top: 12px; align-self: flex-start; }
+.start-mark { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line-strong); align-items: center; justify-content: center; font-size: 12.5px; font-weight: 650; flex: none; color: var(--muted); background: var(--surface); font-variant-numeric: tabular-nums; }
+.start-list li.now .start-mark { background: var(--accent-fill); color: var(--on-fill); border-color: var(--accent-fill); }
+.start-list li.done .start-mark { background: var(--ok); color: var(--on-ok); border-color: var(--ok); }
 
 /* 입력 칸 묶음 — 이름 · 짧은 안내 · 칸(2026-11-17) */
 .field { display: flex; flex-direction: column; gap: 4px; margin: var(--s-4) 0 0; }

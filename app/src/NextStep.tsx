@@ -20,26 +20,46 @@ export function NextStep({ after }: { after: StepKey }) {
   );
 }
 
-/** 처음 쓰는 사람의 홈: 단계 목록 + 지금 할 단계 단추. progress 는 작업 콘솔과 같은 판정(server/src/console/feed.ts progressOf) */
+/** 처음 쓰는 사람의 홈: 끝낸 단계 수 · 단계 목록 · 지금 할 단계 안의 큰 단추. progress 는 작업 콘솔과 같은 판정(server/src/console/feed.ts progressOf).
+ *  진행 막대는 실제로 끝낸 단계 수만 센다(가짜 진행 표시 금지, 결정 2026-10-24). 걸리는 시간은 잰 값이 없어 적지 않는다 */
 export function StartChecklist({ progress }: { progress: Partial<Record<StepKey, boolean>> | null }) {
   const firstTodo = STEPS.find((s) => !progress?.[s.key]);
+  const done = STEPS.filter((s) => progress?.[s.key]).length;
   return (
     <div className="start-list">
-      <ol>
+      <div className="start-head">
+        <span>
+          <b>{STEPS.length}단계 중 {done}단계</b> 끝
+        </span>
+        <span className="muted small">인스타 로그인은 필요 없어요 · AI 는 내 Claude 구독으로</span>
+      </div>
+      <div className="start-bar" role="progressbar" aria-valuemin={0} aria-valuemax={STEPS.length} aria-valuenow={done} aria-label="끝낸 단계">
         {STEPS.map((s) => (
-          <li key={s.key} className={progress?.[s.key] ? 'done' : s === firstTodo ? 'now' : ''}>
-            <span className="start-mark" aria-hidden="true">{progress?.[s.key] ? '✓' : STEPS.indexOf(s) + 1}</span>
-            <span>
-              <a href={s.href}>{s.label}</a> <span className="muted small">{s.what}</span>
-            </span>
-          </li>
+          <i key={s.key} className={progress?.[s.key] ? 'done' : s === firstTodo ? 'now' : ''} />
         ))}
+      </div>
+      <ol>
+        {STEPS.map((s, i) => {
+          const isDone = !!progress?.[s.key];
+          const isNow = s === firstTodo;
+          return (
+            <li key={s.key} className={isDone ? 'done' : isNow ? 'now' : ''} aria-current={isNow ? 'step' : undefined}>
+              <span className="start-mark" aria-hidden="true">{isDone ? '✓' : i + 1}</span>
+              <span className="start-body">
+                <a href={s.href} className="start-label">
+                  {s.label}
+                </a>
+                <span className="start-what">{s.what}</span>
+                {isNow && (
+                  <a className="button primary big" href={s.href}>
+                    {progress?.identity ? `이어서 · ${s.label}` : '정체성부터 시작하기'}
+                  </a>
+                )}
+              </span>
+            </li>
+          );
+        })}
       </ol>
-      {firstTodo && (
-        <a className="button primary big" href={firstTodo.href}>
-          {progress?.identity ? `이어서 · ${firstTodo.label}` : '정체성부터 시작하기'}
-        </a>
-      )}
     </div>
   );
 }

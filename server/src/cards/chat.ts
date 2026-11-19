@@ -19,6 +19,7 @@ import { findUngrounded } from '../rules/grounding.ts';
 import type { Issue } from '../rules/types.ts';
 import { draftById } from '../templates/index.ts';
 import { renderFrame, renderPhotoFrame, type FrameResult } from '../templates/render-frame.ts';
+import { bodyPhotoUrl } from './card-photo.ts';
 import { getTemplateVersion } from '../templates/store.ts';
 import { resolveLook } from '../templates/look.ts';
 import type { BodyContent, ClosingContent, CoverContent, FrameContent } from '../templates/types.ts';
@@ -153,8 +154,8 @@ export function chatRules(c: CardContext, cover: ChosenCover, body: BodyOutput, 
   ];
 }
 
-/** 표지 그림(시안 F)이 있으면 그 그림을 바탕으로 — 그림 올리기 때와 같은 함수 */
-async function renderOne(db: Db, c: CardContext, set: CardSet, cover: ChosenCover, content: FrameContent, dataDir: string): Promise<FrameResult> {
+/** 표지 그림(시안 F)이 있으면 그 그림을 바탕으로, 본문 사진 칸에 그림이 있으면 그 그림을 칸에 — 그림 올리기 때와 같은 함수 */
+async function renderOne(db: Db, c: CardContext, set: CardSet, cover: ChosenCover, content: FrameContent, dataDir: string, idx: number): Promise<FrameResult> {
   const pillarIndex = pillarIndexOf(c.profile.pillars, cover.pillarId);
   const tv = getTemplateVersion(db, set.templateVersionId);
   const draft = (tv && draftById(tv.draftId)) || c.template.draft;
@@ -165,6 +166,9 @@ async function renderOne(db: Db, c: CardContext, set: CardSet, cover: ChosenCove
     const url = `data:${MIME[file.split('.').pop() as ImageType]};base64,${fs.readFileSync(file).toString('base64')}`;
     return renderPhotoFrame(db, draft, look, content, url, { pillarIndex });
   }
+  const card = set.cards.find((x) => x.idx === idx) ?? null;
+  const photo = content.kind === 'body' && card ? bodyPhotoUrl(dataDir, draft, card) : null;
+  if (photo) return renderPhotoFrame(db, draft, look, content, photo, { pillarIndex });
   return renderFrame(db, draft, look, content, { pillarIndex });
 }
 
@@ -238,7 +242,7 @@ export async function proposeChat(ai: AiService, brandId: number, setId: number,
           const out: Issue[] = [];
           for (const w of m.changed) {
             const idx = idxOf(w, n)!;
-            const res = await renderOne(db, c, set, m.cover, fr[idx]!, dataDir);
+            const res = await renderOne(db, c, set, m.cover, fr[idx]!, dataDir, idx);
             rendered.set(idx, res);
             if (!res.ok || !res.png) out.push(issue(w, res.problems[0]?.code ?? 'text_overflow', [...res.shorten.map((s) => s.message), ...res.problems.map((p) => p.message)].slice(0, 2).join(' ') || '카드 틀에 들어가지 않습니다.'));
           }

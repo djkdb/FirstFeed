@@ -197,11 +197,13 @@ function SetView({ setId }: { setId: number }) {
   const [set, setSet] = useState<{
     coverImage: string | null;
     createdAt: string;
-    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
+    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; photo?: string | null; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
   } | null>(null);
   /** 계정 캐릭터(있으면) — 그림 프롬프트를 복사할 때 고정 설명을 앞에 붙인다 */
   const [character, setCharacter] = useState<{ name: string; dna: string } | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  /** 이 세트의 시안에 본문 사진 칸이 있는가 (G · I · J) */
+  const [bodyPhoto, setBodyPhoto] = useState(false);
   // 같은 주소의 PNG 를 다시 그렸을 때 화면이 옛 그림을 보이지 않게
   const [rev, setRev] = useState(0);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -210,11 +212,12 @@ function SetView({ setId }: { setId: number }) {
     () =>
       api.api.cards.sets[':id']
         .$get({ param: { id: String(setId) } })
-        .then((r) => r.json() as Promise<{ set?: unknown; draftId?: string | null }>)
+        .then((r) => r.json() as Promise<{ set?: unknown; draftId?: string | null; bodyPhoto?: boolean }>)
         .then((b) => {
           setSet((b.set as never) ?? null);
           setCharacter((b as { character?: { name: string; dna: string } | null }).character ?? null);
           setDraftId(b.draftId ?? null);
+          setBodyPhoto(b.bodyPhoto === true);
           setRev((n) => n + 1);
         }),
     [setId],
@@ -232,6 +235,21 @@ function SetView({ setId }: { setId: number }) {
       if (b.ok) setMsg({ ok: true, text: `표지를 그림 바탕으로 다시 그렸어요${b.shade ? ` (글자 뒤 띠 진하기 ${Math.round(b.shade * 100)}%)` : ''}.` });
       else setMsg({ ok: false, text: b.error ?? b.problems?.join(' ') ?? '표지를 다시 그리지 못했습니다.' });
       await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+  // 본문 사진 칸: 카드 한 장만 다시 그린다. file 이 null 이면 사진을 빼고 글만 있는 모양으로
+  const cardPhoto = async (idx: number, file: File | null) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch(`/api/cards/sets/${setId}/cards/${idx}/photo`, file ? { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file } : { method: 'DELETE' });
+      const b = (await r.json()) as { ok?: boolean; problems?: string[]; error?: string };
+      if (b.ok) setMsg({ ok: true, text: file ? `${idx + 1}번 카드에 사진을 넣어 다시 그렸어요.` : `${idx + 1}번 카드의 사진을 뺐어요.` });
+      else setMsg({ ok: false, text: b.error ?? (b.problems?.length ? `사진을 넣으면 글이 넘쳐요: ${b.problems.join(' ')}` : '카드를 다시 그리지 못했습니다.') });
+      await load();
+      notifyChanged();
     } finally {
       setBusy(false);
     }
@@ -266,6 +284,19 @@ function SetView({ setId }: { setId: number }) {
               {c.render.scale < 1 && <span className="muted"> · 글자 {Math.round(c.render.scale * 100)}%</span>}
               {c.edited && <span className="tag">직접 고침</span>}
             </figcaption>
+            {bodyPhoto && c.kind === 'body' && (
+              <div className="card-photo small">
+                <label className="file-button">
+                  {c.photo ? '사진 바꾸기' : '사진 넣기'}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => (e.target.files?.[0] && void cardPhoto(c.idx, e.target.files[0]), (e.target.value = ''))} />
+                </label>
+                {c.photo && (
+                  <button type="button" className="small" disabled={busy} onClick={() => void cardPhoto(c.idx, null)}>
+                    빼기
+                  </button>
+                )}
+              </div>
+            )}
             {c.glosses?.map((g) => (
               <GlossItem key={g.sentence} setId={setId} idx={c.idx} gloss={g} onChanged={() => (void load(), notifyChanged())} />
             ))}

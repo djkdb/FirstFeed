@@ -11,11 +11,13 @@ import type { JobStore } from '../ai/jobs.ts';
 import { env, getSetting } from '../config.ts';
 import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
+import { draftById } from '../templates/index.ts';
 import { fixedTemplate, getTemplateVersion } from '../templates/store.ts';
 import { finishWithEdits, generateBody, type BodyResult } from './body.ts';
 import { generateCovers, type CoversResult } from './covers.ts';
 import { checkGloss, editGloss, GlossError } from './gloss-check.ts';
 import { applyCoverImage, CoverImageError } from './cover-image.ts';
+import { applyBodyPhoto, CardPhotoError } from './card-photo.ts';
 import { AssetError } from '../brand/assets.ts';
 import { addSource, getSet, getSource, listSets, rendersDir, setJobIds } from './store.ts';
 import { rewriteHistory } from '../ai/history.ts';
@@ -105,7 +107,7 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
     .get('/sets/:id', (c) => {
       const set = getSet(db, Number(c.req.param('id')));
       if (!set) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
-      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null, character: accountCharacter(db, BRAND_ID) });
+      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null, bodyPhoto: draftById(getTemplateVersion(db, set.templateVersionId)?.draftId ?? '')?.bodyPhoto === true, character: accountCharacter(db, BRAND_ID) });
     })
     // 재작성 기록(결정 2026-10-21 · C): 이 세트를 만든 표지 · 본문 작업에서 걸린 규칙과 바뀐 칸 전/후
     .get('/sets/:id/rewrites', (c) => {
@@ -164,6 +166,24 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
       } catch (err) {
         if (err instanceof AssetError) return c.json(bad(`${err.message} ${err.hint}`), 400);
         if (err instanceof CoverImageError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    // 본문 카드 사진 칸(사진 칸 시안 G · I · J) — 본문은 파일 바이트 그대로, 빼기는 DELETE. 받으면 그 카드만 다시 그린다
+    .post('/sets/:id/cards/:idx/photo', async (c) => {
+      try {
+        return c.json(await applyBodyPhoto(db, dataDir, Number(c.req.param('id')), Number(c.req.param('idx')), new Uint8Array(await c.req.arrayBuffer())));
+      } catch (err) {
+        if (err instanceof AssetError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        if (err instanceof CardPhotoError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    .delete('/sets/:id/cards/:idx/photo', async (c) => {
+      try {
+        return c.json(await applyBodyPhoto(db, dataDir, Number(c.req.param('id')), Number(c.req.param('idx')), null));
+      } catch (err) {
+        if (err instanceof CardPhotoError) return c.json(bad(err.message), 400);
         throw err;
       }
     })

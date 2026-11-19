@@ -1,5 +1,5 @@
 // 브랜딩 폰트 목록 (FR-BR-3: "상업적 사용 가능한 무료 한글 폰트 목록에서만", 수용 기준: 라이선스 정보를 같이 표시).
-// 결정(CLAUDE.md 2026-10-14): OFL 만, 8종 × 굵기 2개, npm 패키지 위주. 각 항목은 넣을 때 라이선스 파일 원문을 확인했다 (2026-10-14).
+// 결정(CLAUDE.md 2026-10-14): OFL 만, 8종 × 굵기 2개, npm 패키지 위주(2026-11-19 검은고딕을 더해 9종). 각 항목은 넣을 때 라이선스 파일 원문을 확인했다 (2026-10-14).
 // AI(brand_visual)는 이 목록의 id 로만 고르고, 코드가 목록 밖 id 를 막는다.
 
 export type FontRole = 'title' | 'body';
@@ -108,6 +108,18 @@ export const FONTS: FontEntry[] = [
       commit: '8ef35f53b318c7ca914c52b1b382b9a8bad07a61',
       licenseFile: 'OFL license.txt',
     },
+  },
+  {
+    // 2026-11-19 사용자 결정: 두껍고 개성 있는 제목 글꼴 1종 추가(참고한 템플릿 파일의 굵은 제목 느낌 — 그 파일의 글꼴은 라이선스를 확인 못 해 쓰지 않음).
+    // 패키지 안 LICENSE 원문 확인: SIL OFL 1.1, 「Copyright 2015 The Black Han Sans Project Authors」, 예약 글꼴 이름 지정 없음. 굵기는 하나뿐
+    id: 'black-han-sans',
+    name: '검은고딕',
+    family: 'Black Han Sans',
+    roles: ['title'],
+    weights: [400],
+    style: 'display',
+    license: { name: OFL, copyright: 'Copyright 2015 The Black Han Sans Project Authors', reservedFontName: null },
+    source: { kind: 'npm', package: '@fontsource/black-han-sans', version: '5.3.0', licenseFile: 'LICENSE' },
   },
 ];
 

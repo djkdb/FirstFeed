@@ -6,9 +6,9 @@ import { env } from '../config.ts';
 import { FONTS } from './fonts.ts';
 
 describe('폰트 목록 (FR-BR-3)', () => {
-  it('8종, id 가 겹치지 않고 모두 OFL 1.1', () => {
-    expect(FONTS).toHaveLength(8);
-    expect(new Set(FONTS.map((f) => f.id)).size).toBe(8);
+  it('9종(2026-11-19 검은고딕 추가), id 가 겹치지 않고 모두 OFL 1.1', () => {
+    expect(FONTS).toHaveLength(9);
+    expect(new Set(FONTS.map((f) => f.id)).size).toBe(9);
     expect(FONTS.every((f) => f.license.name === 'SIL OFL 1.1')).toBe(true);
   });
 

@@ -18,6 +18,7 @@ export function loadBrandFonts(): Promise<void> {
       import('@fontsource/gowun-batang/700.css'),
       import('@fontsource/ibm-plex-sans-kr/400.css'),
       import('@fontsource/ibm-plex-sans-kr/700.css'),
+      import('@fontsource/black-han-sans/400.css'),
     ]);
     // CSS 가 없는 폰트는 FontFace 로 직접 등록한다 (SUIT: 패키지에 CSS 없음, 페이퍼로지: 레포의 public/fonts)
     const faces = [

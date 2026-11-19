@@ -47,16 +47,24 @@ export const FRAME_SIZE: Record<FrameKind, { width: number; height: number; safe
   reel_cover: { width: 1080, height: 1920, safe: 'reel' },
 };
 
-/** 그림 바탕 시안(F)만 쓰는 옵션: 바탕 그림(data: 주소)과 글자 뒤 어두운 띠의 진하기(0~1). 다른 시안은 무시한다 */
+/**
+ * 그림 옵션. 표지 · 릴스 표지: 그림 바탕 시안(F)만 — 바탕 그림(data: 주소)과 글자 뒤 어두운 띠의 진하기(0~1).
+ * 본문: 사진 칸이 있는 시안(bodyPhoto)만 — 사진 칸에 넣을 그림. 그 밖의 시안은 무시한다
+ */
 export interface PhotoOpts {
   background?: string | null;
   shade?: number;
 }
 
+export const DRAFT_IDS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'] as const;
+export type DraftId = (typeof DRAFT_IDS)[number];
+
 export interface Draft {
-  id: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  id: DraftId;
   name: string;
   description: string;
+  /** 본문 카드에 사진 칸이 있는가 (결정 2026-11-19) — 사진이 없으면 글만 있는 모양으로 그린다 */
+  bodyPhoto?: boolean;
   /** scale: 넘칠 때 글자 크기를 줄이는 비율 (1 = 원래 크기) */
   html(look: BrandLook, content: FrameContent, scale: number, photo?: PhotoOpts): string;
 }

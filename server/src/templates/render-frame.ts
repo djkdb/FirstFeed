@@ -73,7 +73,8 @@ export async function renderFrame(
       height,
       safe: safeRect,
       captureEvenIfBad: lastStep && opts.captureEvenIfBad === true,
-      measureContrast: !!opts.photo?.background,
+      // 글자 뒤 그림 명암비는 표지 그림(F)만 — 본문 사진 칸은 글 뒤에 깔리지 않는다
+      measureContrast: !!opts.photo?.background && content.kind !== 'body',
     });
     tries.push({ scale, problems: r.problems.length });
     last = r;
@@ -105,6 +106,8 @@ export async function renderPhotoFrame(
   background: string | null,
   opts: { captureEvenIfBad?: boolean; pillarIndex?: number | null } = {},
 ): Promise<PhotoFrameResult> {
+  // 본문 사진 칸(bodyPhoto 시안): 사진은 글 뒤가 아니라 따로 칸이라 띠 · 명암비 단계가 없다 — 한 번 그린다
+  if (background && content.kind === 'body' && draft.bodyPhoto) return { ...(await renderFrame(db, draft, look, content, { ...opts, photo: { background } })), shade: null, shadeTries: [] };
   if (!background || (content.kind !== 'cover' && content.kind !== 'reel_cover')) return { ...(await renderFrame(db, draft, look, content, opts)), shade: null, shadeTries: [] };
   const min = getSetting(db, 'render.photoMinContrast');
   const steps = getSetting(db, 'render.photoShadeSteps');

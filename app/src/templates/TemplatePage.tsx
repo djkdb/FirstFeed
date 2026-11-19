@@ -1,4 +1,4 @@
-// 템플릿 고정 (FR-TP-1·3). 시안 3개를 지금 브랜드로 그려 나란히 보여 주고, 하나를 고정한다.
+// 템플릿 고정 (FR-TP-1·3). 시안들을 지금 브랜드로 그려 나란히 보여 주고, 하나를 고정한다.
 // 그리기는 서버(Playwright)가 한다 — 화면은 PNG 를 받아 보여 줄 뿐이라 화면과 결과물이 어긋나지 않는다
 import { useCallback, useEffect, useState } from 'react';
 import { notifyChanged } from '../changed.ts';
@@ -10,6 +10,8 @@ import { localTime } from '../time.ts';
 type State = InferResponseType<typeof api.api.templates.$get>;
 interface Frame {
   kind: string;
+  /** 본문 사진 칸에 예시 그림을 넣어 그린 것 */
+  photo?: boolean;
   ok: boolean;
   png: string | null;
   problems: string[];
@@ -18,7 +20,7 @@ interface Frame {
   browser: string;
   reference: boolean;
 }
-type DraftId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+type DraftId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K';
 const KIND_LABEL: Record<string, string> = { cover: '표지', body: '본문', closing: '마무리', reel_cover: '릴스 표지' };
 
 async function fetchState(): Promise<State> {
@@ -30,10 +32,11 @@ function Frames({ frames }: { frames: Frame[] }) {
     <>
       <div className="frames">
         {frames.map((f) => (
-          <figure key={f.kind} className={f.ok ? 'frame' : 'frame bad'}>
+          <figure key={`${f.kind}${f.photo ? '-photo' : ''}`} className={f.ok ? 'frame' : 'frame bad'}>
             {f.png ? <img src={f.png} alt={`${KIND_LABEL[f.kind]} 시안`} /> : <div className="noimg">그리지 못함</div>}
             <figcaption className="small">
               {KIND_LABEL[f.kind]}
+              {f.photo && ' · 사진 넣은 모양'}
               {f.scale < 1 && <span className="muted"> · 글자 {Math.round(f.scale * 100)}%</span>}
             </figcaption>
             {[...f.problems, ...f.shorten].map((p, i) => (
@@ -77,7 +80,7 @@ export function TemplatePage() {
   useEffect(() => {
     void fetchState().then(async (s) => {
       setState(s);
-      // 시안 셋을 차례로 그린다 (서버 브라우저 하나를 돌려 쓰므로 한꺼번에 보내지 않는다)
+      // 시안을 차례로 그린다 (서버 브라우저 하나를 돌려 쓰므로 한꺼번에 보내지 않는다)
       if (s.missing.length === 0) for (const d of s.drafts) await preview(d.id as DraftId);
     });
   }, [preview]);
@@ -106,7 +109,7 @@ export function TemplatePage() {
         {state.missing.length > 0 ? (
           <p className="note">「브랜드」 탭에서 {state.missing.join('·')}을(를) 먼저 고르세요. 고른 색·폰트로 시안을 그려 보여 드려요.</p>
         ) : (
-          <p className="muted small">시안 셋을 지금 브랜드(고른 팔레트·폰트·아이디)로 그렸어요. 하나를 고정하면 이후 모든 카드가 그 틀로 나와요. 고정한 뒤에도 다시 골라 새 판을 만들 수 있어요.</p>
+          <p className="muted small">시안을 지금 브랜드(고른 팔레트·폰트·아이디)로 그렸어요. 「사진 칸」 시안은 본문 카드마다 사진을 넣을 수 있어요(없으면 글만). 하나를 고정하면 이후 모든 카드가 그 틀로 나와요. 고정한 뒤에도 다시 골라 새 판을 만들 수 있어요.</p>
         )}
         {state.fixed && (
           <p className="status ok small">
@@ -133,7 +136,9 @@ export function TemplatePage() {
                 {state.fixed?.draftId === d.id ? '이 틀로 다시 고정' : '이 틀로 고정'}
               </button>
             </div>
-            <p className="muted small">{d.description}</p>
+            <p className="muted small">
+              {'bodyPhoto' in d && d.bodyPhoto && <span className="tag">사진 칸</span>} {d.description}
+            </p>
             {f === 'loading' && <p className="job">그리는 중…</p>}
             {f && typeof f === 'object' && 'error' in f && <p className="status error">{f.error}</p>}
             {Array.isArray(f) && <Frames frames={f} />}

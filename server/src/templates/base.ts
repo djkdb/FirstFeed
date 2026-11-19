@@ -65,3 +65,29 @@ body{
 }
 
 export const esc = (s: string | null | undefined) => (s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+const hex = (c: string) => {
+  const h = c.replace('#', '');
+  const f = h.length === 3 ? [...h].map((x) => x + x).join('') : h;
+  return [0, 2, 4].map((i) => parseInt(f.slice(i, i + 2), 16));
+};
+/** 두 팔레트 색 사이의 색(t = b 쪽 비율). 무늬 · 그라데이션의 옅은 쪽에만 쓴다 — 새 색을 지어내지 않고 팔레트 두 색을 섞는다 */
+export function mix(a: string, b: string, t: number): string {
+  const [x, y] = [hex(a), hex(b)];
+  return `#${x.map((v, i) => Math.round(v + (y[i]! - v) * t).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * 글자 뒤에 깔 섞은 색: a 에서 b 쪽으로 최대 maxT 만큼 섞되, 글자색(fg)과 4.5:1 이 남는 데까지만.
+ * 팔레트 규칙은 글자 · 바탕 짝만 4.5:1 을 보장하므로, 그라데이션 끝색은 그 짝에서 멀어지지 않게 코드가 잰다
+ */
+export function tintFor(a: string, b: string, fg: string, maxT: number): string {
+  for (let t = maxT; t > 0; t -= 0.05) {
+    const c = mix(a, b, t);
+    if (contrastRatio(fg, c) >= 4.5) return c;
+  }
+  return a;
+}
+
+/** 본문 사진 칸 (bodyPhoto 시안): 사진이 있을 때만. 사람이 올린 그림이라 규칙을 걸지 않고 그대로 채운다(결정 2026-10-18 · 사용자 그림) */
+export const photoBox = (url: string | null | undefined, cls = 'photo') => (url ? `<div class="${cls}" data-box="photo" style="background-image:url('${url.replace(/['"\\)]/g, '')}')"></div>` : '');

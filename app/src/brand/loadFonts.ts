@@ -2,6 +2,9 @@
 // 브랜드 화면을 열 때만 불러온다 — 한글 폰트는 무거워서 첫 화면에 싣지 않는다.
 import suit400 from '@sun-typeface/suit/fonts/static/woff2/SUIT-Regular.woff2?url';
 import suit700 from '@sun-typeface/suit/fonts/static/woff2/SUIT-Bold.woff2?url';
+import wanted400 from 'wanted-sans/fonts/webfonts/static/complete/woff2/WantedSans-Regular.woff2?url';
+import wanted700 from 'wanted-sans/fonts/webfonts/static/complete/woff2/WantedSans-Bold.woff2?url';
+import wanted900 from 'wanted-sans/fonts/webfonts/static/complete/woff2/WantedSans-Black.woff2?url';
 
 let loaded: Promise<void> | null = null;
 
@@ -19,13 +22,26 @@ export function loadBrandFonts(): Promise<void> {
       import('@fontsource/ibm-plex-sans-kr/400.css'),
       import('@fontsource/ibm-plex-sans-kr/700.css'),
       import('@fontsource/black-han-sans/400.css'),
+      import('@fontsource/do-hyeon/400.css'),
+      import('@fontsource/gothic-a1/400.css'),
+      import('@fontsource/gothic-a1/700.css'),
+      import('@fontsource/gothic-a1/900.css'),
+      import('@fontsource/bagel-fat-one/400.css'),
+      import('@fontsource/hahmlet/400.css'),
+      import('@fontsource/hahmlet/700.css'),
+      import('@fontsource/nanum-pen-script/400.css'),
     ]);
-    // CSS 가 없는 폰트는 FontFace 로 직접 등록한다 (SUIT: 패키지에 CSS 없음, 페이퍼로지: 레포의 public/fonts)
+    // CSS 가 없는 폰트는 FontFace 로 직접 등록한다 (SUIT · 원티드 산스: 패키지 CSS 를 안 씀, 페이퍼로지 · G마켓 산스: 레포의 public/fonts)
     const faces = [
       new FontFace('SUIT', `url(${suit400})`, { weight: '400' }),
       new FontFace('SUIT', `url(${suit700})`, { weight: '700' }),
       new FontFace('Paperlogy', 'url(/fonts/paperlogy/Paperlogy-7Bold.woff2)', { weight: '700' }),
       new FontFace('Paperlogy', 'url(/fonts/paperlogy/Paperlogy-8ExtraBold.woff2)', { weight: '800' }),
+      new FontFace('Wanted Sans', `url(${wanted400})`, { weight: '400' }),
+      new FontFace('Wanted Sans', `url(${wanted700})`, { weight: '700' }),
+      new FontFace('Wanted Sans', `url(${wanted900})`, { weight: '900' }),
+      new FontFace('Gmarket Sans', 'url(/fonts/gmarket-sans/GmarketSansTTFMedium.ttf)', { weight: '500' }),
+      new FontFace('Gmarket Sans', 'url(/fonts/gmarket-sans/GmarketSansTTFBold.ttf)', { weight: '700' }),
     ];
     await Promise.all(faces.map(async (f) => document.fonts.add(await f.load())));
   })();

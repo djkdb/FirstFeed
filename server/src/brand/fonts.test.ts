@@ -6,9 +6,9 @@ import { env } from '../config.ts';
 import { FONTS } from './fonts.ts';
 
 describe('폰트 목록 (FR-BR-3)', () => {
-  it('9종(2026-11-19 검은고딕 추가), id 가 겹치지 않고 모두 OFL 1.1', () => {
-    expect(FONTS).toHaveLength(9);
-    expect(new Set(FONTS.map((f) => f.id)).size).toBe(9);
+  it('16종(2026-11-19 검은고딕 + 7종 추가), id 가 겹치지 않고 모두 OFL 1.1', () => {
+    expect(FONTS).toHaveLength(16);
+    expect(new Set(FONTS.map((f) => f.id)).size).toBe(16);
     expect(FONTS.every((f) => f.license.name === 'SIL OFL 1.1')).toBe(true);
   });
 
@@ -21,12 +21,24 @@ describe('폰트 목록 (FR-BR-3)', () => {
     const file =
       f.source.kind === 'npm'
         ? path.join(env.repoRoot, 'node_modules', f.source.package, f.source.licenseFile)
-        : path.join(env.repoRoot, 'app/public/fonts', f.id, 'OFL.txt');
+        : path.join(env.repoRoot, 'app/public/fonts', f.id, 'OFL.txt'); // repo · site: 레포에 넣은 폴더
     const text = fs.readFileSync(file, 'utf8');
     expect(text).toMatch(/SIL Open Font License, Version 1\.1/);
     expect(text).toContain(f.license.copyright.replace(/\.$/, ''));
-    if (f.license.reservedFontName) expect(text).toContain(`Reserved Font Name ${f.license.reservedFontName}`);
+    // 예약 이름은 「Reserved Font Name Pretendard」 또는 「Reserved Font Name <Gmarket Sans Font>」 모양
+    if (f.license.reservedFontName) expect(text.replace(/[<>]/g, '')).toContain(`Reserved Font Name ${f.license.reservedFontName}`);
     else expect(text).not.toMatch(/with Reserved Font Name/);
+  });
+
+  it('공식 사이트에서 받은 글꼴은 레포의 파일이 받은 묶음 그대로다(고치지 않음 — 예약 이름)', () => {
+    for (const f of FONTS) {
+      if (f.source.kind !== 'site') continue;
+      const dir = path.join(env.repoRoot, 'app/public/fonts', f.id);
+      const files = fs.readdirSync(dir).filter((x) => !x.endsWith('.txt'));
+      expect(files.length, f.id).toBe(f.weights.length);
+      // 글꼴 파일 안에 라이선스 전문이 그대로 들어 있다 = 고친 판이 아니다
+      for (const x of files) expect(fs.readFileSync(path.join(dir, x)).includes(Buffer.from('SIL Open Font License, Version 1.1', 'utf16le').swap16()), x).toBe(true);
+    }
   });
 
   it('npm 패키지는 package.json 에 정확한 버전으로 고정돼 있다 — 같은 입력이면 같은 렌더링 (PRD 9장 일관성)', () => {

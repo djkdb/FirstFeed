@@ -42,6 +42,11 @@ export function loadBrandFonts(): Promise<void> {
       new FontFace('Wanted Sans', `url(${wanted900})`, { weight: '900' }),
       new FontFace('Gmarket Sans', 'url(/fonts/gmarket-sans/GmarketSansTTFMedium.ttf)', { weight: '500' }),
       new FontFace('Gmarket Sans', 'url(/fonts/gmarket-sans/GmarketSansTTFBold.ttf)', { weight: '700' }),
+      new FontFace('Cafe24 Ssurround', 'url(/fonts/cafe24-ssurround/Cafe24Ssurround-v2.0.woff2)', { weight: '700' }),
+      new FontFace('Cafe24 Ohsquare', 'url(/fonts/cafe24-ohsquare/Cafe24Ohsquare-v2.0.woff2)', { weight: '400' }),
+      new FontFace('NanumSquare', 'url(/fonts/nanum-square/NanumSquareR.ttf)', { weight: '400' }),
+      new FontFace('NanumSquare', 'url(/fonts/nanum-square/NanumSquareB.ttf)', { weight: '700' }),
+      new FontFace('NanumSquare', 'url(/fonts/nanum-square/NanumSquareEB.ttf)', { weight: '800' }),
     ];
     await Promise.all(faces.map(async (f) => document.fonts.add(await f.load())));
   })();

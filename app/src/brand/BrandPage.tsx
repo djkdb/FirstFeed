@@ -387,6 +387,11 @@ export function BrandPage() {
                     <span className="muted small">
                       라이선스: {[t, b].filter((x, i, a) => x && a.indexOf(x) === i).map((x) => `${x!.name} — ${x!.license.name}${x!.license.reservedFontName ? ` (예약 이름 "${x!.license.reservedFontName}")` : ''}`).join(' · ')}
                     </span>
+                    {[...new Set([t?.noticeKo, b?.noticeKo].filter(Boolean))].map((n) => (
+                      <span key={n} className="muted small">
+                        {n}
+                      </span>
+                    ))}
                   </button>
                 );
               })}

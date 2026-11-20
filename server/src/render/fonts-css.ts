@@ -35,6 +35,9 @@ function cssFor(f: FontEntry): string {
       if (f.id === 'wanted-sans') return face(f.family, w, `node_modules/wanted-sans/fonts/webfonts/static/complete/woff2/WantedSans-${WEIGHT_FILE[w]}.woff2`);
       // 예약 이름이 있어 받은 TTF 그대로(fonts.ts 주석)
       if (f.id === 'gmarket-sans') return face(f.family, w, `app/public/fonts/gmarket-sans/GmarketSansTTF${WEIGHT_FILE[w]}.ttf`, 'truetype');
+      if (f.id === 'cafe24-ssurround') return face(f.family, w, 'app/public/fonts/cafe24-ssurround/Cafe24Ssurround-v2.0.woff2');
+      if (f.id === 'cafe24-ohsquare') return face(f.family, w, 'app/public/fonts/cafe24-ohsquare/Cafe24Ohsquare-v2.0.woff2');
+      if (f.id === 'nanum-square') return face(f.family, w, `app/public/fonts/nanum-square/NanumSquare${({ 400: 'R', 700: 'B', 800: 'EB' } as Record<number, string>)[w]}.ttf`, 'truetype');
       if (f.id === 'paperlogy') return face(f.family, w, `app/public/fonts/paperlogy/Paperlogy-${w === 700 ? '7Bold' : '8ExtraBold'}.woff2`);
       throw new Error(`폰트 ${f.id} 의 렌더링용 파일을 정하지 않았습니다 — fonts-css.ts 에 더하세요.`);
     })

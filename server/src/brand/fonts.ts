@@ -1,5 +1,5 @@
 // 브랜딩 폰트 목록 (FR-BR-3: "상업적 사용 가능한 무료 한글 폰트 목록에서만", 수용 기준: 라이선스 정보를 같이 표시).
-// 결정(CLAUDE.md 2026-10-14): OFL 만, 8종 × 굵기 2개, npm 패키지 위주(2026-11-19 검은고딕을 더해 9종 → 같은 날 7종 더해 16종). 각 항목은 넣을 때 라이선스 파일 원문을 확인했다 (2026-10-14).
+// 결정(CLAUDE.md 2026-10-14): OFL 만, 8종 × 굵기 2개, npm 패키지 위주(2026-11-19 검은고딕을 더해 9종 → 같은 날 7종 더해 16종, 2026-11-20 카페24 2종 · 나눔스퀘어 더해 19종). 각 항목은 넣을 때 라이선스 파일 원문을 확인했다 (2026-10-14).
 // AI(brand_visual)는 이 목록의 id 로만 고르고, 코드가 목록 밖 id 를 막는다.
 
 export type FontRole = 'title' | 'body';
@@ -15,12 +15,23 @@ export interface FontEntry {
   weights: number[];
   style: 'sans' | 'serif' | 'display';
   license: { name: 'SIL OFL 1.1'; copyright: string; reservedFontName: string | null };
+  /** OFL 밖에 덧붙은 안내(있을 때만) — 글꼴 목록 화면에 그대로 보인다 */
+  noticeKo?: string;
   /** 어디서 받았고 라이선스 원문을 어디서 확인했는지 */
   source:
     | { kind: 'npm'; package: string; version: string; licenseFile: string }
     | { kind: 'repo'; url: string; commit: string; licenseFile: string }
     /** 저작권자 공식 사이트에서 받은 묶음 — git 이 없어 받은 파일의 지문(sha256)으로 판을 남긴다 */
-    | { kind: 'site'; url: string; file: string; sha256: string; downloadedAt: string; licenseFile: string };
+    | {
+        kind: 'site';
+        url: string;
+        /** 받은 묶음(zip)의 sha256 */
+        sha256: string;
+        downloadedAt: string;
+        licenseFile: string;
+        /** 레포에 넣은 글꼴 파일 → 그 sha256 (묶음 안의 파일 그대로인지 테스트가 잰다) */
+        files: Record<string, string>;
+      };
 }
 
 const OFL = 'SIL OFL 1.1' as const;
@@ -202,10 +213,78 @@ export const FONTS: FontEntry[] = [
     source: {
       kind: 'site',
       url: 'https://corp.gmarket.com/fonts/GmarketSansTTF.zip',
-      file: 'GmarketSansTTF.zip',
       sha256: 'a2cc0ab9eb3bc868a6f2affd89fa1d4718cb6e1226dcb695b05d0d2ff417ae02',
       downloadedAt: '2026-11-19',
       licenseFile: 'name 표 13번(글꼴 파일 안) → OFL.txt',
+      files: {
+        'GmarketSansTTFMedium.ttf': 'c6b9a2c10bfdb55975948ce191f9cf638955b5cfdc99149969add5b579262fc1',
+        'GmarketSansTTFBold.ttf': 'ff7c354dd1a324e4cecc1223c4f71e74fa81be7027e0c7f6324c475909cacefc',
+      },
+    },
+  },
+  // 2026-11-20 사용자 지시(「카페24 나눔스퀘어도 원본 확인해서 넣어줘」). 둘 다 공식 사이트 묶음을 받아 라이선스 원문을 열어 봤다.
+  // 두 곳 모두 OFL 1.1 에 「이 글꼴을 쓴 인쇄물 · 광고물(온라인 포함) 이미지는 만든 회사의 프로모션에 쓰일 수 있고, 원치 않으면 요청」이라는 안내가 붙어 있다 —
+  // 글꼴 목록 화면에 그대로 보인다(noticeKo)
+  {
+    // 카페24 묶음의 License-Ssurround.pdf: 「SIL OPEN FONT LICENSE(Version 1.1)에 따라 사용이 허가」 · 임베딩 「모든 범위」 · 예약 이름 지정 없음.
+    // 카페24가 직접 낸 woff2 를 그대로 쓴다(우리가 바꾼 판이 아님). PDF 원본도 같은 폴더에
+    id: 'cafe24-ssurround',
+    name: '카페24 써라운드',
+    family: 'Cafe24 Ssurround',
+    roles: ['title'],
+    weights: [700],
+    style: 'display',
+    license: { name: OFL, copyright: 'Copyright © Cafe24 Corp.', reservedFontName: null },
+    noticeKo: '이 글꼴을 쓴 인쇄물 · 광고물(온라인 포함) 이미지는 카페24 프로모션에 쓰일 수 있어요. 원치 않으면 카페24에 요청할 수 있어요.',
+    source: {
+      kind: 'site',
+      url: 'https://img.cafe24.com/csdstatic/freefonts/download/kr/Cafe24Ssurround-v2.0.zip',
+      sha256: 'a5f9c0c8f4cc2d3c00220ace363a893618c5cf59ff5aea184aeced3bd3e9af5c',
+      downloadedAt: '2026-11-20',
+      licenseFile: 'License-Ssurround.pdf → OFL.txt',
+      files: { 'Cafe24Ssurround-v2.0.woff2': '2d726dbf8863d66e6d5cf56e2532c5d14d8a4b514461b565c513c1da6ae2f41a' },
+    },
+  },
+  {
+    id: 'cafe24-ohsquare',
+    name: '카페24 아네모네',
+    family: 'Cafe24 Ohsquare',
+    roles: ['title'],
+    weights: [400],
+    style: 'display',
+    license: { name: OFL, copyright: 'Copyright (c) 2020by Cafe24.', reservedFontName: null },
+    noticeKo: '이 글꼴을 쓴 인쇄물 · 광고물(온라인 포함) 이미지는 카페24 프로모션에 쓰일 수 있어요. 원치 않으면 카페24에 요청할 수 있어요.',
+    source: {
+      kind: 'site',
+      url: 'https://img.cafe24.com/csdstatic/freefonts/download/kr/Cafe24Ohsquare-v2.0.zip',
+      sha256: '393ca34fea52d301153d4145fc54f7e5882ba00e0a86768b7b556523f1d865c4',
+      downloadedAt: '2026-11-20',
+      licenseFile: 'License-Ohsquare.pdf → OFL.txt',
+      files: { 'Cafe24Ohsquare-v2.0.woff2': '20fff7aa821a10a8c0432dd4bcfe3ccc416dec2f116e93f43b15de1ff988215d' },
+    },
+  },
+  {
+    // 네이버 고객센터 「네이버 나눔글꼴 라이선스안내」: OFL 1.1 + 「Reserved Font Name Nanum, …」. 묶음에 라이선스 파일이 없어 그 글을 OFL.txt 로 옮겼다.
+    // 예약 이름(Nanum)이 있어 G마켓 산스처럼 받은 TTF 를 고치지 않고 그대로 쓴다. npm 의 비공식 패키지(license 칸이 원본과 다름)는 쓰지 않는다
+    id: 'nanum-square',
+    name: '나눔스퀘어',
+    family: 'NanumSquare',
+    roles: ['title', 'body'],
+    weights: [400, 700, 800],
+    style: 'sans',
+    license: { name: OFL, copyright: 'Copyright (c) 2010, NAVER Corporation', reservedFontName: 'Nanum' },
+    noticeKo: '이 글꼴을 쓴 인쇄물 · 광고물(온라인 포함) 이미지는 나눔글꼴 프로모션에 쓰일 수 있어요. 원치 않으면 네이버에 요청할 수 있어요.',
+    source: {
+      kind: 'site',
+      url: 'https://campaign.naver.com/nanumsquare_neo/download/NaverNanumSquare.zip',
+      sha256: '3a5f4f24955d3994552371580c75b19127d8d542c1e63f96f18803e6cd8b1c33',
+      downloadedAt: '2026-11-20',
+      licenseFile: 'help.naver.com 「네이버 나눔글꼴 라이선스안내」 → OFL.txt',
+      files: {
+        'NanumSquareR.ttf': '5a51deae5237435d9a0bc0cc6cc30619a914b29801f895698cfdacadcad06e94',
+        'NanumSquareB.ttf': 'f737d58294faec9c632189af3a2a3e48e49c03c0256de09db61e879e2857bfbf',
+        'NanumSquareEB.ttf': '6608adc320ff8514630d04a53e16cc7a5d54f5cbdbe3769109f311dcb3b48f80',
+      },
     },
   },
 ];

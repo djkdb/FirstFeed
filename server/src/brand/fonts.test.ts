@@ -1,14 +1,15 @@
 // 폰트 목록이 실제로 설치된 파일·라이선스와 맞는지 (목록만 고치고 파일을 빠뜨리는 일이 없게)
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { env } from '../config.ts';
 import { FONTS } from './fonts.ts';
 
 describe('폰트 목록 (FR-BR-3)', () => {
-  it('16종(2026-11-19 검은고딕 + 7종 추가), id 가 겹치지 않고 모두 OFL 1.1', () => {
-    expect(FONTS).toHaveLength(16);
-    expect(new Set(FONTS.map((f) => f.id)).size).toBe(16);
+  it('19종(2026-11-19 검은고딕 + 7종, 2026-11-20 카페24 2종 · 나눔스퀘어), id 가 겹치지 않고 모두 OFL 1.1', () => {
+    expect(FONTS).toHaveLength(19);
+    expect(new Set(FONTS.map((f) => f.id)).size).toBe(19);
     expect(FONTS.every((f) => f.license.name === 'SIL OFL 1.1')).toBe(true);
   });
 
@@ -30,14 +31,13 @@ describe('폰트 목록 (FR-BR-3)', () => {
     else expect(text).not.toMatch(/with Reserved Font Name/);
   });
 
-  it('공식 사이트에서 받은 글꼴은 레포의 파일이 받은 묶음 그대로다(고치지 않음 — 예약 이름)', () => {
+  it('공식 사이트에서 받은 글꼴은 레포의 파일이 받은 묶음 그대로다(sha256 — 고치지 않음, 예약 이름 · 판 기록)', () => {
     for (const f of FONTS) {
       if (f.source.kind !== 'site') continue;
       const dir = path.join(env.repoRoot, 'app/public/fonts', f.id);
-      const files = fs.readdirSync(dir).filter((x) => !x.endsWith('.txt'));
-      expect(files.length, f.id).toBe(f.weights.length);
-      // 글꼴 파일 안에 라이선스 전문이 그대로 들어 있다 = 고친 판이 아니다
-      for (const x of files) expect(fs.readFileSync(path.join(dir, x)).includes(Buffer.from('SIL Open Font License, Version 1.1', 'utf16le').swap16()), x).toBe(true);
+      const fontFiles = fs.readdirSync(dir).filter((x) => /\.(ttf|otf|woff2?)$/.test(x));
+      expect(fontFiles.sort(), f.id).toEqual(Object.keys(f.source.files).sort());
+      for (const [name, sum] of Object.entries(f.source.files)) expect(createHash('sha256').update(fs.readFileSync(path.join(dir, name))).digest('hex'), `${f.id}/${name}`).toBe(sum);
     }
   });
 

@@ -3,337 +3,785 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FirstFeed — 30일 뒤 내 계정을 먼저</title>
-<meta name="description" content="게시물 하나 올리기 전에 30일 뒤 내 인스타 계정을 먼저 보여 주는 앱. 인터뷰 답에서 개성을 찾고, 이름·소개글·색·카드뉴스까지 이어 줍니다.">
+<title>FirstFeed — 올리기 전에, 30일 뒤 내 계정부터</title>
+<meta name="description" content="인스타를 처음 시작하는 사람을 위한 로컬 앱. AI 인터뷰로 내 개성을 찾고, 이름·소개글·색·카드뉴스·릴스까지 이어 줍니다. 게시물 하나 올리기 전에 30일 뒤 내 계정을 먼저 보여 줍니다.">
+<meta property="og:title" content="FirstFeed — 올리기 전에, 30일 뒤 내 계정부터">
+<meta property="og:description" content="AI 인터뷰로 내 개성을 찾고, 30일 뒤 내 인스타 프로필을 먼저 보여 주는 로컬 앱.">
+<meta property="og:image" content="https://djkdb.github.io/FirstFeed/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2309090B'/%3E%3Cg fill='%23F4F4F5'%3E%3Crect x='7' y='9' width='5' height='6' rx='1'/%3E%3Crect x='20' y='9' width='5' height='6' rx='1'/%3E%3Crect x='13.5' y='17' width='5' height='6' rx='1'/%3E%3C/g%3E%3Cg fill='%2345454D'%3E%3Crect x='13.5' y='9' width='5' height='6' rx='1'/%3E%3Crect x='7' y='17' width='5' height='6' rx='1'/%3E%3Crect x='20' y='17' width='5' height='6' rx='1'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="theme-color" content="#09090B">
 <!--
-  소개 페이지 (결정 2026-10-22, 2026-11-04 다시 짬 — 사용자 지시: 훨씬 고도화 · 크림색 바탕 금지).
-  - 폰 화면은 운영자 계정(@zun_it_)을 예시 사용자로 앱이 그린 결과(사용자 결정 2026-11-04). 계획 칸 표지 PNG 는 앱의 planCover 가 그린 그대로(줄여서 jpg)
-  - 그림은 이미지 AI 로 따로 만든 것 — FirstFeed 는 그림을 만들지 않는다. 숫자는 레포의 측정 결과에서 옮긴 것만
-  - 인스타 로고 · 인증 배지 · 스토리 무지개 테두리는 쓰지 않는다. 팔로워 · 팔로잉은 지어내지 않고 「–」
+  소개 페이지 (결정 2026-10-22 · 2026-11-04 · 2026-11-15 랜딩페이지로 다시 짬).
+  2026-11-15 두 번째: 사용자 지시 「버튼 그라데이션은 짜치니까 하지 말고 레퍼런스 리서치 후 고도화」.
+  Linear · Cursor · Raycast · Granola 를 실제 브라우저로 열어 본 공통점을 따랐다 —
+  단색 단추(밝은 회색 + 검은 글자 / 옅은 회색 면), 흰색 · 중간 굵기 제목, 흰 문장 + 회색 이어지는 문장,
+  파란 기운 없는 검정 바탕(색은 제품 화면에서만), 큰 제품 화면, 얇은 선 · 모노체 번호로 나눈 섹션.
+  지키는 것
+  - 크림색 바탕 금지(2026-11-04). 앱(흰 바탕 무채색)과 따로
+  - 폰 · 격자 그림은 운영자 계정(@zun_it_)을 예시로 앱이 그린 계획 칸 표지(data/demo.json). 그림은 이미지 AI 로 따로 만든 것
+  - 숫자는 레포 측정 · 저장소에서 센 값만(숫자 옆 주석). 후기 · 사용자 수 · 회사 로고는 쓰지 않는다
+  - 실제 앱 화면(img/app-*.jpg)은 운영자 계정 데이터(2026-11-04 앱으로 만든 프로필 · 키트 · 계획 9칸)의 사본으로 지금 코드의 앱을 띄워 찍은 것(2026-11-17).
+    인터뷰 답은 공개 fixture(tests/fixtures/real/me). 채팅 고치기(img/app-chat.jpg)는 2026-11-05 공개 fixture(브랜드 me · 실제 소재 ig-claude-code-skills)로
+    실제 AI 를 불러 만든 세트 · 채팅 기록의 사본을 띄워 찍었다. 「화면 예시」(릴스 모션)는 앱 화면 문구를 옮겨 그린 그림 — 화면에 그렇게 밝힌다
+  - 인스타 로고 · 인증 배지 · 스토리 무지개 테두리 금지, 팔로워 · 팔로잉 「–」. 라이선스 파일이 없어 「오픈소스」 대신 「코드 공개」
 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
   :root{
-    --bg:#070A12; --bg2:#0B1020; --surface:#111729; --surface2:#161E35; --line:#222B45; --line2:#2E3A5C;
-    --ink:#EEF2FA; --muted:#A3ADC4; --dim:#6F7A94; --accent:#4C7DFF; --accent2:#8FB0FF; --glow:rgba(76,125,255,.35);
-    --phone:#0E1116; --phone-ink:#F2F3F5; --phone-muted:#9EA3AB; --phone-line:#22262D; --ring:#3A3F48;
+    --bg:#09090B; --raise:#111113; --raise2:#18181B; --line:#222226; --line2:#2E2E33;
+    --ink:#F4F4F5; --ink2:#D4D4D8; --gray:#9696A0; --dim:#7C7C86;
+    --btn:#EDEDEE; --btn-ink:#111113;
+    --good:#86D9A8; --bad:#F29A9A;
+    --mono:ui-monospace,SFMono-Regular,'JetBrains Mono',Menlo,Consolas,'Pretendard Variable',Pretendard,monospace;
+    --phone:#0E1116; --phone-ink:#F2F3F5; --phone-line:#22262D; --ring:#3A3F48;
   }
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0;word-break:keep-all;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans KR',system-ui,sans-serif;line-height:1.6;
-       background-image:radial-gradient(900px 600px at 85% -10%,rgba(76,125,255,.18),transparent 60%),radial-gradient(700px 500px at -10% 30%,rgba(143,176,255,.08),transparent 60%)}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+       font-size:17px;line-height:1.7;word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;font-feature-settings:'ss06'}
   a{color:inherit}
-  img{max-width:100%}
-  .wrap{max-width:1160px;margin:0 auto;padding:0 16px}
-  section{padding:88px 0}
-  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accent2);letter-spacing:.02em}
-  .eyebrow::before{content:'';width:18px;height:2px;background:var(--accent)}
-  h1,h2,h3{letter-spacing:-.03em;margin:0}
-  h2{font-size:clamp(28px,3.6vw,40px);line-height:1.25;margin-top:14px}
-  .sub{color:var(--muted);font-size:17px;max-width:640px;margin:16px 0 0}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:999px;font-weight:600;text-decoration:none;border:1px solid var(--line2);transition:transform .2s,background .2s,border-color .2s}
-  .btn:hover{transform:translateY(-1px);border-color:var(--accent2)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 10px 30px var(--glow)}
-  .btn.primary:hover{background:#5F8BFF}
+  img{max-width:100%;height:auto;display:block}
+  ::selection{background:rgba(255,255,255,.22)}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:6px}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+  @media (min-width:720px){.wrap{padding:0 32px}}
+  section{position:relative;padding:120px 0}
+  section[id]{scroll-margin-top:64px}
+  @media (max-width:720px){section{padding:80px 0}}
+  .rule{border-top:1px solid var(--line)}
+
+  /* 글자 */
+  .label{font-size:13.5px;font-weight:500;letter-spacing:0;color:var(--dim);font-variant-numeric:tabular-nums}
+  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.03em}
+  h2{font-size:clamp(30px,3.8vw,44px);line-height:1.22;letter-spacing:-.035em}
+  h2 .g, .lead .g{color:var(--gray)}
+  h3{font-size:19px;line-height:1.4;letter-spacing:-.02em}
+  p{margin:0}
+  .muted{color:var(--gray)}
+  .lead{font-size:clamp(22px,2.4vw,30px);line-height:1.38;font-weight:600;letter-spacing:-.03em;max-width:28em}
+  .body{color:var(--gray);font-size:17px;line-height:1.75;max-width:34em}
+  .body b{color:var(--ink2);font-weight:600}
+  .ex{display:inline-block;font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;color:var(--dim)}
+
+  /* 단추 — 레퍼런스처럼 단색 · 그림자 없음 */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:10px;font-weight:600;font-size:15.5px;text-decoration:none;
+       background:rgba(255,255,255,.07);color:var(--ink);border:0;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.12)}
+  .btn.primary{background:var(--btn);color:var(--btn-ink)}
+  .btn.primary:hover{background:#fff}
+  .btn.sm{height:36px;padding:0 14px;font-size:14px;border-radius:8px}
+  .btn svg{flex:none}
+  .link{display:inline-flex;align-items:center;gap:6px;color:var(--ink2);text-decoration:none;font-weight:500;font-size:15.5px}
+  .link:hover{color:var(--ink)}
 
   /* 머리 */
-  nav.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:rgba(7,10,18,.72);border-bottom:1px solid rgba(34,43,69,.6)}
-  nav.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
-  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;text-decoration:none}
-  .logo i{display:grid;grid-template-columns:repeat(3,6px);gap:2px}
-  .logo i b{width:6px;height:8px;background:var(--ink);border-radius:1px} .logo i b.a{background:var(--accent)}
-  .links{display:flex;gap:22px;font-size:14px;color:var(--muted)}
-  .links a{text-decoration:none} .links a:hover{color:var(--ink)}
-  @media (max-width:760px){.links{display:none}}
+  .top{position:sticky;top:0;z-index:50;background:rgba(9,9,11,.8);backdrop-filter:saturate(1.6) blur(12px);-webkit-backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
+  .top.scrolled{border-bottom-color:var(--line)}
+  .top .wrap{display:flex;align-items:center;gap:32px;height:64px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;text-decoration:none;letter-spacing:-.02em}
+  .logo i{display:grid;grid-template-columns:repeat(3,5px);gap:2px}
+  .logo i b{width:5px;height:6.5px;border-radius:1px;background:var(--ink)} .logo i b.o{background:#45454D}
+  .nav{display:flex;gap:26px;font-size:14.5px;color:var(--gray);flex:1}
+  .nav a{text-decoration:none;transition:color .15s} .nav a:hover{color:var(--ink)}
+  .top .right{display:flex;gap:8px;margin-left:auto}
+  @media (max-width:900px){.nav{display:none} .top .right .btn:not(.primary){display:none}}
 
   /* 첫 화면 */
-  .hero{padding:64px 0 72px}
-  .hero .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:56px}
-  .copy{flex:999 1 300px;min-width:0;display:flex;flex-direction:column;gap:22px}
-  .hero h1{font-size:clamp(38px,5.4vw,62px);line-height:1.14}
-  .hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent2),var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
-  .lead{margin:0;font-size:18px;color:var(--muted);max-width:540px}
-  .ctas{display:flex;gap:12px;flex-wrap:wrap}
-  .facts{display:flex;gap:28px;flex-wrap:wrap;margin-top:6px}
-  .facts div{display:flex;flex-direction:column} .facts b{font-size:22px} .facts span{font-size:13px;color:var(--dim)}
-  .stage{flex:1 1 300px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:14px;position:relative}
-  .stage::before{content:'';position:absolute;inset:8% 4% 18%;background:radial-gradient(closest-side,rgba(76,125,255,.45),transparent);filter:blur(40px);z-index:0}
+  .hero{padding:96px 0 0}
+  @media (max-width:720px){.hero{padding:56px 0 0}}
+  .badge-line{display:inline-flex;align-items:center;gap:10px;font-size:14px;color:var(--gray);text-decoration:none}
+  .badge-line b{font-family:var(--mono);font-weight:500;font-size:11.5px;letter-spacing:.06em;color:var(--ink2);border:1px solid var(--line2);border-radius:999px;padding:2px 9px}
+  .hero h1{font-size:clamp(42px,6.4vw,80px);line-height:1.08;letter-spacing:-.05em;margin-top:28px;font-weight:650;max-width:12em}
+  .hero .sub{margin-top:26px;font-size:clamp(17px,1.6vw,20px);line-height:1.7;color:var(--gray);max-width:32em}
+  .hero .sub b{color:var(--ink2);font-weight:600}
+  .ctas{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:36px}
+  .req-line{margin-top:18px;font-size:13.5px;color:var(--dim)}
+
+  /* 제품 무대 */
+  .stage{position:relative;margin-top:72px;border:1px solid var(--line);border-radius:20px;background:var(--raise);overflow:hidden;padding:56px 40px 0}
+  .stage::before{content:'';position:absolute;inset:0;background:radial-gradient(60% 55% at 50% 0%,rgba(255,255,255,.05),transparent 70%);pointer-events:none}
+  .stage-inner{position:relative;max-width:1080px;margin:0 auto;padding-right:170px}
+  .window{margin:0;border-radius:12px 12px 0 0;border:1px solid #2E2E33;border-bottom:0;background:#fff;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .wbar{height:34px;background:#F4F4F5;border-bottom:1px solid #E4E4E7;display:flex;align-items:center;gap:7px;padding:0 14px}
+  .wbar i{width:10px;height:10px;border-radius:50%;background:#D4D4D8}
+  .wbar span{margin:0 auto;transform:translateX(-24px);font-family:var(--mono);font-size:11.5px;color:#71717A;background:#fff;border:1px solid #E4E4E7;border-radius:6px;padding:1px 40px}
+  .window img{width:100%}
+  .stage-inner .phone{position:absolute;right:0;bottom:0;width:320px;height:560px;box-shadow:-30px 0 60px rgba(0,0,0,.45)}
+  del{color:var(--bad);text-decoration-thickness:1.5px} ins{color:var(--good);text-decoration:none;border-bottom:1.5px solid rgba(134,217,168,.55)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{font-size:12px;font-weight:500;padding:2px 9px;border-radius:6px;background:rgba(255,255,255,.06);color:var(--gray)}
+  .chip.on{background:var(--ink);color:#111}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line2)}
+  .row:first-of-type{border-top:0;padding-top:0}
+  .row span{color:var(--ink2)} .row em{font-style:normal;font-size:12px;color:var(--good)}
+  .stage-cap{position:relative;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;max-width:1040px;margin:0 auto;padding:18px 0 20px;font-size:13px;color:var(--dim);border-top:1px solid var(--line);margin-top:-1px}
+  .stage-cap button{font:inherit;font-size:13px;color:var(--ink2);background:rgba(255,255,255,.07);border:0;border-radius:6px;height:32px;padding:0 12px;cursor:pointer}
+  @media (max-width:1000px){.stage-inner{padding-right:110px} .stage-inner .phone{width:260px;height:470px;font-size:.9em}}
+  @media (max-width:760px){.stage-inner{padding-right:0;display:flex;justify-content:center} .stage-inner .window{display:none} .stage-inner .phone{position:relative;width:340px;height:600px;box-shadow:none}}
+  @media (max-width:520px){.stage{padding:32px 12px 0;border-radius:16px}}
 
   /* 폰 */
-  .phone{position:relative;z-index:1;width:380px;max-width:100%;background:var(--phone);color:var(--phone-ink);border-radius:42px;border:8px solid #1A1E26;
-         box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 0 1px rgba(143,176,255,.12);overflow:hidden;transition:opacity .5s}
-  .ptop{display:flex;align-items:center;justify-content:space-between;padding:20px 18px 8px}
-  .handle{display:flex;align-items:center;gap:6px;font-weight:700;font-size:18px;min-width:150px;justify-content:center}
+  .phone{position:relative;width:340px;max-width:100%;height:600px;background:var(--phone);color:var(--phone-ink);border-radius:44px 44px 0 0;border:9px solid #1C1C20;border-bottom:0;overflow:hidden;line-height:1.5;transition:opacity .5s}
+  .phone .island{width:92px;height:25px;border-radius:999px;background:#000;margin:10px auto 0}
+  .ptop{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px}
+  .handle{display:flex;align-items:center;gap:6px;font-weight:700;font-size:16px;min-width:150px;justify-content:center}
   .ph{display:block;border-radius:6px;background:var(--phone-line)}
-  .head{display:flex;align-items:center;gap:20px;padding:8px 18px 0}
-  .avatar{width:84px;height:84px;border-radius:50%;border:2px solid var(--ring);padding:3px;flex:none}
+  .head{display:flex;align-items:center;gap:18px;padding:8px 16px 0}
+  .avatar{width:78px;height:78px;border-radius:50%;border:2px solid var(--ring);padding:3px;flex:none}
   .avatar div{width:100%;height:100%;border-radius:50%;overflow:hidden;background:var(--phone-line);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
-  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .avatar img{width:100%;height:100%;object-fit:cover}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-  .stats b{display:block;font-size:16px} .stats span{font-size:12.5px;color:#C9CCD2}
-  .bio{padding:12px 18px 0;min-height:92px}
-  .bio .text{font-size:13.5px;line-height:1.55;white-space:pre-line}
-  .caret{display:inline-block;width:1px;height:14px;background:var(--accent2);vertical-align:-2px}
-  .btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px 18px 0}
-  .btns div{background:var(--phone-line);border-radius:9px;text-align:center;font-weight:600;font-size:13.5px;padding:8px 0}
-  .hls{display:flex;gap:16px;padding:14px 18px 0;overflow:hidden}
-  .hl{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;font-size:12px}
-  .hl .c{width:58px;height:58px;border-radius:50%;border:1px solid var(--ring);padding:3px;display:grid;place-items:center}
-  .hl .c div{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:16px;transition:transform .4s cubic-bezier(.2,.8,.2,1)}
-  .ptabs{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px;border-bottom:1px solid var(--phone-line)}
-  .ptabs div{display:grid;place-items:center;padding:9px 0} .ptabs div.on{border-bottom:2px solid var(--phone-ink)}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;perspective:900px;padding-bottom:16px}
+  .stats b{display:block;font-size:15.5px} .stats span{font-size:12px;color:#C9CCD2}
+  .bio{padding:10px 16px 0;min-height:86px}
+  .bio .text{font-size:13px;line-height:1.55;white-space:pre-line}
+  .caret{display:inline-block;width:1px;height:14px;background:var(--phone-ink);vertical-align:-2px}
+  .pbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 16px 0}
+  .pbtns div{background:var(--phone-line);border-radius:9px;text-align:center;font-weight:600;font-size:13px;padding:7px 0}
+  .hls{display:flex;gap:16px;padding:12px 16px 0;overflow:hidden}
+  .hl{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;font-size:11.5px}
+  .hl .c{width:54px;height:54px;border-radius:50%;border:1px solid var(--ring);padding:3px;display:grid;place-items:center}
+  .hl .c div{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+  .hl span{transition:opacity .3s}
+  .ptabs{display:grid;grid-template-columns:repeat(3,1fr);margin-top:12px;border-bottom:1px solid var(--phone-line)}
+  .ptabs div{display:grid;place-items:center;padding:8px 0} .ptabs div.on{border-bottom:2px solid var(--phone-ink)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;perspective:900px}
   .cell{position:relative;aspect-ratio:3/4;background:#171A20;overflow:hidden}
   .card{position:absolute;inset:0;transform-origin:left center;transition:opacity .35s,transform .55s cubic-bezier(.2,.8,.2,1)}
-  .card img{width:100%;height:100%;object-fit:cover;display:block}
-  .badge{position:absolute;right:5px;top:5px;font-size:9px;font-weight:600;padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.92);color:#15161A}
-  .note{position:relative;z-index:1;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--dim);flex-wrap:wrap;justify-content:center;text-align:center}
-  .note button{font:inherit;font-weight:600;color:var(--ink);background:none;border:1px solid var(--line2);border-radius:999px;min-height:40px;min-width:60px;padding:0 12px;cursor:pointer}
+  .card img{width:100%;height:100%;object-fit:cover}
+  .pbadge{position:absolute;right:5px;top:5px;font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px;background:rgba(255,255,255,.92);color:#15161A;line-height:1.3}
 
-  /* 공통 카드 */
-  .cards{display:grid;gap:16px;margin-top:40px}
-  .c3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-  .box{background:linear-gradient(180deg,var(--surface),var(--bg2));border:1px solid var(--line);border-radius:18px;padding:24px}
-  .box h3{font-size:19px;margin-top:12px}
-  .box p{color:var(--muted);margin:8px 0 0;font-size:15px}
-  .quote{font-size:20px;font-weight:600;line-height:1.45}
-  .quote::before{content:'“';color:var(--accent);font-size:34px;line-height:0;vertical-align:-10px;margin-right:4px}
-  .tag{display:inline-block;font-size:12px;font-weight:600;color:var(--accent2);background:rgba(76,125,255,.12);border:1px solid rgba(76,125,255,.3);padding:3px 10px;border-radius:999px}
+  /* 숫자 */
+  .nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .nums > div{padding:36px 28px 36px 0}
+  .nums > div + div{padding-left:28px;border-left:1px solid var(--line)}
+  .nums b{display:block;font-size:clamp(34px,3.6vw,46px);font-weight:600;letter-spacing:-.045em;line-height:1}
+  .nums b small{font-size:.48em;color:var(--gray);font-weight:500;letter-spacing:0;margin-left:2px}
+  .nums span{display:block;margin-top:14px;font-size:14.5px;color:var(--gray);line-height:1.6}
+  @media (max-width:860px){.nums{grid-template-columns:repeat(2,minmax(0,1fr))} .nums > div:nth-child(3){padding-left:0;border-left:0} .nums > div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+  @media (max-width:420px){.nums > div{padding:26px 14px 26px 0} .nums > div + div{padding-left:14px}}
 
-  /* 흐름 */
-  .flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:40px;counter-reset:s}
-  .step{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 16px}
-  .step b{display:block;font-size:12px;color:var(--accent2)} .step strong{display:block;font-size:16px;margin-top:6px} .step span{display:block;color:var(--muted);font-size:13.5px;margin-top:6px}
-  .step.dash{border-style:dashed}
+  /* 2단 머리 */
+  .head2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px 64px;align-items:end}
+  .head2 .label{grid-column:1/-1}
+  @media (max-width:860px){.head2{grid-template-columns:minmax(0,1fr);gap:20px}}
 
-  /* 두 칸 */
-  .split{display:flex;flex-wrap:wrap;gap:40px;align-items:center;margin-top:40px}
-  .split > *{flex:1 1 300px;min-width:0}
-  .check{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px}
-  .check li{display:flex;gap:12px;color:var(--muted)} .check li b{color:var(--ink)}
-  .check li::before{content:'';flex:none;width:22px;height:22px;border-radius:50%;margin-top:2px;background:rgba(76,125,255,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FB0FF' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/13px no-repeat;border:1px solid rgba(76,125,255,.35)}
-  .shot{border-radius:16px;border:1px solid var(--line);overflow:hidden;background:#fff}
-  .shot img{display:block;width:100%}
-  .cap{font-size:13px;color:var(--dim);margin-top:10px}
+  /* 고민 */
+  .voices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:64px;border-top:1px solid var(--line)}
+  .voices > div{padding:32px 32px 0 0}
+  .voices > div + div{padding-left:32px;border-left:1px solid var(--line)}
+  .voices .q{font-size:22px;font-weight:600;line-height:1.45;letter-spacing:-.025em}
+  .voices .q::before{content:'“';margin-right:2px;color:var(--dim)} .voices .q::after{content:'”';color:var(--dim)}
+  .voices p{margin-top:16px;color:var(--gray);font-size:16px;line-height:1.7}
+  .voices p b{color:var(--ink2);font-weight:600}
+  @media (max-width:860px){.voices{grid-template-columns:minmax(0,1fr)} .voices > div{padding:28px 0} .voices > div + div{padding-left:0;border-left:0;border-top:1px solid var(--line)}}
+  .founder{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:56px;padding:22px 24px;border:1px solid var(--line);border-radius:14px;background:var(--raise)}
+  .founder img{width:48px;height:48px;border-radius:50%;flex:none}
+  .founder p{flex:1 1 360px;min-width:0;color:var(--ink2);font-size:16px;line-height:1.7}
 
-  /* 큰 숫자 */
-  .vs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:40px}
-  .vs .box{display:flex;flex-direction:column;gap:6px}
-  .big{font-size:clamp(40px,5vw,56px);font-weight:700;letter-spacing:-.04em;line-height:1}
-  .big small{font-size:.45em;color:var(--muted);font-weight:600;letter-spacing:0;margin-left:4px}
-  .bad{color:#FF8A8A} .good{color:var(--accent2)}
 
-  /* 생성 순서 */
-  .pipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;margin-top:40px;border:1px solid var(--line);border-radius:18px;overflow:hidden}
-  .pipe div{padding:22px 20px;background:var(--surface);border-right:1px solid var(--line)}
-  .pipe div:last-child{border-right:none}
-  .pipe b{font-size:12px;color:var(--accent2)} .pipe strong{display:block;font-size:17px;margin-top:6px} .pipe span{display:block;color:var(--muted);font-size:14px;margin-top:6px}
-  @media (max-width:640px){.pipe div{border-right:none;border-bottom:1px solid var(--line)} .pipe div:last-child{border-bottom:none}}
+  /* 실제 화면 둘러보기 */
+  .tour{margin-top:64px}
+  .tour-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line)}
+  .tour-tabs button{position:relative;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:26px 24px 30px 0;cursor:pointer;opacity:.45;transition:opacity .2s}
+  .tour-tabs button + button{padding-left:24px}
+  .tour-tabs button:hover,.tour-tabs button.on{opacity:1}
+  .tour-tabs .bar{position:absolute;top:-1px;left:0;height:1px;width:0;background:var(--ink)}
+  .tour-tabs button + button .bar{left:0}
+  .tour-tabs button.on .bar{width:var(--p,100%)}
+  .tour-tabs .label{display:block;margin-bottom:14px}
+  .tour-tabs h3{font-size:17.5px}
+  .tour-tabs p{margin-top:8px;color:var(--gray);font-size:14.5px;line-height:1.65}
+  .tour-view{border-radius:12px;border-bottom:1px solid #2E2E33;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+  .panes{position:relative;aspect-ratio:1600/1000;background:#fff}
+  .panes img{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .45s}
+  .panes img.on{opacity:1}
+  .tour-cap{margin-top:16px;font-size:13.5px;color:var(--dim)}
+  @media (max-width:900px){.tour-tabs{grid-template-columns:repeat(2,minmax(0,1fr))} .tour-tabs button:nth-child(3){padding-left:0} .tour-tabs button:nth-child(n+3){border-top:1px solid var(--line)} .tour-tabs button{padding-bottom:22px}}
+  @media (max-width:520px){.tour-tabs p{display:none} .tour-tabs h3{font-size:15.5px} .tour-tabs button{padding:18px 12px 18px 0} .tour-tabs button + button{padding-left:12px} .tour-tabs button:nth-child(3){padding-left:0}}
 
-  /* 계획 */
-  .road{margin-top:40px;display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line2);padding-left:24px}
-  .road div{position:relative;padding:0 0 26px}
-  .road div::before{content:'';position:absolute;left:-31px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--accent)}
-  .road b{color:var(--accent2);font-size:13px} .road strong{display:block;font-size:17px;margin-top:2px} .road span{color:var(--muted);font-size:14.5px}
+  /* 기능 줄 */
+  .feat{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px 72px;align-items:center;padding:96px 0;border-top:1px solid var(--line)}
+  .feat:first-of-type{border-top:0;padding-top:72px}
+  .feat.flip{grid-template-columns:minmax(0,7fr) minmax(0,5fr)} .feat.flip .txt{order:2}
+  .feat .txt h3{font-size:clamp(24px,2.6vw,32px);line-height:1.3;letter-spacing:-.035em;margin-top:16px}
+  .feat .txt .body{margin-top:16px}
+  @media (max-width:900px){.feat,.feat.flip{grid-template-columns:minmax(0,1fr);padding:64px 0} .feat.flip .txt{order:0}}
+  .points{list-style:none;padding:0;margin:28px 0 0;display:flex;flex-direction:column;gap:14px}
+  .points li{position:relative;padding-left:22px;color:var(--gray);font-size:15.5px;line-height:1.7}
+  .points li::before{content:'';position:absolute;left:2px;top:.62em;width:8px;height:8px;border-radius:2px;background:var(--ink2)}
+  .points li b{color:var(--ink);font-weight:600}
+  .panel{position:relative;background:var(--raise);border:1px solid var(--line);border-radius:18px;padding:32px;overflow:hidden}
+  @media (max-width:520px){.panel{padding:18px;border-radius:14px}}
+  .panel .cap{display:flex;justify-content:space-between;gap:10px;margin-top:20px;font-size:13px;color:var(--dim)}
+  .pgrid{border-radius:10px;overflow:hidden;gap:3px;max-width:440px;margin:0 auto}
+
+  .chat{display:flex;flex-direction:column;gap:12px;font-size:15px;line-height:1.6;max-width:460px;margin:0 auto}
+  .bubble{max-width:86%;padding:11px 15px;border-radius:16px}
+  .bubble.me{align-self:flex-end;background:var(--ink);color:#111;border-bottom-right-radius:5px}
+  .bubble.ai{align-self:flex-start;background:var(--raise2);color:var(--ink2);border:1px solid var(--line2);border-bottom-left-radius:5px}
+  .bubble .meta{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.04em;margin-bottom:6px}
+  .acts{display:flex;gap:8px;margin-top:12px}
+
+  .reel-wrap{display:flex;gap:28px;align-items:center;justify-content:center;flex-wrap:wrap}
+  .reel{position:relative;width:230px;max-width:100%;aspect-ratio:9/16;border-radius:16px;overflow:hidden;border:1px solid var(--line2);background:#0B0B0D;flex:none}
+  .reel img{position:absolute;top:0;left:0;width:100%;height:150%;max-width:none;object-fit:cover;object-position:50% 0;transform-origin:50% 0;animation:kb 9s ease-in-out infinite alternate}
+  .reel::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(0,0,0,.8) 92%)}
+  .reel .guide{position:absolute;left:0;right:0;height:12.5%;background:repeating-linear-gradient(135deg,rgba(242,154,154,.16) 0 6px,transparent 6px 12px);z-index:2}
+  .reel .guide.t{top:0;border-bottom:1px dashed rgba(242,154,154,.7)} .reel .guide.b{bottom:0;border-top:1px dashed rgba(242,154,154,.7)}
+  .reel .t1{position:absolute;left:12px;right:12px;bottom:27%;z-index:3;font-weight:800;font-size:19px;line-height:1.25;letter-spacing:-.03em;color:#fff;animation:pop 4.5s cubic-bezier(.2,1.4,.4,1) infinite}
+  .reel .t1 em{font-style:normal;background:#2F6BFF;padding:0 5px;border-radius:4px}
+  .reel .t2{position:absolute;left:12px;right:12px;bottom:17%;z-index:3;font-size:12px;font-weight:600;color:#fff;background:rgba(0,0,0,.55);padding:5px 8px;border-radius:6px;text-align:center;line-height:1.45;animation:fadeup 4.5s ease infinite}
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+  @keyframes pop{0%,6%{opacity:0;transform:scale(.6)}14%{opacity:1;transform:scale(1.04)}20%,86%{opacity:1;transform:scale(1)}94%,100%{opacity:0;transform:scale(1)}}
+  @keyframes fadeup{0%,22%{opacity:0;transform:translateY(8px)}32%,86%{opacity:1;transform:none}94%,100%{opacity:0}}
+  .checks{font-size:14px;line-height:1.6;min-width:200px;flex:1 1 200px;max-width:260px}
+  .checks .row{padding:10px 0}
+
+  .smalls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px}
+  @media (max-width:900px){.smalls{grid-template-columns:minmax(0,1fr)}}
+  .smalls .panel{padding:28px}
+  .smalls .panel p{margin-top:10px;color:var(--gray);font-size:15.5px;line-height:1.7}
+  .prompt{margin-top:18px;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink2);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px;word-break:break-word}
+  .prompt u{text-decoration:none;color:var(--ink);background:rgba(255,255,255,.1);border-radius:3px;padding:0 2px}
+  .qrline{display:flex;gap:16px;align-items:center;margin-top:18px;font-size:14px;color:var(--gray);line-height:1.6}
+  .qr{width:76px;height:76px;flex:none;border-radius:10px;background:#fff;padding:7px;display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .qr i{background:#111;border-radius:1px} .qr i.o{background:transparent}
+
+  /* 지어내지 않기 */
+  .compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:64px;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .compare > div{padding:40px 36px;background:var(--raise)}
+  .compare > div + div{border-left:1px solid var(--line)}
+  .compare .big{font-size:clamp(64px,8vw,104px);font-weight:600;letter-spacing:-.06em;line-height:1;margin-top:18px}
+  .compare .big small{font-size:.26em;color:var(--gray);font-weight:500;letter-spacing:0;margin-left:8px}
+  .compare p{margin-top:18px;color:var(--gray);font-size:16px;line-height:1.7;max-width:30em}
+  .compare .bad{color:var(--bad)} .compare .good{color:var(--good)}
+  @media (max-width:760px){.compare{grid-template-columns:minmax(0,1fr)} .compare > div + div{border-left:0;border-top:1px solid var(--line)} .compare > div{padding:30px 22px}}
+  .src{display:block;margin-top:16px;font-size:13.5px;color:var(--dim)}
+  .src a{color:var(--gray);text-underline-offset:3px} .src a:hover{color:var(--ink)}
+  .pipe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:72px;border-top:1px solid var(--line)}
+  .pipe > div{padding:28px 28px 0 0}
+  .pipe > div + div{padding-left:28px;border-left:1px solid var(--line)}
+  .pipe .label{display:block;margin-bottom:20px}
+  .pipe p{margin-top:8px;color:var(--gray);font-size:15.5px;line-height:1.7}
+  @media (max-width:860px){.pipe{grid-template-columns:repeat(2,minmax(0,1fr))} .pipe > div:nth-child(3){padding-left:0;border-left:0} .pipe > div{padding-bottom:28px} .pipe > div:nth-child(n+3){border-top:1px solid var(--line)}}
+  @media (max-width:520px){.pipe{grid-template-columns:minmax(0,1fr)} .pipe > div{padding:24px 0!important;border-left:0!important} .pipe > div + div{border-top:1px solid var(--line)}}
+  .proofshot{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:48px 64px;align-items:center;margin-top:72px}
+  @media (max-width:900px){.proofshot{grid-template-columns:minmax(0,1fr)}}
+  .shot{border-radius:10px;overflow:hidden;background:#fff}
+
+  /* 세 칸 글 */
+  .cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:64px;border-top:1px solid var(--line)}
+  .cols3 > div{padding:32px 32px 0 0}
+  .cols3 > div + div{padding-left:32px;border-left:1px solid var(--line)}
+  .cols3 svg{color:var(--ink2);margin-bottom:22px}
+  .cols3 p{margin-top:10px;color:var(--gray);font-size:15.5px;line-height:1.75}
+  @media (max-width:860px){.cols3{grid-template-columns:minmax(0,1fr)} .cols3 > div{padding:28px 0} .cols3 > div + div{padding-left:0;border-left:0;border-top:1px solid var(--line)}}
+
+  /* 공개 */
+  .counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:64px;border-top:1px solid var(--line)}
+  .counts > div{padding:28px 28px 0 0}
+  .counts > div + div{padding-left:28px;border-left:1px solid var(--line)}
+  .counts b{display:block;font-size:40px;font-weight:600;letter-spacing:-.045em;line-height:1}
+  .counts span{display:block;margin-top:12px;color:var(--gray);font-size:14.5px;line-height:1.6}
+  @media (max-width:860px){.counts{grid-template-columns:repeat(2,minmax(0,1fr))} .counts > div:nth-child(3){padding-left:0;border-left:0} .counts > div{padding-bottom:28px} .counts > div:nth-child(n+3){border-top:1px solid var(--line)}}
+  .links{display:flex;gap:24px;flex-wrap:wrap;margin-top:40px}
+
+  /* 시작하기 */
+  .start{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:48px 72px;align-items:start;margin-top:56px}
+  @media (max-width:900px){.start{grid-template-columns:minmax(0,1fr)}}
+  .req{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+  .req li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px;padding:18px 0;border-bottom:1px solid var(--line);font-size:15.5px;color:var(--gray);line-height:1.65}
+  .req li .label{padding-top:3px}
+  .req li b{display:block;color:var(--ink);font-weight:600;font-size:16.5px}
+  .req code{font-family:var(--mono);font-size:.9em;color:var(--ink2);background:rgba(255,255,255,.07);padding:1px 6px;border-radius:5px}
+  .term{background:#0C0C0E;border:1px solid var(--line2);border-radius:14px;overflow:hidden}
+  .term .bar{display:flex;align-items:center;gap:7px;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line)}
+  .term .bar i{width:10px;height:10px;border-radius:50%;background:#2E2E33}
+  .term .bar span{margin-left:8px;font-family:var(--mono);font-size:12px;color:var(--dim);flex:1}
+  .term pre{margin:0;padding:20px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:2;color:var(--ink2)}
+  .term .c{color:#5F5F69} .term .p{color:var(--dim);user-select:none}
+  .note{margin-top:14px;font-size:14px;color:var(--dim);line-height:1.6}
+  .note a{color:var(--gray);text-underline-offset:3px}
+
+  /* 로드맵 */
+  .road{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:64px;border-top:1px solid var(--line)}
+  .road > div{padding:28px 32px 0 0}
+  .road > div + div{padding-left:32px;border-left:1px solid var(--line)}
+  .road .label{display:flex;align-items:center;gap:8px;margin-bottom:18px}
+  .road .label i{width:7px;height:7px;border-radius:50%;background:var(--dim)} .road .now .label{color:var(--ink2)} .road .now .label i{background:var(--good)}
+  .road ul{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:9px}
+  .road li{color:var(--gray);font-size:15.5px;line-height:1.6}
+  .road li.done{padding-left:24px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2386D9A8' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") 0 .3em/15px no-repeat}
+  @media (max-width:860px){.road{grid-template-columns:minmax(0,1fr)} .road > div{padding:28px 0} .road > div + div{padding-left:0;border-left:0;border-top:1px solid var(--line)}}
+
+  /* 자주 묻는 질문 */
+  .faqwrap{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:40px 72px}
+  @media (max-width:900px){.faqwrap{grid-template-columns:minmax(0,1fr)}}
+  .faq{border-top:1px solid var(--line)}
+  .faq details{border-bottom:1px solid var(--line)}
+  .faq summary{list-style:none;cursor:pointer;padding:22px 0;font-weight:600;font-size:17.5px;display:flex;justify-content:space-between;gap:16px;align-items:center;line-height:1.5}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:'';flex:none;width:18px;height:18px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239696A0' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E") center/18px no-repeat;transition:transform .2s}
+  .faq details[open] summary::after{transform:rotate(45deg)}
+  .faq summary:hover{color:#fff}
+  .faq .a{padding:0 40px 24px 0;color:var(--gray);font-size:16px;line-height:1.8}
+  .faq .a b{color:var(--ink2);font-weight:600}
 
   /* 끝 */
-  .cta{padding:72px 0}
-  .cta .box{text-align:center;padding:48px 24px;background:radial-gradient(600px 300px at 50% 0%,rgba(76,125,255,.25),transparent),var(--surface)}
-  .cta .ctas{justify-content:center;margin-top:26px}
-  footer{border-top:1px solid var(--line);padding:28px 0 40px;color:var(--dim);font-size:13px}
-  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .final{text-align:center;padding:140px 0}
+  .final h2{font-size:clamp(36px,5.2vw,64px);line-height:1.12;letter-spacing:-.045em}
+  .final .ctas{justify-content:center}
+  footer{border-top:1px solid var(--line);padding:40px 0 56px;color:var(--dim);font-size:13.5px;line-height:1.7}
+  footer .wrap{display:flex;justify-content:space-between;gap:24px 48px;flex-wrap:wrap}
+  footer .l{display:flex;flex-direction:column;gap:10px;max-width:540px}
+  footer .r{display:flex;gap:22px;flex-wrap:wrap}
+  footer a{text-decoration:none;color:var(--gray)} footer a:hover{color:var(--ink)}
 
-  .rv{opacity:0;transform:translateY(18px);transition:opacity .7s,transform .7s}
+  .rv{opacity:0;transform:translateY(16px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
   .rv.in{opacity:1;transform:none}
-  @media (prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto} .rv{opacity:1;transform:none;transition:none} .reel img,.reel .t1,.reel .t2{animation:none}}
 </style>
 </head>
 <body>
 
-<nav class="top">
+<header class="top" id="top">
   <div class="wrap">
-    <a class="logo" href="#"><i aria-hidden="true"><b></b><b></b><b class="a"></b><b></b><b class="a"></b><b></b></i>FirstFeed</a>
-    <div class="links"><a href="#problem">왜</a><a href="#how">흐름</a><a href="#preview">30일 미리보기</a><a href="#trust">지어내지 않기</a><a href="#roadmap">계획</a></div>
-    <a class="btn" href="https://github.com/djkdb/FirstFeed">GitHub</a>
-  </div>
-</nav>
-
-<header class="hero">
-  <div class="wrap">
-    <div class="copy">
-      <div class="eyebrow">인스타를 처음 시작하는 사람을 위한 로컬 앱</div>
-      <h1>게시물 하나 올리기 전에,<br><em>30일 뒤 내 계정</em>을<br>먼저 봅니다.</h1>
-      <p class="lead">AI와 짧게 인터뷰하면 내 개성을 찾아 계정 주제를 정하고, 이름 · 소개글 · 색 · 글꼴, 앞으로 올릴 게시물 9개까지 실제 프로필 화면처럼 채워 줍니다. 그 안의 문장은 모두 내가 한 말에서 나옵니다.</p>
-      <div class="ctas">
-        <a class="btn primary" href="#preview">미리보기 살펴보기</a>
-        <a class="btn" href="https://github.com/djkdb/FirstFeed#readme">설치 방법</a>
-      </div>
-      <div class="facts">
-        <div><b>질문에 답만</b><span>설문 8문항 + AI 인터뷰</span></div>
-        <div><b>9칸</b><span>올리기 전에 보는 프로필 격자</span></div>
-        <div><b>내 구독으로</b><span>이미 쓰는 Claude 로 실행</span></div>
-      </div>
-    </div>
-
-    <div class="stage">
-      <div class="phone" id="phone" aria-label="30일 뒤 계정 미리보기 예시">
-        <div class="ptop">
-          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          <div class="handle"><span id="handle"></span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
-          <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-        </div>
-        <div class="head">
-          <div class="avatar"><div id="avatar"></div></div>
-          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
-            <div id="name" style="font-weight:600;font-size:14.5px;height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-            <div class="stats">
-              <div><b id="posts">0</b><span>게시물</span></div>
-              <div><b>–</b><span>팔로워</span></div>
-              <div><b>–</b><span>팔로잉</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="bio"><div class="text"><span id="bio"></span><span class="caret" id="caret"></span></div></div>
-        <div class="btns"><div>프로필 편집</div><div>프로필 공유</div></div>
-        <div class="hls" id="hls"></div>
-        <div class="ptabs">
-          <div class="on"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg></div>
-          <div><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#9EA3AB" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l5 3.5-5 3.5z"/></svg></div>
-          <div><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#9EA3AB" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="4"/><circle cx="12" cy="10.5" r="3"/><path d="M7 18c1.2-2.2 3-3 5-3s3.8.8 5 3"/></svg></div>
-        </div>
-        <div class="grid" id="grid"></div>
-      </div>
-      <div class="note"><span id="note"></span><button type="button" id="toggle" aria-label="애니메이션 멈춤">멈춤</button></div>
+    <a class="logo" href="#" aria-label="FirstFeed 맨 위로"><i aria-hidden="true"><b></b><b class="o"></b><b></b><b class="o"></b><b></b><b class="o"></b></i>FirstFeed</a>
+    <nav class="nav" aria-label="섹션">
+      <a href="#how">실제 화면</a><a href="#features">기능</a><a href="#trust">지어내지 않기</a><a href="#roadmap">로드맵</a><a href="#faq">자주 묻는 질문</a>
+    </nav>
+    <div class="right">
+      <a class="btn sm" href="https://github.com/djkdb/FirstFeed">GitHub</a>
+      <a class="btn sm primary" href="#start">시작하기</a>
     </div>
   </div>
 </header>
 
 <main>
+  <!-- 첫 화면 -->
+  <section class="hero">
+    <div class="wrap">
+      <a class="badge-line" href="#start"><b>LOCAL APP</b>인스타를 처음 시작하는 사람을 위한 도우미 →</a>
+      <h1>올리기 전에,<br>30일 뒤 내 계정부터.</h1>
+      <p class="sub">AI와 짧게 인터뷰하면 <b>내 개성에서 계정 주제를 찾고</b>, 이름 · 소개글 · 색 · 카드뉴스까지 이어 줍니다. 첫 게시물을 올리기 전에 9칸이 채워진 내 프로필을 먼저 보세요.</p>
+      <div class="ctas">
+        <a class="btn primary" href="#start">내 컴퓨터에 설치하기</a>
+        <a class="btn" href="#how">어떻게 동작하나요</a>
+      </div>
+      <p class="req-line">macOS · Node.js 24 · Claude 유료 구독이 필요해요. 인스타 로그인은 필요 없어요.</p>
+
+      <div class="stage rv">
+        <div class="stage-inner">
+          <figure class="window" aria-label="실제 앱 화면: 오늘 올릴 것">
+            <div class="wbar" aria-hidden="true"><i></i><i></i><i></i><span>localhost:5173</span></div>
+            <img src="img/app-home.jpg" alt="실제 FirstFeed 화면 「오늘 올릴 것」 — 오늘 올릴 칸과 30일 계획 목록, 칸마다 올렸어요 · 하루 미루기 단추" width="1600" height="1000">
+          </figure>
+          <div class="phone" id="phone" role="img" aria-label="30일 뒤 계정 미리보기 예시 — 프로필 사진, 소개글, 하이라이트, 게시물 9칸이 차례로 채워지는 애니메이션">
+            <div class="island" aria-hidden="true"></div>
+            <div class="ptop">
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              <div class="handle"><span id="handle"></span><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+              <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </div>
+            <div class="head">
+              <div class="avatar"><div id="avatar"></div></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+                <div id="name" style="font-weight:600;font-size:14px;height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+                <div class="stats">
+                  <div><b id="posts">0</b><span>게시물</span></div>
+                  <div><b>–</b><span>팔로워</span></div>
+                  <div><b>–</b><span>팔로잉</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="bio"><div class="text"><span id="bio"></span><span class="caret" id="caret"></span></div></div>
+            <div class="pbtns"><div>프로필 편집</div><div>프로필 공유</div></div>
+            <div class="hls" id="hls"></div>
+            <div class="ptabs">
+              <div class="on"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="9.5" y="3" width="5" height="5" rx="1"/><rect x="16" y="3" width="5" height="5" rx="1"/><rect x="3" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><rect x="16" y="9.5" width="5" height="5" rx="1"/><rect x="3" y="16" width="5" height="5" rx="1"/><rect x="9.5" y="16" width="5" height="5" rx="1"/><rect x="16" y="16" width="5" height="5" rx="1"/></svg></div>
+              <div><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9EA3AB" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5l5 3.5-5 3.5z"/></svg></div>
+              <div><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9EA3AB" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="4"/><circle cx="12" cy="10.5" r="3"/><path d="M7 18c1.2-2.2 3-3 5-3s3.8.8 5 3"/></svg></div>
+            </div>
+            <div class="grid" id="grid"></div>
+          </div>
+
+        </div>
+        <div class="stage-cap"><span id="note">실제 앱 화면 · 운영자 계정(@zun_it_) 데이터로 띄운 FirstFeed</span><button type="button" id="toggle" aria-label="애니메이션 멈춤">멈춤</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 숫자: 모두 레포 측정 · 저장소에서 센 값 -->
+  <section style="padding:96px 0 0" aria-label="측정한 숫자">
+    <div class="wrap rv">
+      <div class="nums">
+        <!-- tests/results/2026-11-04-plain-ai-compare.md -->
+        <div><b>8<small>→</small>0</b><span>인터뷰에 없는 숫자가 붙은 제목. 그냥 AI 27개 중 8개, FirstFeed 저장 0개</span></div>
+        <!-- tests/results/2026-11-04-tokens-step1-overhead.md: 3,358 → 2,160 -->
+        <div><b>-35<small>%</small></b><span>AI 호출마다 붙는 고정 토큰을 줄였어요</span></div>
+        <!-- npm test: unit 443 + browser 77 (2026-11-09) -->
+        <div><b>520</b><span>커밋할 때마다 도는 자동 테스트</span></div>
+        <!-- docs/devlog/2026-*.md -->
+        <div><b>40</b><span>만드는 과정을 남긴 공개 개발 일지</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 고민 -->
   <section id="problem">
     <div class="wrap rv">
-      <div class="eyebrow">왜 만들었나</div>
-      <h2>AI로 누구나 잘 만드는 시대,<br>차이를 만드는 건 결국 「나다움」입니다</h2>
-      <p class="sub">취업 · 대외활동 · 프리랜서처럼 나를 보여 줘야 하는 순간은 누구에게나 옵니다. 그런데 주변에 물어보니 다들 해 보고는 싶은데 이렇게 말했습니다.</p>
-      <div class="cards c3">
-        <div class="box"><div class="quote">너무 큰 결심이 필요하다</div><p>→ 올리기 전에 <b style="color:var(--ink)">30일 뒤 내 계정</b>을 먼저 보여 줍니다</p></div>
-        <div class="box"><div class="quote">어떻게 시작해야 할지 모르겠다</div><p>→ <b style="color:var(--ink)">질문에 답만</b> 하면 이름 · 색 · 첫 카드까지 이어집니다</p></div>
-        <div class="box"><div class="quote">주제나 개성을 잡기가 어렵다</div><p>→ 내 답에서 <b style="color:var(--ink)">계정 주제 3~5개</b>와 근거가 된 내 말을 찾아 줍니다</p></div>
+      <div class="head2">
+        <div class="label">01 — 왜 만들었나</div>
+        <h2>누구나 AI로 잘 만드는 시대. <span class="g">차이는 결국 나다움에서 납니다.</span></h2>
+        <p class="body">취업 · 대외활동 · 프리랜서처럼 나를 보여 줘야 하는 순간은 누구에게나 옵니다. 주변에 인스타를 시작해 보라고 하자, 다들 하고는 싶은데 이렇게 말했습니다.</p>
       </div>
-      <p class="sub" style="margin-top:28px">운영자도 같은 곳에서 시작했습니다. AI로 만든 것을 기록하려고 연 계정이 석 달 만에 팔로워 2,840명이 됐고, 그때 직접 부딪히며 정한 것들을 FirstFeed 에 담았습니다.</p>
-      <div class="ctas" style="margin-top:16px"><a class="btn" href="https://www.instagram.com/reel/Dd3eTXlSgqB/" target="_blank" rel="noopener">운영 중인 계정 소개 릴스 보기 ↗</a></div>
-    </div>
-  </section>
-
-  <section id="how" style="background:linear-gradient(180deg,transparent,rgba(17,23,41,.6),transparent)">
-    <div class="wrap rv">
-      <div class="eyebrow">흐름</div>
-      <h2>한 번 정한 개성이 끝까지 이어집니다</h2>
-      <p class="sub">단계마다 나를 다시 설명하지 않아도 됩니다. 인터뷰에서 정리한 프로필 하나가 이름부터 카드뉴스까지 모든 생성의 입력이 됩니다.</p>
-      <div class="flow">
-        <div class="step"><b>1 · 인터뷰</b><strong>설문과 AI 질문에 답하기</strong><span>한 번에 한 질문, 3~10개</span></div>
-        <div class="step"><b>2 · 나의 개성</b><strong>계정 주제 3~5개</strong><span>주제마다 근거가 된 내 말</span></div>
-        <div class="step"><b>3 · 계정 꾸미기</b><strong>이름 · 소개글 · 색 · 글꼴</strong><span>글자 수와 글자색 대비까지 검사</span></div>
-        <div class="step"><b>4 · 30일 미리보기</b><strong>게시물 9개가 채워진 프로필</strong><span>만든 칸과 계획 칸을 구분</span></div>
-        <div class="step"><b>5 · 카드뉴스</b><strong>같은 디자인으로 만들기</strong><span>업로드 순서 정리 · 폰으로 받기</span></div>
-        <div class="step dash"><b>6 · 릴스</b><strong>대본 · AI 음성 · 모션</strong><span>진행 중</span></div>
+      <div class="voices">
+        <div><div class="q">너무 큰 결심이 필요해요</div><p>올리기 전에 <b>30일 뒤 내 계정</b>을 먼저 보여 줍니다. 결심은 그 뒤에 해도 됩니다.</p></div>
+        <div><div class="q">어떻게 시작할지 모르겠어요</div><p><b>질문에 답만</b> 하면 이름 · 색 · 첫 카드뉴스까지 한 길로 이어집니다.</p></div>
+        <div><div class="q">주제나 개성을 못 잡겠어요</div><p>내 답에서 <b>계정 주제 3~5개</b>와, 그 근거가 된 내 말을 찾아 줍니다.</p></div>
       </div>
-      <div class="box" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
-        <div style="flex:1 1 420px;min-width:0"><span class="tag">계획 · 12월</span><h3>앱도 내 계정처럼 바뀝니다</h3><p>개성이 잡히면 그 개성의 캐릭터와 색감으로 앱 화면 자체가 바뀝니다. 남의 도구를 빌려 쓰는 느낌이 아니라, 내 계정의 작업실에서 일하는 느낌을 주려고 합니다. 글자가 잘 읽히는지 대비 검사는 그대로 유지합니다.</p></div>
-        <div aria-hidden="true" style="display:flex;gap:8px;flex:none"><span style="width:44px;height:44px;border-radius:12px;background:#2F6BFF"></span><span style="width:44px;height:44px;border-radius:12px;background:#1B2440;border:1px solid #2E3A5C"></span><span style="width:44px;height:44px;border-radius:12px;background:#8FB0FF"></span><span style="width:44px;height:44px;border-radius:12px;overflow:hidden;border:1px solid #2E3A5C"><img src="img/zun-avatar.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span></div>
+      <div class="founder">
+        <img src="img/zun-avatar.jpg" alt="" width="48" height="48">
+        <p>운영자도 같은 곳에서 시작했습니다. AI로 만든 것을 기록하려고 연 계정이 석 달 만에 팔로워 2,840명이 됐고, 그때 직접 부딪히며 정한 것들을 FirstFeed에 담았습니다.</p>
+        <a class="link" href="https://www.instagram.com/reel/Dd3eTXlSgqB/" target="_blank" rel="noopener">계정 소개 릴스 ↗</a>
       </div>
     </div>
   </section>
 
-  <section id="preview">
+  <!-- 흐름 -->
+  <section id="how" class="rule">
     <div class="wrap rv">
-      <div class="eyebrow">핵심 기능</div>
-      <h2>올리기 전에 보는 30일 뒤 프로필</h2>
-      <div class="split">
-        <ul class="check">
-          <li><span><b>실제 인스타 격자와 같게.</b> 최근 게시물이 왼쪽 위, 프로필 격자에서 카드 양옆이 잘리는 정도까지 운영 계정에서 직접 재서 맞췄습니다.</span></li>
-          <li><span><b>계획 칸은 계정 주제를 번갈아.</b> 같은 주제가 한 줄로 몰리지 않게 코드가 배치하고, 이미 만든 카드와 거의 같은 제목이면 다시 쓰게 합니다.</span></li>
-          <li><span><b>내 그림을 올리면 실제 게시물처럼.</b> 칸에 그림을 올리면 그림 바탕 표지로 그리고, 제목이 잘 읽히는지 글자 뒤 명암비를 재서 맞춥니다. FirstFeed 는 그림을 직접 만들지 않고 그림 프롬프트를 뽑아 줍니다.</span></li>
-          <li><span><b>없는 걸 있는 것처럼 보이지 않게.</b> 아직 안 만든 칸에는 「계획」 표시, 게시물 수도 「만든 카드 · 계획」으로 나누고, 없는 팔로워 수는 「–」로 둡니다.</span></li>
-        </ul>
-        <div>
-          <div class="grid" id="grid2" style="border-radius:14px;overflow:hidden;padding:0;gap:3px"></div>
-          <div class="cap">위 화면의 계획 칸 9개. 운영자 계정(@zun_it_)을 예시로, 이미지 AI 로 따로 만든 그림을 올려 앱이 그린 표지입니다.</div>
+      <div class="head2">
+        <div class="label">02 — 실제 화면으로 보기</div>
+        <h2>한 번 찾은 개성이, <span class="g">마지막 게시물까지 이어집니다.</span></h2>
+        <p class="body">단계마다 나를 다시 설명하지 않아도 됩니다. 인터뷰로 만든 프로필 하나가 이름부터 카드뉴스까지 모든 생성의 입력이 됩니다.</p>
+      </div>
+      <div class="tour">
+        <div class="tour-tabs" role="tablist" aria-label="실제 화면 둘러보기">
+        <button type="button" role="tab" id="tt0" aria-controls="tp0" aria-selected="true" class="on"><i class="bar" aria-hidden="true"></i><span class="label">01 · 인터뷰</span><h3>질문에 답하기</h3><p>경험 · 관점 · 고집 · 말투처럼 8가지 각도로 한 번에 하나씩 물어요. 답에서 계정 주제와 근거가 된 내 말을 찾아요.</p></button>
+        <button type="button" role="tab" id="tt1" aria-controls="tp1" aria-selected="false" class=""><i class="bar" aria-hidden="true"></i><span class="label">02 · 템플릿</span><h3>내 색으로 카드 틀 고정</h3><p>브랜딩 키트의 색 · 글꼴을 입힌 시안을 실제 브라우저로 그려 글자 넘침을 재고, 하나를 고정해요.</p></button>
+        <button type="button" role="tab" id="tt2" aria-controls="tp2" aria-selected="false" class=""><i class="bar" aria-hidden="true"></i><span class="label">03 · 30일 뒤 미리보기</span><h3>올리기 전에 9칸 프로필</h3><p>시리즈 계획 9개를 실제 인스타 격자 순서로 깔아요. 아직 안 만든 칸에는 「계획」 표시.</p></button>
+        <button type="button" role="tab" id="tt3" aria-controls="tp3" aria-selected="false" class=""><i class="bar" aria-hidden="true"></i><span class="label">04 · 릴스</span><h3>편집 화면에서 바로 영상까지</h3><p>타임라인에서 자막 · 장면을 고치고, AI 모션 제안을 받아 720 · 1080 · 4K로 뽑아요.</p></button>
+        </div>
+        <figure class="window tour-view">
+          <div class="wbar" aria-hidden="true"><i></i><i></i><i></i><span>localhost:5173</span></div>
+          <div class="panes">
+          <img role="tabpanel" id="tp0" aria-labelledby="tt0" class="on" src="img/app-identity.jpg" alt="실제 FirstFeed 화면 「정체성 찾기」 — 운영자가 답한 인터뷰 질문 5개와 답" width="1600" height="1000" loading="eager">
+          <img role="tabpanel" id="tp1" aria-labelledby="tt1" class="" src="img/app-template.jpg" alt="실제 FirstFeed 화면 「템플릿」 — 계정 색을 입힌 표지 · 본문 · 마무리 · 릴스 표지 시안" width="1600" height="1000" loading="lazy">
+          <img role="tabpanel" id="tp2" aria-labelledby="tt2" class="" src="img/app-preview.jpg" alt="실제 FirstFeed 화면 「30일 뒤 내 계정 미리보기」 — 계획 9칸이 채워진 프로필" width="1600" height="1000" loading="lazy">
+          <img role="tabpanel" id="tp3" aria-labelledby="tt3" class="" src="img/app-reels.jpg" alt="실제 FirstFeed 화면 「릴스 만들기」 — 편집 화면 · 완성 미리보기 · 4줄 타임라인" width="1600" height="1000" loading="lazy">
+          </div>
+        </figure>
+        <p class="tour-cap">실제 앱 화면 · 운영자 계정(@zun_it_) 데이터 · 오른쪽 「작업 콘솔」은 AI 작업과 한 일을 한 줄씩 보여 줘요</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 기능 -->
+  <section id="features" class="rule" style="padding-bottom:40px">
+    <div class="wrap">
+      <div class="head2 rv">
+        <div class="label">03 — 기능</div>
+        <h2>처음 시작하는 데 필요한 것만. <span class="g">끝까지 한 곳에서.</span></h2>
+      </div>
+
+      <div class="feat rv" id="preview">
+        <div class="txt">
+          <div class="label">30일 뒤 미리보기</div>
+          <h3>첫 게시물 전에, 9칸이 찬 내 프로필</h3>
+          <p class="body">시리즈 계획 9개를 실제 프로필 격자처럼 깔아 보여 줍니다. 마음에 들 때 하나씩 만들면 됩니다.</p>
+          <ul class="points">
+            <li><b>실제 인스타 격자와 같게.</b> 최근 게시물이 왼쪽 위, 카드 양옆이 잘리는 정도까지 실제 계정에서 재서 맞췄어요.</li>
+            <li><b>주제를 번갈아.</b> 같은 주제가 한 줄로 몰리지 않게 코드가 칸을 배치해요.</li>
+            <li><b>없는 걸 있는 척하지 않게.</b> 아직 안 만든 칸은 「계획」, 없는 팔로워 수는 「–」.</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <div class="grid pgrid" id="grid2" aria-label="계획 칸 9개 예시"></div>
+          <div class="cap"><span>운영자 계정 예시 · 그림은 이미지 AI로 따로</span><span>계획 9칸</span></div>
+        </div>
+      </div>
+
+      <div class="feat flip rv">
+        <div class="txt">
+          <div class="label">카드뉴스</div>
+          <h3>말로 고치고, 전과 후를 보고 적용</h3>
+          <p class="body">「표지 제목 더 짧게」 「3번 카드 너무 설명조야」처럼 말하면 그 카드만 다시 씁니다. 적용하기 전에는 세트가 바뀌지 않고, 언제든 되돌릴 수 있어요. 고친 카드에도 같은 근거 검사가 걸립니다.</p>
+        </div>
+        <div class="panel">
+          <div class="shot"><img src="img/app-chat.jpg" alt="실제 앱 화면: 「표지 제목 더 짧게」라고 말하자 표지만 다시 그려 전/후를 보여 주고, 적용 · 버리기를 고르게 한 화면" width="1100" height="535" loading="lazy" style="width:100%"></div>
+          <div class="cap"><span>실제 앱 화면 · 운영자 브랜드 · 본인 인스타 캡션 원문으로 만든 세트</span></div>
+        </div>
+      </div>
+
+      <div class="feat rv">
+        <div class="txt">
+          <div class="label">릴스</div>
+          <h3>AI는 고르기만, 코드가 프레임마다 잽니다</h3>
+          <p class="body">AI는 정해 둔 움직임 중에서 고르기만 하고, 코드가 프레임마다 글자가 격자에서 가려지는 영역에 들어가지 않는지 · 글자가 읽히는지 잽니다. 720 · 1080 · 4K로 뽑고 음량도 맞춰요.</p>
+        </div>
+        <div class="panel">
+          <div class="reel-wrap">
+            <div class="reel" aria-hidden="true">
+              <img src="img/zun-4.jpg" alt="">
+              <div class="guide t"></div><div class="guide b"></div>
+              <div class="t1">Claude Max,<br>처음 켜면 <em>뭐부터</em>?</div>
+              <div class="t2">설치 다음 단계를 정리해요</div>
+            </div>
+            <div class="checks" aria-label="화면 예시: 모션 규칙 검사">
+              <div class="row"><span>격자 가림 영역 밖</span><em>통과</em></div>
+              <div class="row"><span>다 보이는 시간</span><em>통과</em></div>
+              <div class="row"><span>글자 뒤 명암비</span><em>통과</em></div>
+              <div class="row"><span>글자 내용</span><span class="muted">바꾸지 않음</span></div>
+            </div>
+          </div>
+          <div class="cap"><span class="ex">화면 예시 · 움직임은 CSS로 흉내 냄</span><span style="color:#F29A9A">빗금 = 격자에서 가려지는 곳</span></div>
+        </div>
+      </div>
+
+      <div class="smalls rv">
+        <div class="panel">
+          <div class="label">인터뷰</div>
+          <h3 style="margin-top:14px">8가지 각도로 묻기</h3>
+          <p>같은 각도를 연달아 묻지 않게 코드가 막아요.</p>
+          <div class="chips" style="margin-top:16px"><span class="chip on">경험</span><span class="chip">관점</span><span class="chip">이유</span><span class="chip">삽질</span><span class="chip">고집·취향</span><span class="chip">남이 보는 나</span><span class="chip">보는 사람</span><span class="chip">말투</span></div>
+        </div>
+        <div class="panel">
+          <div class="label">브랜딩</div>
+          <h3 style="margin-top:14px">개성 캐릭터 프롬프트</h3>
+          <p>고른 값만 영어 프롬프트로 조립해요. 생김새를 AI가 지어내지 않아요.</p>
+          <div class="prompt" aria-label="예시 프롬프트 일부">cute <u>chibi</u> character, <u>navy cap</u>, <u>hoodie</u>, holding a <u>laptop</u>, flat illustration, no text</div>
+        </div>
+        <div class="panel">
+          <div class="label">업로드</div>
+          <h3 style="margin-top:14px">폰으로 받기</h3>
+          <p>같은 와이파이에서 QR로 카드와 캡션을 받아요. 10분 뒤 저절로 닫혀요.</p>
+          <div class="qrline"><div class="qr" id="qr" aria-hidden="true"></div><span>처음 연 기기 하나만<br>읽기 전용 · 1회용 주소</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="trust" style="background:linear-gradient(180deg,transparent,rgba(17,23,41,.6),transparent)">
+  <!-- 지어내지 않기 -->
+  <section id="trust">
     <div class="wrap rv">
-      <div class="eyebrow">지어내지 않기</div>
-      <h2>내 이름으로 올라갈 글에<br>내가 하지 않은 말은 넣지 않습니다</h2>
-      <p class="sub">같은 인터뷰 답을 같은 AI 모델에 검사 없이 그냥 넣어 세 번 받아 봤습니다(게시물 제목 27개).</p>
-      <div class="vs">
-        <div class="box"><span class="tag">검사 없이 그냥 AI</span><div class="big bad">8<small>/ 27개</small></div><p>제목에 내가 말한 적 없는 개수(「실수 5가지」, 「기능 3개」)가 붙었고, 한 번은 하지 않은 경험을 계정 주제로 넣었습니다.</p></div>
-        <div class="box"><span class="tag">FirstFeed</span><div class="big good">0<small>개 저장</small></div><p>내가 말하지 않은 숫자 · 영문 이름이 나오면 코드가 잡아 다시 쓰게 해서, 저장되는 결과에는 남지 않습니다.</p></div>
+      <div class="head2">
+        <div class="label">04 — 지어내지 않기</div>
+        <h2>내 이름으로 올라갈 글에, <span class="g">내가 하지 않은 말은 넣지 않습니다.</span></h2>
+        <p class="body">같은 인터뷰 답을 같은 AI 모델에 검사 없이 넣어 세 번 받아 봤습니다. 게시물 제목 27개를 사람이 하나씩 읽고 판정했어요.</p>
       </div>
-      <div class="split">
+      <div class="compare">
         <div>
-          <div class="shot"><img src="img/fixed.jpg" alt="카드뉴스의 AI가 고친 곳 화면" loading="lazy"></div>
-          <div class="cap">「AI가 고친 곳」 — 어디가 왜 바뀌었는지 사람 말로 남깁니다(지운 부분 취소선, 더한 부분 밑줄).</div>
+          <div class="label">검사 없이 그냥 AI</div>
+          <div class="big bad">8<small>/ 27개</small></div>
+          <p>제목에 내가 말한 적 없는 개수(「실수 5가지」, 「기능 3개」)가 붙었고, 한 번은 하지 않은 경험을 계정 주제로 넣었습니다.</p>
         </div>
-        <ul class="check">
-          <li><span><b>계정 주제마다 근거가 된 내 말.</b> 그 말이 실제 인터뷰 답에 있는지 코드가 한 번 더 확인합니다.</span></li>
-          <li><span><b>용어 풀이는 표시해서 보여 주기.</b> 자료에 없는 설명은 「올리기 전에 맞는지 확인하세요」로 강조하고, 확인 전에는 업로드 폴더를 만들 수 없습니다.</span></li>
-          <li><span><b>개성은 내가 고친다.</b> 말투를 반말로 바꾸면 소개글이 「… 정리해요」에서 「… 정리해」로 바뀝니다.</span></li>
-          <li><span><b>규칙의 한계도 적어 둡니다.</b> 한글로 쓴 지어낸 경험처럼 코드가 못 잡는 것은 AI 검토와 사람 확인에 맡긴다고 밝혀 둡니다.</span></li>
-        </ul>
+        <div>
+          <div class="label" style="color:var(--ink2)">FirstFeed</div>
+          <div class="big good">0<small>개 저장</small></div>
+          <p>내가 말하지 않은 숫자 · 날짜 · 영문 이름이 나오면 코드가 잡아 다시 쓰게 해서, 저장되는 결과에는 남지 않습니다.</p>
+        </div>
       </div>
-    </div>
-  </section>
+      <span class="src">측정 방법과 원자료 → <a href="https://github.com/djkdb/FirstFeed/blob/main/tests/results/2026-11-04-plain-ai-compare.md">tests/results/2026-11-04-plain-ai-compare.md</a></span>
 
-  <section id="engine">
-    <div class="wrap rv">
-      <div class="eyebrow">안에서 일어나는 일</div>
-      <h2>AI가 쓰면, 코드가 검사하고, 다시 씁니다</h2>
       <div class="pipe">
-        <div><b>1</b><strong>쓰기</strong><span>AI가 정해진 형식(JSON)으로 작성</span></div>
-        <div><b>2</b><strong>규칙 검사</strong><span>근거 없는 숫자 · 이름, 글자 수, 글자색 대비, 카드 넘침을 코드로</span></div>
-        <div><b>3</b><strong>다시 보기</strong><span>더 강한 모델이 사실 오류만 판정 — 취향 지적은 경고로</span></div>
-        <div><b>4</b><strong>다시 쓰기</strong><span>최대 2번, 통과한 결과만 저장</span></div>
+        <div><span class="label">01</span><h3>AI가 쓰기</h3><p>정해진 형식(JSON)으로만 받아요.</p></div>
+        <div><span class="label">02</span><h3>코드가 검사</h3><p>근거 없는 숫자 · 이름, 글자 수, 색 대비, 카드 넘침.</p></div>
+        <div><span class="label">03</span><h3>AI가 다시 보기</h3><p>사실 오류만 판정해요. 취향 지적은 경고로만.</p></div>
+        <div><span class="label">04</span><h3>다시 쓰기</h3><p>최대 2번. 통과한 결과만 저장해요.</p></div>
       </div>
-      <div class="cards c3">
-        <div class="box"><span class="tag">내 구독으로</span><h3>사용자의 Claude 구독을 그대로</h3><p>내 컴퓨터에서 실행하고, 인터뷰 답 같은 개인적인 내용은 컴퓨터 밖으로 나가지 않습니다. 앱이 부르는 AI는 파일 쓰기 · 명령 실행이 막혀 있습니다.</p></div>
-        <div class="box"><span class="tag">아껴 쓰기</span><h3>호출마다 붙는 토큰 35% 줄임</h3><p>코딩용 기본 지시문을 앱 전용으로 바꿔, 계정을 처음 만드는 흐름 한 번의 입력이 13.9만 → 8.3만 토큰, 시간은 368 → 253초가 됐습니다(2회 측정).</p></div>
-        <div class="box"><span class="tag">일에 맞는 모델</span><h3>빠른 모델과 강한 모델을 나눠서</h3><p>꼬리 질문처럼 자주 오가는 일은 빠른 모델, 개성 정리 · 카드 글 · 검토는 강한 모델. 작은 모델이 오히려 출력이 2배였던 과제는 바꾸지 않았습니다.</p></div>
+
+      <div class="proofshot">
+        <div class="panel" style="padding:20px">
+          <div class="shot"><img src="img/fixed.jpg" alt="실제 앱 화면: AI가 고친 곳 — 카드 6의 풀이 용어를 고친 전후, 지운 부분은 취소선, 더한 부분은 밑줄" width="1244" height="294" style="width:100%"></div>
+          <div class="cap"><span>실제 앱 화면 · 「AI가 고친 곳」</span></div>
+        </div>
+        <ul class="points" style="margin:0">
+          <li><b>어디를 왜 바꿨는지 사람 말로.</b> 지운 부분은 취소선, 더한 부분은 밑줄로 남겨요.</li>
+          <li><b>자료에 없는 설명은 표시해요.</b> 「맞는지 확인했어요」를 누르기 전에는 업로드 폴더를 만들 수 없어요.</li>
+          <li><b>한계도 밝혀요.</b> 한글로 지어낸 경험처럼 코드가 못 잡는 것은 AI 검토와 사람 확인에 맡깁니다.</li>
+        </ul>
       </div>
     </div>
   </section>
 
-  <section id="roadmap" style="background:linear-gradient(180deg,transparent,rgba(17,23,41,.6),transparent)">
+  <!-- 내 컴퓨터에서 -->
+  <section id="local" class="rule">
     <div class="wrap rv">
-      <div class="eyebrow">앞으로</div>
-      <h2>다음 30일은 반응을 보고 다시 그립니다</h2>
+      <div class="head2">
+        <div class="label">05 — 내 컴퓨터에서, 내 구독으로</div>
+        <h2>새 요금도, 새 계정도 없습니다.</h2>
+        <p class="body">FirstFeed는 내 컴퓨터에서 돌고, AI는 이미 쓰고 있는 Claude 구독으로 부릅니다.</p>
+      </div>
+      <div class="cols3">
+        <div>
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+          <h3>답은 내 컴퓨터 안에</h3>
+          <p>인터뷰 답, 프로필, 만든 카드는 내 컴퓨터에 저장돼요. 얼굴이 나오는 원본 영상은 밖으로 보내지 않아요.</p>
+        </div>
+        <div>
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>구독이 아니면 멈춰요</h3>
+          <p>AI를 부르기 직전마다 구독 로그인인지 확인하고, 아니면 호출하지 않아요. 모르는 요금으로 돌지 않게요.</p>
+        </div>
+        <div>
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <h3>AI 권한은 최소로</h3>
+          <p>앱이 부르는 AI는 파일 쓰기와 명령 실행이 막혀 있어요. 인스타에 대신 로그인하거나 자동으로 올리지도 않아요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 공개 -->
+  <section id="open" class="rule">
+    <div class="wrap rv">
+      <div class="head2">
+        <div class="label">06 — 만드는 과정까지 공개</div>
+        <h2>결과만이 아니라, <span class="g">판단의 근거를 남깁니다.</span></h2>
+        <p class="body">왜 그렇게 정했는지, 무엇이 틀렸고 어떻게 고쳤는지, 프롬프트를 바꾸기 전과 후에 무엇을 쟀는지까지 저장소에 모두 있습니다.</p>
+      </div>
+      <!-- 2026-11-15 저장소에서 셈: git rev-list --count HEAD · prompts/*/v*.md · CLAUDE.md 「겪은 오류」 항목 · docs/devlog -->
+      <div class="counts">
+        <div><b>364</b><span>커밋 · 10월 13일 시작</span></div>
+        <div><b>41</b><span>프롬프트 판 · 24종, 고치지 않고 새 판으로</span></div>
+        <div><b>26</b><span>「겪은 오류」 · 원인의 모양으로 기록</span></div>
+        <div><b>40</b><span>세션별 개발 일지</span></div>
+      </div>
+      <div class="links">
+        <a class="link" href="https://github.com/djkdb/FirstFeed/tree/main/docs/devlog">개발 일지 →</a>
+        <a class="link" href="https://github.com/djkdb/FirstFeed/tree/main/tests/results">측정 결과 →</a>
+        <a class="link" href="https://github.com/djkdb/FirstFeed/tree/main/prompts">프롬프트 →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 시작하기 -->
+  <section id="start" class="rule">
+    <div class="wrap rv">
+      <div class="head2">
+        <div class="label">07 — 시작하기</div>
+        <h2>터미널 다섯 줄이면, <span class="g">내 컴퓨터에서 열립니다.</span></h2>
+      </div>
+      <div class="start">
+        <ul class="req">
+          <li><span class="label">01</span><span><b>macOS</b>지금은 macOS에서만 써 봤어요. Windows는 확인 중이에요.</span></li>
+          <li><span class="label">02</span><span><b>Node.js 24 이상</b>앱의 로컬 서버를 돌려요.</span></li>
+          <li><span class="label">03</span><span><b>Claude Code + Claude 유료 구독</b>터미널에서 <code>claude</code>를 실행해 로그인해 두세요.</span></li>
+        </ul>
+        <div>
+          <div class="term">
+            <div class="bar"><i></i><i></i><i></i><span>zsh</span><button type="button" class="btn sm" id="copy">복사</button></div>
+<pre id="cmds"><span class="p">$ </span>git clone https://github.com/djkdb/FirstFeed.git
+<span class="p">$ </span>cd FirstFeed &amp;&amp; npm install
+<span class="p">$ </span>npx playwright install chromium   <span class="c"># 카드를 그릴 브라우저, 처음 한 번</span>
+<span class="p">$ </span>npm run doctor                    <span class="c"># 설치 점검, 문제마다 다음 할 일</span>
+<span class="p">$ </span>npm run dev                       <span class="c"># → http://localhost:5173</span></pre>
+          </div>
+          <p class="note">더블클릭으로 여는 설치 파일은 준비 중입니다. 자세한 안내는 <a href="https://github.com/djkdb/FirstFeed#readme">README</a>에 있어요.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 로드맵 -->
+  <section id="roadmap" class="rule">
+    <div class="wrap rv">
+      <div class="head2">
+        <div class="label">08 — 로드맵</div>
+        <h2>다음 30일은, <span class="g">반응을 보고 다시 그립니다.</span></h2>
+      </div>
       <div class="road">
-        <div><b>~ 11월 15일</b><strong>지인 2명이 실제로 써 보기</strong><span>캡션 마무리 · 말로 고치기(「3번 카드가 너무 설명조야」) · 댓글 · DM 문구</span></div>
-        <div><b>~ 11월 29일</b><strong>성과로 다음 30일 미리보기를 다시</strong><span>게시물 반응을 넣으면 반응이 좋은 주제는 더, 아닌 주제는 덜</span></div>
-        <div><b>11 ~ 12월</b><strong>릴스</strong><span>얼굴을 드러내지 않는 계정은 대본 → AI 음성 → 계정 색 모션 · 자막, 드러내는 계정은 촬영 도우미</span></div>
-        <div><b>12월</b><strong>앱 화면을 내 개성의 캐릭터와 색감으로 · 설치 파일</strong><span>개성이 잡히면 앱이 그 계정의 작업실처럼 바뀐다 · 글자가 잘 읽히는지 검사는 그대로</span></div>
+        <div>
+          <div class="label"><i></i>지금까지</div>
+          <h3>처음 계정 만들기</h3>
+          <ul>
+            <li class="done">설문 · AI 인터뷰 · 근거 붙은 프로필</li>
+            <li class="done">이름 · 소개글 · 색 · 글꼴 · 캐릭터 프롬프트</li>
+            <li class="done">템플릿 · 카드뉴스 · 채팅으로 고치기</li>
+            <li class="done">30일 뒤 미리보기 · 오늘 올릴 것</li>
+            <li class="done">릴스 편집 화면 · 모션 제안</li>
+          </ul>
+        </div>
+        <div class="now">
+          <div class="label"><i></i>11월 · 진행 중</div>
+          <h3>실제로 써 보고 반응 넣기</h3>
+          <ul>
+            <li>지인이 처음부터 끝까지 직접 써 보기</li>
+            <li>게시물 반응을 넣으면 다음 30일 계획을 다시</li>
+            <li>캡션 마무리 · 고정 댓글 · DM 문구</li>
+          </ul>
+        </div>
+        <div>
+          <div class="label"><i></i>12월</div>
+          <h3>릴스 완성 · 설치 파일</h3>
+          <ul>
+            <li>대본 → AI 음성 → 자막 → 영상까지</li>
+            <li>내가 찍은 영상으로 릴스 굽기</li>
+            <li>더블클릭으로 여는 설치 파일</li>
+          </ul>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="cta">
+  <!-- 자주 묻는 질문 -->
+  <section id="faq" class="rule">
     <div class="wrap rv">
-      <div class="box">
-        <div class="eyebrow" style="justify-content:center">CUVIC 바이브 코딩 대회 · 개인 프로젝트</div>
-        <h2 style="margin-top:12px">내 개성으로 시작하는 첫 피드</h2>
-        <p class="sub" style="margin:14px auto 0">코드 · 기획서 · 개발 일지 · 측정 결과가 모두 저장소에 공개되어 있습니다.</p>
-        <div class="ctas"><a class="btn primary" href="https://github.com/djkdb/FirstFeed">GitHub 저장소</a><a class="btn" href="https://github.com/djkdb/FirstFeed/tree/main/docs/devlog">개발 일지</a></div>
+      <div class="faqwrap">
+        <div>
+          <div class="label">09 — 자주 묻는 질문</div>
+          <h2 style="margin-top:20px">궁금한 점</h2>
+        </div>
+        <div class="faq">
+          <details><summary>돈이 드나요?</summary>
+            <div class="a">FirstFeed 자체는 돈을 받지 않습니다. 다만 AI를 <b>내 Claude 유료 구독</b>으로 부르기 때문에 구독이 필요하고, 쓰는 만큼 구독 사용량이 듭니다. API 키처럼 따로 요금이 나가는 경로로는 돌지 않게 막아 두었어요.</div></details>
+          <details><summary>인스타 계정을 연결해야 하나요?</summary>
+            <div class="a">아니요. 인스타에 로그인하거나 대신 올리지 않습니다. 업로드 순서대로 정리한 폴더와 캡션을 만들어 드리면, 올리는 것은 내가 합니다.</div></details>
+          <details><summary>그림도 AI가 만들어 주나요?</summary>
+            <div class="a">그림은 직접 만들지 않고, 이미지 AI에 넣을 <b>그림 프롬프트</b>를 뽑아 드립니다. 만든 그림을 올리면 그 그림을 바탕으로 표지를 그리고, 그림 위 제목이 잘 읽히는지 명암비를 재서 맞춥니다.</div></details>
+          <details><summary>AI가 쓴 글을 믿어도 되나요?</summary>
+            <div class="a">숫자 · 날짜 · 영문 이름은 코드가 원문과 대조해서, 근거가 없으면 다시 쓰게 합니다. 코드로 잴 수 없는 것(한글로 지어낸 경험 등)은 AI가 한 번 더 검토하고, 자료에 없는 설명은 <b>올리기 전에 내가 확인</b>하도록 표시합니다. 그래도 마지막 확인은 사람이 해야 한다고 생각합니다.</div></details>
+          <details><summary>Windows에서도 되나요?</summary>
+            <div class="a">지금은 macOS에서만 써 봤습니다. Windows는 최종 발표 전까지 확인하는 것이 목표예요.</div></details>
+          <details><summary>화면 속 계정은 누구인가요?</summary>
+            <div class="a">운영자 계정(@zun_it_)을 예시 사용자로 앱이 그린 결과입니다. 그림은 이미지 AI로 따로 만들었고, 「화면 예시」라고 적힌 곳은 앱 화면 문구를 옮겨 그린 것입니다.</div></details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 끝 -->
+  <section class="final rule">
+    <div class="wrap rv">
+      <div class="label">CUVIC 바이브 코딩 대회 · 개인 프로젝트</div>
+      <h2 style="margin-top:22px">내 개성으로 시작하는<br>첫 피드.</h2>
+      <div class="ctas">
+        <a class="btn primary" href="#start">내 컴퓨터에 설치하기</a>
+        <a class="btn" href="https://github.com/djkdb/FirstFeed">GitHub 저장소</a>
       </div>
     </div>
   </section>
 </main>
 
 <footer>
-  <div class="wrap"><span>FirstFeed · 이성준</span><span>화면 속 계정은 운영자 계정(@zun_it_)을 예시로 앱이 그린 결과입니다. 그림은 이미지 AI 로 따로 만들었습니다.</span></div>
+  <div class="wrap">
+    <div class="l">
+      <a class="logo" href="#" style="color:var(--ink)"><i aria-hidden="true"><b></b><b class="o"></b><b></b><b class="o"></b><b></b><b class="o"></b></i>FirstFeed</a>
+      <span>화면 속 계정은 운영자 계정(@zun_it_)을 예시로 앱이 그린 결과이며, 그림은 이미지 AI로 따로 만들었습니다. Instagram은 Meta의 상표이고, FirstFeed는 Meta와 관련이 없습니다.</span>
+      <span>© 2026 FirstFeed · 이성준</span>
+    </div>
+    <div class="r">
+      <a href="https://github.com/djkdb/FirstFeed">GitHub</a>
+      <a href="https://github.com/djkdb/FirstFeed/tree/main/docs/devlog">개발 일지</a>
+      <a href="https://github.com/djkdb/FirstFeed/blob/main/docs/PRD.md">기획서</a>
+      <a href="#top">맨 위로 ↑</a>
+    </div>
+  </div>
 </footer>
 
 <script>
@@ -342,17 +790,70 @@ const $ = (id) => document.getElementById(id);
 function el(tag, attrs, html) { const n = document.createElement(tag); Object.assign(n, attrs || {}); if (html != null) n.innerHTML = html; return n; }
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
+// 스크롤하면 머리 줄 아래 선 (window.top 과 이름이 겹치지 않게 topBar)
+const topBar = $('top');
+const onScroll = () => topBar.classList.toggle('scrolled', window.scrollY > 8);
+window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+
 // 보이는 곳에 들어오면 나타나기
-const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.12 }) : null;
+const io = 'IntersectionObserver' in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.06 }) : null;
 document.querySelectorAll('.rv').forEach((n) => (io ? io.observe(n) : n.classList.add('in')));
 
+// QR 모양(장식 — 실제 주소 아님)
+(function () {
+  const q = $('qr'); if (!q) return;
+  const on = '1111111100000110111011010101101011101011000010111011111111';
+  for (let i = 0; i < 49; i++) q.appendChild(el('i', { className: on[(i * 7) % on.length] === '1' ? '' : 'o' }));
+})();
+
+// 실제 화면 둘러보기: 7초마다 다음 탭(보이는 동안 · 손이 올라가 있지 않을 때만). 움직임 줄이기 설정이면 자동으로 넘기지 않는다
+(function () {
+  const tabs = [...document.querySelectorAll('.tour-tabs button')];
+  const panes = [...document.querySelectorAll('.panes img')];
+  if (!tabs.length) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DUR = 7000;
+  let cur = 0, start = performance.now(), held = false, visible = false;
+  const show = (i, user) => {
+    cur = i; start = performance.now();
+    tabs.forEach((t, j) => { t.classList.toggle('on', j === i); t.setAttribute('aria-selected', String(j === i)); t.style.setProperty('--p', j === i && !reduce && !user ? '0%' : '100%'); });
+    panes.forEach((p, j) => p.classList.toggle('on', j === i));
+    if (user) held = true; // 직접 고르면 그 화면에 머문다
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => show(i, true));
+    t.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const n = (i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length; show(n, true); tabs[n].focus(); } });
+  });
+  const tour = document.querySelector('.tour');
+  if ('IntersectionObserver' in window) new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) start = performance.now(); }, { threshold: 0.3 }).observe(tour);
+  tour.addEventListener('mouseenter', () => { held = true; tabs[cur].style.setProperty('--p', '100%'); });
+  if (reduce) { tabs.forEach((t) => t.style.setProperty('--p', '100%')); return; }
+  const tick = (now) => {
+    if (!held && visible) {
+      const k = (now - start) / DUR;
+      if (k >= 1) show((cur + 1) % tabs.length, false);
+      else tabs[cur].style.setProperty('--p', (k * 100).toFixed(1) + '%');
+    }
+    requestAnimationFrame(tick);
+  };
+  show(0, false); requestAnimationFrame(tick);
+})();
+
+// 명령 복사
+$('copy').addEventListener('click', async () => {
+  const text = $('cmds').innerText.split('\n').map((l) => l.replace(/^\$ /, '').replace(/\s+#.*$/, '')).join('\n');
+  try { await navigator.clipboard.writeText(text); $('copy').textContent = '복사했어요'; }
+  catch { $('copy').textContent = '직접 선택해 복사하세요'; }
+  setTimeout(() => ($('copy').textContent = '복사'), 1800);
+});
+
 fetch('data/demo.json', { cache: 'no-store' }).then((r) => r.json()).then((D) => {
-  $('note').textContent = D.source + ' · 「계획」 칸은 아직 만들지 않은 게시물';
+  $('note').textContent = '실제 앱 화면 · 운영자 계정(@zun_it_) 데이터로 띄운 FirstFeed · 폰은 그 계정의 30일 뒤 미리보기(「계획」 = 아직 안 만든 게시물)';
   const hlEls = D.highlights.map((h) => {
     const n = el('div', { className: 'hl' }, '<div class="c"><div style="background:' + h.bg + ';color:' + h.fg + '">' + esc(h.mark) + '</div></div><span>' + esc(h.label) + '</span>');
     $('hls').appendChild(n); return n;
   });
-  const tile = (t) => '<img src="' + esc(t.src) + '" alt="' + esc(t.title) + '" loading="lazy">' + (t.planned ? '<span class="badge">계획</span>' : '');
+  const tile = (t) => '<img src="' + esc(t.src) + '" alt="' + esc(t.title) + '" loading="lazy">' + (t.planned ? '<span class="pbadge">계획</span>' : '');
   const cards = D.tiles.slice(0, 9).map((t) => {
     const cell = el('div', { className: 'cell' }); const card = el('div', { className: 'card' }, tile(t));
     cell.appendChild(card); $('grid').appendChild(cell); return card;

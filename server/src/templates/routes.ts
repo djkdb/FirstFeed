@@ -8,13 +8,20 @@ import { RenderError } from '../render/browser.ts';
 import { measureBudget } from './budget.ts';
 import { DRAFTS, draftById } from './index.ts';
 import { lookFromSelection, resolveLook } from './look.ts';
-import { renderFrame } from './render-frame.ts';
+import { renderFrame, renderPhotoFrame } from './render-frame.ts';
 import { SAMPLE_CONTENT } from './sample.ts';
 import { fixedTemplate, fixTemplate, getTemplateVersion, listTemplateVersions } from './store.ts';
-import type { BrandLook, Draft } from './types.ts';
+import { DRAFT_IDS, type BrandLook, type Draft } from './types.ts';
 
 const BRAND_ID = 1;
-const DraftBody = z.object({ draftId: z.enum(['A', 'B', 'C', 'D', 'E', 'F']) });
+const DraftBody = z.object({ draftId: z.enum(DRAFT_IDS) });
+
+/** 미리 보기용 예시 사진: 브랜드 팔레트 색 도형만 그린 SVG(글자 · 사람 없음) */
+function samplePhoto(look: BrandLook): string {
+  const p = look.palette;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="${p.secondary}"/><circle cx="880" cy="300" r="230" fill="${p.accent}"/><rect x="140" y="420" width="560" height="360" rx="40" fill="${p.primary}"/><circle cx="330" cy="250" r="90" fill="${p.background}"/></svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
 
 async function previewFrames(db: Db, draft: Draft, look: BrandLook, dataDir: string) {
   const resolved = resolveLook(look, dataDir);
@@ -30,7 +37,14 @@ async function previewFrames(db: Db, draft: Draft, look: BrandLook, dataDir: str
       scale: r.scale,
       browser: `${r.browser.kind} ${r.browser.version}`,
       reference: r.browser.reference,
+      photo: false,
     });
+  }
+  // 사진 칸 시안: 본문에 예시 그림(팔레트 색 도형 — 사람이 올린 그림 자리)을 넣은 모양도 하나
+  const body = SAMPLE_CONTENT.find((c) => c.kind === 'body');
+  if (draft.bodyPhoto && body) {
+    const r = await renderPhotoFrame(db, draft, resolved, body, samplePhoto(resolved));
+    frames.push({ kind: body.kind, ok: r.ok, png: r.png ? `data:image/png;base64,${r.png.toString('base64')}` : null, problems: r.problems.map((p) => p.message), shorten: r.shorten.map((s) => s.message), scale: r.scale, browser: `${r.browser.kind} ${r.browser.version}`, reference: r.browser.reference, photo: true });
   }
   return frames;
 }
@@ -56,7 +70,7 @@ export function templateRoutes(db: Db, dataDir = env.dataDir) {
       const { missing } = lookFromSelection(db, BRAND_ID);
       const fixed = fixedTemplate(db, BRAND_ID);
       return c.json({
-        drafts: DRAFTS.map((d) => ({ id: d.id, name: d.name, description: d.description })),
+        drafts: DRAFTS.map((d) => ({ id: d.id, name: d.name, description: d.description, bodyPhoto: d.bodyPhoto === true })),
         missing,
         fixed: fixed ? { id: fixed.id, version: fixed.version, draftId: fixed.draftId, budget: fixed.budget, browser: fixed.browser, createdAt: fixed.createdAt } : null,
         versions: listTemplateVersions(db, BRAND_ID).map((v) => ({ id: v.id, version: v.version, draftId: v.draftId, createdAt: v.createdAt, palette: v.look.palette.name ?? null })),

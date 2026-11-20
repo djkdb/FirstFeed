@@ -50,11 +50,17 @@ export const DEFAULTS = {
     // 브랜딩 키트는 글·시각 두 호출 (결정 2026-10-14 · 브랜딩 키트 설계)
     brand_words: 'opus',
     brand_visual: 'opus',
+    // 개성 캐릭터 추천 3안(2026-11-08) — 브랜딩과 같은 모델. 고르는 값은 표 안에서만, 자기 평가 없음
+    character_suggest: 'opus',
     cover_titles: 'opus',
     // 30일 뒤 미리보기의 시리즈 계획 — 제목 카피라 표지 제목과 같은 모델 (FR-BR-6)
     series_plan: 'opus',
     card_body: 'opus',
+    // 카드뉴스 채팅으로 고치기(FR-MK-3) — 카드 글을 다시 쓰는 일이라 본문과 같은 모델
+    card_chat: 'opus',
     reel_script: 'opus',
+    // 릴스 모션그래픽(결정 2026-11-08) — 사용자가 「오퍼스 5.5로」라고 지정. 별칭 opus 가 지금 Opus 5.5 로 간다(11-04 토큰 측정의 실제 모델 이름)
+    reel_motion: 'opus',
     caption_set: 'opus',
     // 중간 발표용 최소 캡션 (결정 2026-10-18 · FR-PB-1)
     caption_min: 'opus',
@@ -89,6 +95,7 @@ export const DEFAULTS = {
     cover_titles: 300_000,
     // 본문은 카드 N장 + 그림 프롬프트를 한 번에 써서 출력이 길다
     card_body: 480_000,
+    card_chat: 360_000,
     caption_min: 240_000,
   } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
@@ -106,6 +113,11 @@ export const DEFAULTS = {
   'identity.maxTurns': 10,
   /** 지난 질문과 글자 유사도가 이 값 이상이면 같은 질문으로 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
   'identity.duplicateQuestionThreshold': 0.6,
+  /**
+   * 인터뷰 다양화(2026-11-08, 꼬리질문 v3) — 각도를 아는 최근 질문 window 개 안에서 각도 minDistinctLenses 가지 이상,
+   * 각도를 아는 질문이 formatBy 개가 될 때까지 모두 글로 답하기면 다른 방식을 하나 섞게. 첫 값은 감 — 측정 뒤 바꾼다
+   */
+  'identity.variety': { window: 5, minDistinctLenses: 4, formatBy: 4 },
   /** 축끼리 글자 유사도가 이 값 이상이면 겹친다고 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
   'identity.pillarOverlapThreshold': 0.5,
   /** 인용 최소 글자 수(공백·문장부호 제외). 너무 짧은 조각은 근거가 약해서 (CLAUDE.md 근거 규칙의 알려진 한계) */
@@ -219,6 +231,41 @@ export const DEFAULTS = {
   'preview.titleOverlapThreshold': 0.4,
   /** 캐러셀 최대 장수 — **확인됨**: 인스타 도움말 원문 "You can upload up to 20 photos and videos … as a single post"(help.instagram.com/269314186824048). 넘으면 업로드 폴더를 안 만든다(결정 2026-10-18) */
   'publish.maxCarousel': 20,
+  /**
+   * 티스토리 · 리틀리 브라우저 발행(사용자 결정 2026-11-20 — 티스토리 완전 자동 발행, 리틀리 자동 입력 · 저장은 사용자).
+   * 공식 API 가 없어(티스토리 글쓰기 API 2024 종료, 리틀리 공개 API 못 찾음) 사용자 컴퓨터의 브라우저 창을 열어 사용자가 직접 로그인한 뒤 앱이 화면을 채운다.
+   * 앱은 비밀번호를 받지 않고, 로그인은 이 앱 전용 브라우저 프로필(data 폴더)에만 남는다
+   */
+  /** 티스토리 블로그 이름 — 「이름.tistory.com」 의 이름. null 이면 화면이 먼저 묻는다 */
+  'blog.tistory.name': null as string | null,
+  /** 발행할 때 공개 범위 — public(공개) · private(비공개). 화면에서 바꾸면 DB */
+  'blog.tistory.visibility': 'public' as 'public' | 'private',
+  /** 티스토리 태그 최대 개수 — 캡션 해시태그에서 앞에서부터 */
+  'blog.tistory.maxTags': 10,
+  /** 리틀리 편집 화면 주소 */
+  'blog.litly.adminUrl': 'https://litt.ly/admin',
+  /** 열린 창에서 사용자가 로그인하기를 기다리는 시간(분) — 지나면 그만두고 다시 하라고 알린다 */
+  'blog.loginWaitMinutes': 5,
+  /** 브라우저 창을 띄우지 않고 돌릴지 — 테스트에서만 true(사용자는 창에서 로그인해야 해서 false) */
+  'blog.headless': false,
+  /** 릴스에 올리는 영상 · 사진 · 소리 한 개의 최대 크기 — 휴대폰 세로 영상 1분이 보통 100~300MB 라 넉넉히 */
+  'reels.maxUploadBytes': 2 * 1024 * 1024 * 1024,
+  /**
+   * 뽑은 릴스의 최종 음량 목표(LUFS, ffmpeg loudnorm). **외부 자료 등급** — 「인스타 기준 약 −14」는 공식 원문을 확인 못 함(결정 2026-11-05 · 0-10).
+   * ffmpeg 가 없거나 소리가 없으면 맞추지 않고 그대로 둔다
+   */
+  'reels.targetLufs': -14,
+  /**
+   * 릴스 모션 규칙(결정 2026-11-08). 단위는 프레임(30fps).
+   * - minHoldFrames: 등장이 끝나고 퇴장이 시작되기 전, 글자가 다 보이는 시간의 최소 — 0.4초. 읽을 틈 없이 움직이기만 하면 모션이 글을 가린다
+   * - subtitleMaxEnter · subtitleMaxExit: 자막은 말과 같이 가야 해서 등장 · 퇴장을 짧게(0.27초 · 0.2초)
+   * - maxEnterFrames · maxExitFrames · maxTransitionFrames: 1초 · 0.67초 · 0.67초 — 그보다 길면 릴스 속도에 비해 늘어진다
+   * - maxEmphasis: 글자 하나에 강조 낱말 수
+   * 감으로 정한 첫 값이다 — 측정(tests/results/2026-11-08-reel-motion.md) 뒤 바꾼다
+   */
+  'reels.motion': { minHoldFrames: 12, subtitleMaxEnter: 8, subtitleMaxExit: 6, maxEnterFrames: 30, maxExitFrames: 20, maxTransitionFrames: 20, maxEmphasis: 2 },
+  /** 선택 기능 받아쓰기(faster-whisper) 모델 — 클수록 정확하고 느리다(결정 2026-11-06) */
+  'reels.whisperModel': 'small',
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
@@ -229,8 +276,13 @@ export const DEFAULTS = {
    */
   'prompts.activeVersions': {
     self_review: 'v2',
-    identity_profile: 'v2',
-    identity_followup: 'v2',
+    // identity_followup v2 → v4 · identity_profile v2 → v3 (인터뷰 다양화, 사용자 지시 2026-11-08). 가상 응답자 시뮬레이션(AI 생성 답) 4명:
+    // 각도 5~6가지 · 방식 3가지(v2 는 글만) · 질문끼리 최대 유사도 낮음, 앱처럼 모자라면 더 묻게 하니 프로필 저장 v2 3/4(minji 10턴 실패) · v4 4/4(minji 8턴).
+    // 6턴 한 번만 재면 v3 · v4 가 needs_more 1/4 저장이라 흔들림이 크다(1회씩) — tests/results/2026-11-08-interview-sim-*.md, devlog 2026-11-08-02
+    identity_profile: 'v3',
+    // ~~v4~~ → v5(사용자 시뮬레이션 2026-11-09): 「왜 묻나요?」가 사용자를 「이 사람」으로 불렀다. 가상 응답자 4명 × 6질문에서
+    // v4 는 why_third_person 재작성 5번(질문 24개) · v5 는 0번(재작성 0) — tests/results/2026-11-09-interview-sim-why-v*.md
+    identity_followup: 'v5',
     brand_visual: 'v2',
     brand_words_review: 'v2',
     // 첫 실제 실행에서 v1 의 "인용 밖 사실 = fact" 가 소재의 다른 곳에 있는 사실까지 막아 세트가 실패 (devlog 2026-10-15-02)
@@ -250,6 +302,7 @@ export const DEFAULTS = {
     // ~~v3~~ → v4(사용자 결정 2026-10-24): 이미 만든 세트의 표지 제목을 넣고 같은 소재·표현 반복 금지. 데모 브랜드 v3 · v4 1회씩 — 겹침 규칙
     // (preview.titleOverlapThreshold) 위반 둘 다 0, 사람이 읽고 만든 카드 소재 반복 v3 1 → v4 0 (devlog 2026-10-24-01)
     series_plan: 'v4',
+    reel_motion: 'v1',
   } as Record<string, string>,
 };
 

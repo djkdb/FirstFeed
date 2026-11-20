@@ -10,16 +10,22 @@ import { localOnly } from './lib/local-only.ts';
 import { detectProviders, type DetectResult } from './ai/detect.ts';
 import type { AiService } from './ai/adapter.ts';
 import { JobStore } from './ai/jobs.ts';
+import { consoleFeed } from './console/feed.ts';
 import { runSmokeExtract } from './tasks/smoke-extract.ts';
 import { identityRoutes } from './identity/routes.ts';
 import { brandRoutes } from './brand/routes.ts';
 import { templateRoutes } from './templates/routes.ts';
 import { cardRoutes } from './cards/routes.ts';
 import { publishRoutes } from './publish/routes.ts';
+import { blogRoutes } from './publish/blog/routes.ts';
+import { settingsRoutes } from './secrets/routes.ts';
+import { SecretStore } from './secrets/store.ts';
+import { memoryKeychain } from './secrets/keychain.ts';
 import { PhoneShare } from './publish/phone-share.ts';
 import { demoRoutes } from './demo/routes.ts';
 import { previewRoutes } from './preview/routes.ts';
 import { homeRoutes } from './home/routes.ts';
+import { reelRoutes } from './reels/routes.ts';
 
 export interface AppDeps {
   db: Db;
@@ -30,6 +36,8 @@ export interface AppDeps {
   dataDir?: string;
   /** 폰으로 받기 서버 (테스트는 127.0.0.1 에 묶은 것) */
   phoneShare?: PhoneShare;
+  /** 설정 탭의 키 · 토큰(OS 키체인). 없으면 메모리 키체인 — 테스트용 */
+  secrets?: SecretStore;
 }
 
 const SmokeBody = z.object({ source: z.string().max(5000).optional() });
@@ -70,14 +78,18 @@ export function createApp(deps: AppDeps) {
       if (!state) return c.json({ error: '작업을 찾지 못했습니다. 서버가 다시 시작됐다면 시험 호출을 다시 실행하세요.' }, 404);
       return c.json(state);
     })
+    .get('/api/console', (c) => c.json(consoleFeed(deps.db, jobs, 1)))
     .post('/api/ai/jobs/:jobId/cancel', (c) => c.json({ cancelled: jobs.cancel(c.req.param('jobId')) }))
     .route('/api/identity', identityRoutes(deps.ai, jobs))
     .route('/api/brand', brandRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/templates', templateRoutes(deps.db, deps.dataDir))
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir, deps.phoneShare ?? new PhoneShare()))
+    .route('/api/blog', blogRoutes(deps.db, deps.dataDir))
+    .route('/api/settings', settingsRoutes(deps.secrets ?? new SecretStore(memoryKeychain())))
     .route('/api/demo', demoRoutes(deps.db))
     .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir))
+    .route('/api/reels', reelRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/home', homeRoutes(deps.db));
   return app;
 }

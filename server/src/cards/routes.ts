@@ -1,6 +1,7 @@
 // 카드뉴스 API (FR-MK-1). AI 단계(표지 후보·본문)는 작업 ID 를 먼저 돌려주고 화면이 상태를 묻는다(취소 가능).
 // 고른 표지·직접 줄일 초안은 화면이 보낸 내용이 아니라 서버가 기억한 작업 결과에서 꺼낸다
 import fs from 'node:fs';
+import { accountCharacter } from '../brand/characterStore.ts';
 import path from 'node:path';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
@@ -10,14 +11,17 @@ import type { JobStore } from '../ai/jobs.ts';
 import { env, getSetting } from '../config.ts';
 import { FlowError } from '../identity/flow.ts';
 import { activeProfile } from '../identity/store.ts';
+import { draftById } from '../templates/index.ts';
 import { fixedTemplate, getTemplateVersion } from '../templates/store.ts';
 import { finishWithEdits, generateBody, type BodyResult } from './body.ts';
 import { generateCovers, type CoversResult } from './covers.ts';
 import { checkGloss, editGloss, GlossError } from './gloss-check.ts';
 import { applyCoverImage, CoverImageError } from './cover-image.ts';
+import { applyBodyPhoto, CardPhotoError } from './card-photo.ts';
 import { AssetError } from '../brand/assets.ts';
 import { addSource, getSet, getSource, listSets, rendersDir, setJobIds } from './store.ts';
 import { rewriteHistory } from '../ai/history.ts';
+import { applyChat, CHAT_PNG, ChatError, discardChat, listChat, proposeChat, revertChat } from './chat.ts';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
@@ -103,7 +107,7 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
     .get('/sets/:id', (c) => {
       const set = getSet(db, Number(c.req.param('id')));
       if (!set) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
-      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null });
+      return c.json({ set, source: getSource(db, set.sourceId), draftId: getTemplateVersion(db, set.templateVersionId)?.draftId ?? null, bodyPhoto: draftById(getTemplateVersion(db, set.templateVersionId)?.draftId ?? '')?.bodyPhoto === true, character: accountCharacter(db, BRAND_ID) });
     })
     // 재작성 기록(결정 2026-10-21 · C): 이 세트를 만든 표지 · 본문 작업에서 걸린 규칙과 바뀐 칸 전/후
     .get('/sets/:id/rewrites', (c) => {
@@ -118,6 +122,43 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
       if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
       return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
     })
+    // 채팅으로 고치기(FR-MK-3): 지시 → AI 제안(작업 ID) → 전/후 보고 적용 · 버리기 · 되돌리기
+    .get('/sets/:id/chat', (c) => c.json({ items: listChat(db, Number(c.req.param('id'))) }))
+    .post(
+      '/sets/:id/chat',
+      validator('json', (v, c) => {
+        const b = z.object({ message: z.string().trim().min(2).max(500), targets: z.array(z.number().int().min(0).max(20)).max(20).nullable().optional() }).safeParse(v);
+        return b.success ? b.data : c.json(bad('고칠 내용을 2자 이상 500자 이하로 써 주세요.'), 400);
+      }),
+      (c) => {
+        const setId = Number(c.req.param('id'));
+        if (!getSet(db, setId)) return c.json(bad('카드 세트를 찾지 못했습니다.'), 404);
+        const { message, targets } = c.req.valid('json');
+        return c.json({ jobId: jobs.start('card_chat', (j) => proposeChat(ai, BRAND_ID, setId, message, targets?.length ? targets : null, j, dataDir)) });
+      },
+    )
+    .post('/sets/:id/chat/:cid/:action', (c) => {
+      const setId = Number(c.req.param('id'));
+      const cid = Number(c.req.param('cid'));
+      try {
+        const a = c.req.param('action');
+        if (a === 'apply') applyChat(db, dataDir, setId, cid);
+        else if (a === 'discard') discardChat(db, setId, cid);
+        else if (a === 'revert') revertChat(db, dataDir, setId, cid);
+        else return c.json(bad('알 수 없는 동작입니다.'), 400);
+        return c.json({ ok: true });
+      } catch (err) {
+        if (err instanceof ChatError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    .get('/sets/:id/chat-png/:file', (c) => {
+      const file = c.req.param('file');
+      if (!CHAT_PNG.test(file)) return c.json(bad('파일 이름이 맞지 않습니다.'), 400);
+      const p = path.join(rendersDir(dataDir, Number(c.req.param('id'))), file);
+      if (!fs.existsSync(p)) return c.json(bad('그림을 찾지 못했습니다.'), 404);
+      return c.body(fs.readFileSync(p), 200, { 'content-type': 'image/png', 'cache-control': 'no-store' });
+    })
     // 그림 바탕 표지(시안 F)에 그림 올리기 — 본문은 파일 바이트 그대로. 받으면 표지만 다시 그린다
     .post('/sets/:id/cover-image', async (c) => {
       try {
@@ -125,6 +166,24 @@ export function cardRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataDir)
       } catch (err) {
         if (err instanceof AssetError) return c.json(bad(`${err.message} ${err.hint}`), 400);
         if (err instanceof CoverImageError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    // 본문 카드 사진 칸(사진 칸 시안 G · I · J) — 본문은 파일 바이트 그대로, 빼기는 DELETE. 받으면 그 카드만 다시 그린다
+    .post('/sets/:id/cards/:idx/photo', async (c) => {
+      try {
+        return c.json(await applyBodyPhoto(db, dataDir, Number(c.req.param('id')), Number(c.req.param('idx')), new Uint8Array(await c.req.arrayBuffer())));
+      } catch (err) {
+        if (err instanceof AssetError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        if (err instanceof CardPhotoError) return c.json(bad(err.message), 400);
+        throw err;
+      }
+    })
+    .delete('/sets/:id/cards/:idx/photo', async (c) => {
+      try {
+        return c.json(await applyBodyPhoto(db, dataDir, Number(c.req.param('id')), Number(c.req.param('idx')), null));
+      } catch (err) {
+        if (err instanceof CardPhotoError) return c.json(bad(err.message), 400);
         throw err;
       }
     })

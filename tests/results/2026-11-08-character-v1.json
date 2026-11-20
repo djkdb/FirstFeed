@@ -1,0 +1,536 @@
+[
+ {
+  "run": 1,
+  "id": "me",
+  "kind": "실제·공개",
+  "ok": true,
+  "rewrites": 0,
+  "seconds": 13,
+  "reasons": [],
+  "error": null,
+  "model": "claude-opus-5-5",
+  "tokens": {
+   "input": 2,
+   "cacheWrite": 5998,
+   "cacheRead": 0,
+   "output": 1110
+  },
+  "candidates": [
+   {
+    "name": "Zun",
+    "concept": "새 AI 도구를 먼저 켜 보고 쓰는 법을 들어 보이는 작은 초록 로봇",
+    "why": "'직접 써 본 새 도구' 축과 얼굴 대신 캐릭터로 보여 주는 방식을 따른 무난한 안",
+    "kind": "object",
+    "species": "robot",
+    "style": "flat",
+    "line": "clean",
+    "shading": "cel",
+    "eyes": "round",
+    "hair": "none",
+    "marking": "blush",
+    "outfit": "none",
+    "accessories": [
+     "laptop",
+     "badge"
+    ],
+    "personality": [
+     "curious",
+     "cheerful"
+    ],
+    "expression": "smile",
+    "pose": "hold",
+    "body_color": "primary",
+    "accent_color": "accent",
+    "spec": {
+     "name": "Zun",
+     "kind": "object",
+     "species": "robot",
+     "style": "flat",
+     "line": "clean",
+     "shading": "cel",
+     "eyes": "round",
+     "hair": "none",
+     "marking": "blush",
+     "outfit": "none",
+     "accessories": [
+      "laptop",
+      "badge"
+     ],
+     "personality": [
+      "curious",
+      "cheerful"
+     ],
+     "expression": "smile",
+     "pose": "hold",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "primary",
+     "accentColor": "accent",
+     "extra": ""
+    }
+   },
+   {
+    "name": "Byte",
+    "concept": "후드티에 비니 차림으로 노트북 화면을 가리키며 따라 해 보자는 동글이 선배",
+    "why": "대학생·주니어 개발자 눈높이에서 쉽게 따라 하게 돕는 말투를 따름",
+    "kind": "human",
+    "species": "round",
+    "style": "chibi",
+    "line": "bold",
+    "shading": "flat",
+    "eyes": "glasses",
+    "hair": "beanie",
+    "marking": "none",
+    "outfit": "hoodie",
+    "accessories": [
+     "laptop",
+     "coffee"
+    ],
+    "personality": [
+     "nerdy",
+     "calm"
+    ],
+    "expression": "grin",
+    "pose": "point",
+    "body_color": "text",
+    "accent_color": "primary",
+    "spec": {
+     "name": "Byte",
+     "kind": "human",
+     "species": "round",
+     "style": "chibi",
+     "line": "bold",
+     "shading": "flat",
+     "eyes": "glasses",
+     "hair": "beanie",
+     "marking": "none",
+     "outfit": "hoodie",
+     "accessories": [
+      "laptop",
+      "coffee"
+     ],
+     "personality": [
+      "nerdy",
+      "calm"
+     ],
+     "expression": "grin",
+     "pose": "point",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "text",
+     "accentColor": "primary",
+     "extra": ""
+    }
+   },
+   {
+    "name": "Blip",
+    "concept": "바이브코딩으로 뭔가 만들 때마다 폴짝 튀어 오르는 노란 픽셀 슬라임",
+    "why": "'AI로 만든 것' 축의 만드는 재미와 그날 바로 해 보는 마무리를 살린 과감한 안",
+    "kind": "creature",
+    "species": "slime",
+    "style": "pixel",
+    "line": "none",
+    "shading": "flat",
+    "eyes": "dot",
+    "hair": "none",
+    "marking": "sticker",
+    "outfit": "none",
+    "accessories": [
+     "headphones",
+     "pencil"
+    ],
+    "personality": [
+     "playful",
+     "curious"
+    ],
+    "expression": "grin",
+    "pose": "jump",
+    "body_color": "accent",
+    "accent_color": "primary",
+    "spec": {
+     "name": "Blip",
+     "kind": "creature",
+     "species": "slime",
+     "style": "pixel",
+     "line": "none",
+     "shading": "flat",
+     "eyes": "dot",
+     "hair": "none",
+     "marking": "sticker",
+     "outfit": "none",
+     "accessories": [
+      "headphones",
+      "pencil"
+     ],
+     "personality": [
+      "playful",
+      "curious"
+     ],
+     "expression": "grin",
+     "pose": "jump",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "accent",
+     "accentColor": "primary",
+     "extra": ""
+    }
+   }
+  ]
+ },
+ {
+  "run": 1,
+  "id": "doyun",
+  "kind": "AI 생성",
+  "ok": true,
+  "rewrites": 0,
+  "seconds": 15,
+  "reasons": [],
+  "error": null,
+  "model": "claude-opus-5-5",
+  "tokens": {
+   "input": 2,
+   "cacheWrite": 4111,
+   "cacheRead": 1759,
+   "output": 1176
+  },
+  "candidates": [
+   {
+    "name": "Nibble",
+    "concept": "볼에 동전을 모아 두는, 귀찮음 많지만 알뜰한 햄스터 메이트",
+    "why": "돈 관리를 귀찮아하는 20대 직장인이 편하게 느끼도록 친구처럼 가볍고 친근한 말투를 따름",
+    "kind": "animal",
+    "species": "hamster",
+    "style": "flat",
+    "line": "clean",
+    "shading": "cel",
+    "eyes": "round",
+    "hair": "none",
+    "marking": "blush",
+    "outfit": "none",
+    "accessories": [
+     "laptop",
+     "coffee"
+    ],
+    "personality": [
+     "cheerful",
+     "curious"
+    ],
+    "expression": "smile",
+    "pose": "wave",
+    "body_color": "secondary",
+    "accent_color": "accent",
+    "spec": {
+     "name": "Nibble",
+     "kind": "animal",
+     "species": "hamster",
+     "style": "flat",
+     "line": "clean",
+     "shading": "cel",
+     "eyes": "round",
+     "hair": "none",
+     "marking": "blush",
+     "outfit": "none",
+     "accessories": [
+      "laptop",
+      "coffee"
+     ],
+     "personality": [
+      "cheerful",
+      "curious"
+     ],
+     "expression": "smile",
+     "pose": "wave",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "secondary",
+     "accentColor": "accent",
+     "extra": ""
+    }
+   },
+   {
+    "name": "Dusk",
+    "concept": "퇴근 후 후드티 차림으로 혼자 앱을 만드는 졸린 눈의 메이커",
+    "why": "광고비 없이 퇴근 후 혼자 앱을 키우는 근황 축과 솔직하게 털어놓는 말투를 담음",
+    "kind": "human",
+    "species": "round",
+    "style": "chibi",
+    "line": "bold",
+    "shading": "flat",
+    "eyes": "sleepy",
+    "hair": "beanie",
+    "marking": "none",
+    "outfit": "hoodie",
+    "accessories": [
+     "laptop",
+     "coffee"
+    ],
+    "personality": [
+     "calm",
+     "grumpy"
+    ],
+    "expression": "focused",
+    "pose": "sit",
+    "body_color": "primary",
+    "accent_color": "secondary",
+    "spec": {
+     "name": "Dusk",
+     "kind": "human",
+     "species": "round",
+     "style": "chibi",
+     "line": "bold",
+     "shading": "flat",
+     "eyes": "sleepy",
+     "hair": "beanie",
+     "marking": "none",
+     "outfit": "hoodie",
+     "accessories": [
+      "laptop",
+      "coffee"
+     ],
+     "personality": [
+      "calm",
+      "grumpy"
+     ],
+     "expression": "focused",
+     "pose": "sit",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "primary",
+     "accentColor": "secondary",
+     "extra": ""
+    }
+   },
+   {
+    "name": "Scribble",
+    "concept": "기능을 적었다 지웠다 하는, 연필 든 꼬깃한 메모지 캐릭터",
+    "why": "기능 제작기와 지운 기능 노트 축처럼 만들고 지우며 겪은 일을 기록하는 느낌을 살림",
+    "kind": "object",
+    "species": "note",
+    "style": "crayon",
+    "line": "sketchy",
+    "shading": "grain",
+    "eyes": "dot",
+    "hair": "none",
+    "marking": "sticker",
+    "outfit": "none",
+    "accessories": [
+     "pencil",
+     "badge"
+    ],
+    "personality": [
+     "playful",
+     "nerdy"
+    ],
+    "expression": "thinking",
+    "pose": "hold",
+    "body_color": "accent",
+    "accent_color": "primary",
+    "spec": {
+     "name": "Scribble",
+     "kind": "object",
+     "species": "note",
+     "style": "crayon",
+     "line": "sketchy",
+     "shading": "grain",
+     "eyes": "dot",
+     "hair": "none",
+     "marking": "sticker",
+     "outfit": "none",
+     "accessories": [
+      "pencil",
+      "badge"
+     ],
+     "personality": [
+      "playful",
+      "nerdy"
+     ],
+     "expression": "thinking",
+     "pose": "hold",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "accent",
+     "accentColor": "primary",
+     "extra": ""
+    }
+   }
+  ]
+ },
+ {
+  "run": 1,
+  "id": "seoyeon",
+  "kind": "AI 생성",
+  "ok": true,
+  "rewrites": 0,
+  "seconds": 9,
+  "reasons": [],
+  "error": null,
+  "model": "claude-opus-5-5",
+  "tokens": {
+   "input": 2,
+   "cacheWrite": 4124,
+   "cacheRead": 1759,
+   "output": 735
+  },
+  "candidates": [
+   {
+    "name": "Mochi",
+    "concept": "줄 끝에서 빼꼼 고개 내밀고 맛을 솔직하게 판정해 주는 햄스터",
+    "why": "두 번 가 본 판정 리뷰 축과, 친구처럼 편하게 결론부터 말하는 말투를 따랐어요",
+    "kind": "animal",
+    "species": "hamster",
+    "style": "sticker",
+    "line": "bold",
+    "shading": "cel",
+    "eyes": "round",
+    "hair": "none",
+    "marking": "blush",
+    "outfit": "apron",
+    "accessories": [
+     "badge",
+     "coffee"
+    ],
+    "personality": [
+     "cheerful",
+     "confident"
+    ],
+    "expression": "grin",
+    "pose": "thumbs",
+    "body_color": "secondary",
+    "accent_color": "primary",
+    "spec": {
+     "name": "Mochi",
+     "kind": "animal",
+     "species": "hamster",
+     "style": "sticker",
+     "line": "bold",
+     "shading": "cel",
+     "eyes": "round",
+     "hair": "none",
+     "marking": "blush",
+     "outfit": "apron",
+     "accessories": [
+      "badge",
+      "coffee"
+     ],
+     "personality": [
+      "cheerful",
+      "confident"
+     ],
+     "expression": "grin",
+     "pose": "thumbs",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "secondary",
+     "accentColor": "primary",
+     "extra": ""
+    }
+   },
+   {
+    "name": "Plum",
+    "concept": "맛없으면 시큰둥한 얼굴로 솔직하게 말하는 디저트 머그컵",
+    "why": "맛없으면 맛없다고 쓰는 솔직한 말투와, 주말 카페를 찾는 사람의 시선을 담았어요",
+    "kind": "object",
+    "species": "mug",
+    "style": "flat",
+    "line": "clean",
+    "shading": "flat",
+    "eyes": "sleepy",
+    "hair": "none",
+    "marking": "sticker",
+    "outfit": "none",
+    "accessories": [
+     "pencil",
+     "badge"
+    ],
+    "personality": [
+     "grumpy",
+     "calm"
+    ],
+    "expression": "thinking",
+    "pose": "sit",
+    "body_color": "primary",
+    "accent_color": "accent",
+    "spec": {
+     "name": "Plum",
+     "kind": "object",
+     "species": "mug",
+     "style": "flat",
+     "line": "clean",
+     "shading": "flat",
+     "eyes": "sleepy",
+     "hair": "none",
+     "marking": "sticker",
+     "outfit": "none",
+     "accessories": [
+      "pencil",
+      "badge"
+     ],
+     "personality": [
+      "grumpy",
+      "calm"
+     ],
+     "expression": "thinking",
+     "pose": "sit",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "primary",
+     "accentColor": "accent",
+     "extra": ""
+    }
+   },
+   {
+    "name": "Juno",
+    "concept": "직접 그린 동네 디저트 지도를 들고 카페를 다니는 그림책 속 친구",
+    "why": "동네 디저트 지도와 디저트 일상 기록 축을 따라 손그림 느낌으로 담았어요",
+    "kind": "human",
+    "species": "round",
+    "style": "storybook",
+    "line": "sketchy",
+    "shading": "grain",
+    "eyes": "smile",
+    "hair": "bun",
+    "marking": "none",
+    "outfit": "overalls",
+    "accessories": [
+     "backpack",
+     "pencil"
+    ],
+    "personality": [
+     "curious",
+     "playful"
+    ],
+    "expression": "smile",
+    "pose": "hold",
+    "body_color": "accent",
+    "accent_color": "secondary",
+    "spec": {
+     "name": "Juno",
+     "kind": "human",
+     "species": "round",
+     "style": "storybook",
+     "line": "sketchy",
+     "shading": "grain",
+     "eyes": "smile",
+     "hair": "bun",
+     "marking": "none",
+     "outfit": "overalls",
+     "accessories": [
+      "backpack",
+      "pencil"
+     ],
+     "personality": [
+      "curious",
+      "playful"
+     ],
+     "expression": "smile",
+     "pose": "hold",
+     "background": "plain",
+     "aspect": "1:1",
+     "bodyColor": "accent",
+     "accentColor": "secondary",
+     "extra": ""
+    }
+   }
+  ]
+ }
+]

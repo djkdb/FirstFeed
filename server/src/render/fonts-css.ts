@@ -9,12 +9,12 @@ export const FONT_ORIGIN = 'http://render.firstfeed.local';
 const PREFIX = `${FONT_ORIGIN}/files/`;
 
 /** 렌더러가 내줄 수 있는 폴더 — 이 밖의 경로는 내주지 않는다 */
-export const SERVABLE_DIRS = ['node_modules/@fontsource', 'node_modules/pretendard', 'node_modules/@sun-typeface', 'app/public/fonts'];
+export const SERVABLE_DIRS = ['node_modules/@fontsource', 'node_modules/pretendard', 'node_modules/@sun-typeface', 'node_modules/wanted-sans', 'app/public/fonts'];
 
-const WEIGHT_FILE: Record<number, string> = { 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold' };
+const WEIGHT_FILE: Record<number, string> = { 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold', 800: 'ExtraBold', 900: 'Black' };
 
-function face(family: string, weight: number, rel: string): string {
-  return `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:block;src:url(${PREFIX}${rel}) format('woff2');}`;
+function face(family: string, weight: number, rel: string, format: 'woff2' | 'truetype' = 'woff2'): string {
+  return `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:block;src:url(${PREFIX}${rel}) format('${format}');}`;
 }
 
 /** fontsource CSS 는 unicode-range 로 잘린 파일 여러 개 — 주소만 바꿔 그대로 쓴다 */
@@ -32,6 +32,12 @@ function cssFor(f: FontEntry): string {
       if (f.source.kind === 'npm' && f.source.package.startsWith('@fontsource/')) return fontsourceCss(f.source.package, w);
       if (f.id === 'pretendard') return face(f.family, w, `node_modules/pretendard/dist/web/static/woff2/Pretendard-${WEIGHT_FILE[w]}.woff2`);
       if (f.id === 'suit') return face(f.family, w, `node_modules/@sun-typeface/suit/fonts/static/woff2/SUIT-${WEIGHT_FILE[w]}.woff2`);
+      if (f.id === 'wanted-sans') return face(f.family, w, `node_modules/wanted-sans/fonts/webfonts/static/complete/woff2/WantedSans-${WEIGHT_FILE[w]}.woff2`);
+      // 예약 이름이 있어 받은 TTF 그대로(fonts.ts 주석)
+      if (f.id === 'gmarket-sans') return face(f.family, w, `app/public/fonts/gmarket-sans/GmarketSansTTF${WEIGHT_FILE[w]}.ttf`, 'truetype');
+      if (f.id === 'cafe24-ssurround') return face(f.family, w, 'app/public/fonts/cafe24-ssurround/Cafe24Ssurround-v2.0.woff2');
+      if (f.id === 'cafe24-ohsquare') return face(f.family, w, 'app/public/fonts/cafe24-ohsquare/Cafe24Ohsquare-v2.0.woff2');
+      if (f.id === 'nanum-square') return face(f.family, w, `app/public/fonts/nanum-square/NanumSquare${({ 400: 'R', 700: 'B', 800: 'EB' } as Record<number, string>)[w]}.ttf`, 'truetype');
       if (f.id === 'paperlogy') return face(f.family, w, `app/public/fonts/paperlogy/Paperlogy-${w === 700 ? '7Bold' : '8ExtraBold'}.woff2`);
       throw new Error(`폰트 ${f.id} 의 렌더링용 파일을 정하지 않았습니다 — fonts-css.ts 에 더하세요.`);
     })

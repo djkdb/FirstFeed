@@ -8,6 +8,7 @@
 // - 같은 이름 폴더가 있으면 덮어쓰지 않고 -2, -3 … · 서버는 업로드 루트 밖에 쓰지 않는다
 // - 표시된 풀이 문장(카드·캡션)을 모두 확인하기 전엔 만들지 않는다
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -16,6 +17,10 @@ import type { Db } from '../db/index.ts';
 import { uncheckedGlosses } from '../cards/gloss-check.ts';
 import { getSet, rendersDir } from '../cards/store.ts';
 import { addExport, captionText, getCaption, getExport } from './store.ts';
+import { accountCharacter } from '../brand/characterStore.ts';
+import { cardImageName, withCharacter } from '../cards/imageName.ts';
+
+const BRAND_ID = 1; // 브랜드 여러 개(FR-AC-3)는 F 범위
 
 export class ExportError extends Error {}
 
@@ -86,9 +91,12 @@ export function exportSet(db: Db, dataDir: string, setId: number, now: Date = ne
     fs.writeFileSync(path.join(dir, '캡션.txt'), `${captionText(caption)}\n`);
     files.push('캡션.txt');
   }
-  const prompts = set.cards.filter((c) => c.image).map((c) => `${String(c.idx + 1).padStart(2, '0')}번 카드 · ${c.image!.filename}\n${c.image!.prompt}\n`);
+  // 파일 이름은 카드 번호에 맞추고, 계정 캐릭터가 있으면 고정 설명을 앞에 붙인다(그림 도구가 생김새를 알게)
+  const character = accountCharacter(db, BRAND_ID);
+  const prompts = set.cards.filter((c) => c.image).map((c) => `${String(c.idx + 1).padStart(2, '0')}번 카드 · ${cardImageName(c.idx, c.image!.filename)}\n${withCharacter(c.image!.prompt, character)}\n`);
   if (prompts.length) {
-    fs.writeFileSync(path.join(dir, '그림-프롬프트.txt'), `# 카드 그림 프롬프트 — 그림 생성 도구에 붙여 넣어 만드세요\n\n${prompts.join('\n')}`);
+    const head = character ? `캐릭터 ${character.name} 의 고정 설명을 프롬프트 앞에 붙였어요 — 같은 캐릭터로 나오게, 캐릭터 시트 그림이 있으면 참고 그림으로 같이 넣으세요.\n\n` : '';
+    fs.writeFileSync(path.join(dir, '그림-프롬프트.txt'), `# 카드 그림 프롬프트 — 그림 생성 도구에 붙여 넣어 만드세요\n${head ? `\n${head}` : '\n'}${prompts.join('\n')}`);
     files.push('그림-프롬프트.txt');
   }
   const checked = [
@@ -99,8 +107,30 @@ export function exportSet(db: Db, dataDir: string, setId: number, now: Date = ne
     fs.writeFileSync(path.join(dir, '확인한-설명.txt'), `# 소재에 없는 설명 — 올리기 전에 사람이 확인한 문장\n\n${checked.join('\n')}\n`);
     files.push('확인한-설명.txt');
   }
-  const id = addExport(db, setId, dir, files.length);
+  const id = addExport(db, setId, dir, files.length, setFingerprint(db, dataDir, setId));
   return { id, dir, files };
+}
+
+/**
+ * 세트 지문 — 업로드 폴더에 들어가는 것(카드 원고 · 그린 PNG · 그림 프롬프트 · 캡션)이 바뀌면 달라진다.
+ * PNG 는 바이트를 다시 읽지 않고 크기 · 수정 시각으로(다시 그리면 같은 이름 파일을 새로 쓴다)
+ */
+export function setFingerprint(db: Db, dataDir: string, setId: number): string | null {
+  const set = getSet(db, setId);
+  if (!set) return null;
+  const h = createHash('sha1');
+  for (const c of set.cards) {
+    h.update(JSON.stringify([c.idx, c.content, c.image]));
+    try {
+      const st = fs.statSync(path.join(rendersDir(dataDir, setId), c.pngFile));
+      h.update(`${st.size}:${st.mtimeMs}`);
+    } catch {
+      h.update('missing');
+    }
+  }
+  const caption = getCaption(db, setId);
+  h.update(caption ? captionText(caption) : '');
+  return h.digest('hex').slice(0, 16);
 }
 
 /** 「폴더 열기」 — 이 앱이 만든(exports 에 적힌) 폴더만. 셸을 거치지 않고 인자로 넘긴다 */

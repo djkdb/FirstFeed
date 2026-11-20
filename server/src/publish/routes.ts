@@ -10,7 +10,7 @@ import { FlowError } from '../identity/flow.ts';
 import { uncheckedGlosses } from '../cards/gloss-check.ts';
 import { getSet } from '../cards/store.ts';
 import { checkCaptionGloss, editCaption, generateCaption } from './caption.ts';
-import { ExportError, exportSet, openExport, uploadRoot } from './export.ts';
+import { ExportError, exportSet, openExport, setFingerprint, uploadRoot } from './export.ts';
 import { PhoneShare } from './phone-share.ts';
 import { captionText, getCaption, listExports } from './store.ts';
 
@@ -25,7 +25,8 @@ export function publishRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
     return {
       caption: caption ? { ...caption, text: captionText(caption) } : null,
       unchecked: (set ? uncheckedGlosses(set).length : 0) + (caption?.glosses.filter((g) => !g.checkedAt).length ?? 0),
-      exports: listExports(db, setId),
+      // 폴더를 만든 뒤 세트가 바뀌었으면 stale — 화면이 「다시 만드세요」(옛 그림을 올리지 않게)
+      exports: listExports(db, setId).map((e) => ({ ...e, stale: e.fingerprint !== null && e.fingerprint !== setFingerprint(db, dataDir, setId) })),
     };
   };
   return new Hono()

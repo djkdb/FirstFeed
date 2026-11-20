@@ -1,0 +1,643 @@
+[
+ {
+  "persona": "me",
+  "kind": "실제·공개 바탕",
+  "version": "v2",
+  "questions": [
+   {
+    "no": 1,
+    "lens": null,
+    "format": "open",
+    "question": "최근에 직접 써 본 AI·개발 도구 중에서, 다른 사람에게 꼭 알려 주고 싶었던 것을 하나만 꼽는다면 무엇인가요?",
+    "extra": "",
+    "answer": "8월부터 계속 써 온 Claude예요. 이걸로 이것저것 만들어 보면서 알게 된 걸 정리했는데, 소개만 하고 끝내지 않고 \"그래서 오늘 뭘 하면 되는지\"까지 알려 주고 싶어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 2,
+    "lens": null,
+    "format": "open",
+    "question": "“Claude로 이것저것 만들어 보셨다”고 하셨는데, 그중 가장 기억에 남는 것 하나만 골라 무엇인지 알려 주실 수 있나요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 3,
+    "lens": null,
+    "format": "open",
+    "question": "Claude를 쓰면서 가장 자주 하게 된 일은 무엇에 가장 가까운가요?",
+    "extra": "",
+    "answer": "웹·앱 만들어 보기가 제일 가까워요. 8월부터 Claude Max 쓰면서 이것저것 만들어 본 게 제일 많고, 그러다 알게 된 걸 정리해서 올리고 있어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": null,
+    "format": "open",
+    "question": "“웹·앱 만들어 보기”를 가장 많이 하셨다고 했는데, 그중 가장 최근에 Claude로 만든 것은 무엇인가요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 5,
+    "lens": null,
+    "format": "open",
+    "question": "이름이 기억나지 않아도 괜찮아요. Claude로 만들어 본 것 중 가장 가까운 종류를 골라 주실래요?",
+    "extra": "",
+    "answer": "이것저것 만들어 봤는데 굳이 하나 고르면 자동화 스크립트가 제일 가까워요. 귀찮은 걸 줄이는 쪽으로 많이 써 봤어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": null,
+    "format": "open",
+    "question": "“귀찮은 걸 줄이는 쪽”으로 자동화 스크립트를 써 보셨다고 했는데, 그중 어떤 귀찮은 일을 줄이려고 했는지 하나만 알려 주실 수 있나요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 0,
+  "seconds": 110,
+  "maxSimilarity": 0.28,
+  "distinctLenses": null,
+  "formats": [
+   "open"
+  ],
+  "profile": {
+   "outcome": "saved",
+   "voiceRules": [
+    "전공자가 아니어도 따라 할 수 있게 용어를 풀어 쉽게 말한다",
+    "직접 써 보고 만들어 본 경험을 바탕으로, 겪은 그대로 말한다",
+    "소개로 끝내지 않고 '그래서 오늘 뭘 하면 되는지'로 마무리한다"
+   ],
+   "pillars": [
+    "써 보고 오늘 할 일 — 직접 써 본 AI·개발 도구를 소개하고, 오늘 바로 해 볼 수 있는 한 가지까지 정리해 올려요.",
+    "만들어 본 웹·앱 — Claude로 웹·앱을 만들어 보면서 거친 과정과 비하인드, 그러다 알게 된 걸 기록해요.",
+    "귀찮음 줄이는 자동화 — 반복되는 귀찮은 일을 줄이려고 만든 자동화 스크립트와 그 쓰는 법을 공유해요."
+   ],
+   "accountLine": "새 AI·개발 도구, 직접 써 보고 바로 쓰게 정리"
+  }
+ },
+ {
+  "persona": "me",
+  "kind": "실제·공개 바탕",
+  "version": "v3",
+  "questions": [
+   {
+    "no": 1,
+    "lens": "experience",
+    "format": "open",
+    "question": "최근에 직접 써 본 AI·개발 도구 중 가장 기억에 남는 하나는 뭔가요?",
+    "extra": "",
+    "answer": "8월부터 쓰고 있는 Claude Max요. 이걸로 이것저것 만들어 보면서 알게 된 게 제일 많아서, 그걸 정리해서 올리는 게 지금 계정의 시작이 됐어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 2,
+    "lens": "opinion",
+    "format": "this_or_that",
+    "question": "AI 도구를 처음 쓰는 사람에게 어느 쪽을 권하고 싶으세요?",
+    "extra": "「여러 도구를 두루 써 보기」 / 「하나를 깊게 파고들기」 → 하나를 깊게 파고들기",
+    "answer": "저도 Claude 하나를 쓰면서 이것저것 만들어 보다가 감이 잡혔어요. 하나를 써 봐야 뭘 시키면 잘 되는지 보이고, 그다음에 다른 도구를 봐도 비교가 돼요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": "struggle",
+    "format": "open",
+    "question": "Claude로 \"이것저것 만들어 보면서\" 가장 오래 헤맨 건 뭐였나요?",
+    "extra": "",
+    "answer": "솔직히 \"뭘 만들지\"보다 \"어떻게 시켜야 내가 원하는 게 나오는지\"가 제일 오래 걸렸어요. 처음엔 대충 던졌다가 계속 엉뚱한 결과만 나와서, 공식 문서 보고 직접 써 보면서 하나씩 감을 잡았어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": "voice",
+    "format": "rewrite",
+    "question": "이 문장을 내 말투로 다시 써 주세요. 인스타 게시물에 올린다고 생각하고, 평소 말하듯 편하게요.",
+    "extra": "예시 문장: AI에게 일을 시킬 때는 원하는 결과를 구체적으로 적어 주는 것이 중요합니다.",
+    "answer": "AI한테 일 시킬 땐 \"알아서 해줘\"는 금물이에요. 원하는 결과를 구체적으로 적어 줘야 진짜 쓸 만한 게 나와요. 오늘 바로 프롬프트 한 줄만 더 구체적으로 바꿔 보세요!",
+    "answerKind": "text"
+   },
+   {
+    "no": 5,
+    "lens": "quirk",
+    "format": "open",
+    "question": "Claude에게 일을 시킬 때, 남들은 안 해도 나는 꼭 하는 습관이 있다면 하나만 알려 주세요.",
+    "extra": "",
+    "answer": "시키기 전에 공식 문서나 발표 원문부터 직접 읽고, 그 내용을 같이 넘겨요. 그래야 AI가 소문이나 옛날 정보 말고 확인된 걸 기준으로 만들어 줘요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": "others_view",
+    "format": "open",
+    "question": "주변 사람들이 AI나 개발 얘기만 나오면 나한테 자주 묻는 건 어떤 거예요?",
+    "extra": "",
+    "answer": "\"요즘 AI 뭐 쓰는 게 좋아?\", \"그거 어떻게 써야 해?\" 같은 걸 제일 많이 물어봐요. 저는 그럴 때 소개만 하지 않고 오늘 바로 뭘 해 보면 되는지까지 알려주려고 해요.",
+    "answerKind": "text"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 0,
+  "seconds": 115,
+  "maxSimilarity": 0.08,
+  "distinctLenses": 6,
+  "formats": [
+   "open",
+   "this_or_that",
+   "rewrite"
+  ],
+  "profile": {
+   "outcome": "saved",
+   "voiceRules": [
+    "딱딱한 '~습니다' 대신 편한 해요체로 짧은 문장 두세 개로 말해요",
+    "하면 안 되는 말은 \"알아서 해줘\"처럼 따옴표로 콕 집어 보여 줘요",
+    "끝은 '오늘 바로 ~해 보세요!'처럼 바로 해 볼 행동과 느낌표로 맺어요"
+   ],
+   "pillars": [
+    "하나 깊게 파기 — Claude 하나로 이것저것 만들어 본 결과물과 과정을 보여 드려요",
+    "시키는 법 삽질기 — 대충 던졌다 엉뚱한 결과가 나온 경험에서 찾은, 원하는 걸 얻는 지시법을 나눠요",
+    "원문부터 확인 — 새로 나온 AI·개발 도구를 소문 말고 공식 문서·발표 원문 기준으로 정리해요",
+    "오늘 바로 해 보기 — 자주 받는 \"뭐 써?\", \"어떻게 써?\" 질문에 오늘 해 볼 한 가지까지 답해요"
+   ],
+   "accountLine": "AI 도구, 직접 써 보고 오늘 바로 쓰게 정리"
+  }
+ },
+ {
+  "persona": "doyun",
+  "kind": "AI 생성",
+  "version": "v2",
+  "questions": [
+   {
+    "no": 1,
+    "lens": null,
+    "format": "open",
+    "question": "가계부 앱을 만들게 된 계기가 된, 직접 겪은 돈 관리의 불편한 순간 하나를 떠올려 말씀해 주실 수 있나요?",
+    "extra": "",
+    "answer": "한 달 지나고 카드값을 보면 돈이 어디로 나갔는지 모르겠더라고요. 기존 가계부 앱은 하나하나 입력하는 게 귀찮아서 며칠 쓰다 말았고, 그래서 영수증만 찍으면 되는 걸 만들고 싶었어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 2,
+    "lens": null,
+    "format": "open",
+    "question": "“영수증만 찍으면 되는 걸” 만드는 과정에서, 가장 오래 막혔거나 예상과 달랐던 순간 하나를 말씀해 주실 수 있나요?",
+    "extra": "",
+    "answer": "영수증 사진을 찍으면 항목이 자동으로 나뉘게 하는 게 제일 오래 걸렸어요. 주말을 세 번이나 통째로 썼는데, 영수증마다 생김새가 다 달라서 생각보다 훨씬 까다로웠어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": null,
+    "format": "open",
+    "question": "앱을 만들면서 쓴 기술 말고, 직접 돈 관리를 하며 \"이건 나한테 효과 있었다\" 싶었던 습관이나 방법이 있나요?",
+    "extra": "",
+    "answer": "거창한 건 없고, 저는 귀찮으면 바로 안 하게 되더라고요. 그래서 영수증 사진만 찍어 두면 알아서 항목이 나뉘게 만든 게 제일 효과 있었어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": null,
+    "format": "open",
+    "question": "퇴근 후 앱을 만드는 시간은 보통 어떻게 보내세요? 최근 평일 저녁 하루를 떠올려 말씀해 주세요.",
+    "extra": "",
+    "answer": "퇴근하고 저녁 먹고 나면 보통 한두 시간 정도 앉아요. 요즘은 친구들이 써 보고 불편하다고 한 부분 고치거나, 안 쓰는 기능 지우는 일을 주로 해요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 5,
+    "lens": null,
+    "format": "open",
+    "question": "“친구들이 써 보고 불편하다고 한 부분” 중에 기억에 남는 것 하나만, 친구가 뭐라고 했고 어떻게 고쳤는지 말씀해 주실 수 있나요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 6,
+    "lens": null,
+    "format": "open",
+    "question": "친구들이 앱을 써 보고 가장 자주 했던 말은 어느 쪽에 가까웠나요? 고르고, 한마디만 덧붙여 주세요.",
+    "extra": "",
+    "answer": "기능이 많아 복잡하다고 했어요. 그래서 안 쓰는 기능을 계속 지우게 됐고, 지금은 지운 게 만든 것보다 더 많아요.",
+    "answerKind": "text"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 0,
+  "seconds": 108,
+  "maxSimilarity": 0.17,
+  "distinctLenses": null,
+  "formats": [
+   "open"
+  ],
+  "profile": {
+   "outcome": "saved",
+   "voiceRules": [
+    "거창하게 포장하지 않고 제가 겪은 불편함을 솔직하게 말한다",
+    "막히고 시간이 오래 걸린 일도 숨기지 않고 있는 그대로 적는다",
+    "기능을 덜어내듯 글도 짧고 단순하게 쓴다"
+   ],
+   "pillars": [
+    "귀찮아서 만든 이유 — 카드값을 보고 막막했던 순간처럼, 앱을 만들게 된 돈 관리의 불편함을 이야기합니다.",
+    "막혔던 순간 기록 — 영수증 자동 분류처럼 오래 막히고 예상과 달랐던 개발 과정을 그대로 남깁니다.",
+    "지우면서 만들기 — 친구들의 피드백을 듣고 기능을 고치고 지워 가며 앱을 단순하게 다듬는 과정을 보여드립니다."
+   ],
+   "accountLine": "영수증만 찍는 가계부, 혼자 만드는 개발 일지"
+  }
+ },
+ {
+  "persona": "doyun",
+  "kind": "AI 생성",
+  "version": "v3",
+  "questions": [
+   {
+    "no": 1,
+    "lens": "experience",
+    "format": "open",
+    "question": "최근 가계부 앱을 만들다가 가장 기억에 남는 순간 하나를 들려주세요.",
+    "extra": "",
+    "answer": "영수증 사진 찍으면 항목이 자동으로 나뉘는 기능이 처음 제대로 됐을 때요. 주말 세 번을 통째로 쓴 끝에 편의점 영수증이 딱 나뉘는 걸 보고 혼자 소리 질렀어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 2,
+    "lens": "opinion",
+    "format": "this_or_that",
+    "question": "가계부에 대해 흔히 하는 말 중, 어느 쪽에 더 가까우세요?",
+    "extra": "「한 푼까지 꼼꼼하게」 / 「대충이라도 꾸준하게」 → 대충이라도 꾸준하게",
+    "answer": "돈 관리가 귀찮은 사람한테는 꼼꼼함보다 안 끊기는 게 더 중요해서요. 그래서 안 쓰는 기능도 계속 지우고 있어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": "voice",
+    "format": "rewrite",
+    "question": "아래 문장을 개발 일지에 올린다고 생각하고, 내 말투로 다시 써 주세요.",
+    "extra": "예시 문장: 가계부는 꼼꼼하게 쓰는 것보다 끊기지 않고 쓰는 게 더 중요합니다.",
+    "answer": "가계부는 꼼꼼하게 쓰는 것보다 안 끊기고 계속 쓰는 게 훨씬 중요하더라고요. 그래서 저는 기능을 넣는 것보다 빼는 쪽으로 만들고 있어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": "reason",
+    "format": "open",
+    "question": "이미 가계부 앱이 많은데, 퇴근 후에 직접 만들어 보기로 한 처음 계기는 무엇이었나요?",
+    "extra": "",
+    "answer": "솔직히 정확히 어떤 계기였는지는 잘 기억이 안 나요. 그냥 제가 쓰고 싶은 가계부를 직접 만들어 보고 싶었고, 어느새 6개월째 하고 있네요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 5,
+    "lens": "quirk",
+    "format": "open",
+    "question": "앱을 만들 때 남들은 신경 안 쓰는데 나는 꼭 지키는 고집이 하나 있다면 무엇인가요?",
+    "extra": "",
+    "answer": "기능을 넣기 전에 친구들한테 먼저 써 보게 하는 거요. 안 쓰는 기능은 아깝더라도 바로 지워요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": "struggle",
+    "format": "open",
+    "question": "6개월 동안 만들면서 가장 오래 헤맨 부분은 무엇이었고, 어떻게 풀었나요?",
+    "extra": "",
+    "answer": "영수증 사진 찍으면 항목이 자동으로 나뉘는 기능이 제일 오래 걸렸어요. 주말 세 번을 통째로 썼는데, 한 번에 다 하려던 걸 포기하고 자주 쓰는 항목부터 나누게 줄이니까 풀렸어요.",
+    "answerKind": "text"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 0,
+  "seconds": 140,
+  "maxSimilarity": 0.11,
+  "distinctLenses": 6,
+  "formats": [
+   "open",
+   "this_or_that",
+   "rewrite"
+  ],
+  "profile": {
+   "outcome": "needs_more",
+   "voiceRules": [],
+   "pillars": [],
+   "accountLine": null
+  }
+ },
+ {
+  "persona": "seoyeon",
+  "kind": "AI 생성",
+  "version": "v2",
+  "questions": [
+   {
+    "no": 1,
+    "lens": null,
+    "format": "open",
+    "question": "최근에 직접 줄 서서 먹어 본 디저트 중, 기억에 남는 것 하나를 알려 주세요.",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 2,
+    "lens": null,
+    "format": "open",
+    "question": "디저트를 고를 때 \"이건 줄 서도 아깝지 않다\"고 느끼는 가장 큰 이유는 무엇에 가까운가요?",
+    "extra": "",
+    "answer": "맛이 확실히 특별해야 아깝지 않더라고요. 줄 서서 먹었는데 다른 데서도 먹을 수 있는 맛이면 제일 실망스러워서요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": null,
+    "format": "open",
+    "question": "“다른 데서도 먹을 수 있는 맛이면 실망”이라고 하셨는데, 반대로 “여기서만 먹을 수 있다”고 느낀 디저트가 있다면 하나만 떠올려 주세요.",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 4,
+    "lens": null,
+    "format": "open",
+    "question": "줄 서서 먹은 게 아니어도 괜찮아요. 최근에 먹은 디저트 중 가장 기억에 남는 건 어떤 종류였나요?",
+    "extra": "",
+    "answer": "구움과자요. 줄 안 서고 먹었는데 겉은 바삭하고 속은 촉촉해서 오히려 더 기억에 남았어요. 이런 데가 진짜 추천하기 좋더라고요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 5,
+    "lens": null,
+    "format": "open",
+    "question": "카페에 한 번 갔다가 \"또 오고 싶다\"고 느끼게 되는 건 보통 어떤 점 때문인가요?",
+    "extra": "",
+    "answer": "맛이 기대만큼이면서 웨이팅이나 자리 걱정이 덜한 곳이요. 주말에 가도 앉을 자리가 있고 디저트가 줄 선 값을 하면 또 가게 되더라고요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": null,
+    "format": "open",
+    "question": "관심 분야에 여행도 적어 주셨는데, 여행 가서 카페나 디저트를 찾아가 본 곳이 있다면 어느 지역이었나요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 1,
+  "seconds": 116,
+  "maxSimilarity": 0.23,
+  "distinctLenses": null,
+  "formats": [
+   "open"
+  ],
+  "profile": {
+   "outcome": "saved",
+   "voiceRules": [
+    "다른 데서도 먹을 수 있는 맛이면 줄 설 값은 없다고 솔직하게 말해요",
+    "'맛있다' 대신 '겉은 바삭, 속은 촉촉'처럼 식감과 맛을 구체적으로 써요",
+    "주말 웨이팅과 자리 상황을 함께 알려줘서 바로 갈지 정할 수 있게 해요"
+   ],
+   "pillars": [
+    "줄 설 값 판정 — 웨이팅 있는 디저트가 다른 데서 못 먹는 특별한 맛인지 직접 줄 서서 먹고 판정해요.",
+    "줄 없는 숨은 맛 — 웨이팅 없이 편하게 앉아서 먹을 수 있는데도 맛이 확실한 카페와 구움과자를 추천해요.",
+    "디저트 일상 기록 — 카페와 디저트를 찾아다니는 제 하루를 얼굴도 보여주면서 기록해요."
+   ],
+   "accountLine": "줄 서도 아깝지 않은 디저트만 골라요"
+  }
+ },
+ {
+  "persona": "seoyeon",
+  "kind": "AI 생성",
+  "version": "v3",
+  "questions": [
+   {
+    "no": 1,
+    "lens": "experience",
+    "format": "open",
+    "question": "최근에 다녀온 디저트 가게 중 \"이건 줄 서서 먹을 만했다\" 싶었던 한 곳은 어디였나요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 2,
+    "lens": "experience",
+    "format": "open",
+    "question": "가게 이름이 바로 안 떠올라도 괜찮아요. 최근 다녀온 카페·디저트 가게 중 기억에 남는 곳은 어떤 점이 기억에 남았나요?",
+    "extra": "",
+    "answer": "최근엔 줄 서서 먹었는데 기대보다 아쉬웠던 곳이 제일 기억에 남아요. 평일엔 괜찮았는데 주말엔 웨이팅이 너무 길어서, 그 차이를 꼭 적어 두고 싶었어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": "opinion",
+    "format": "this_or_that",
+    "question": "\"줄이 길면 그만한 이유가 있다\"는 말, 어느 쪽에 더 가깝나요?",
+    "extra": "「줄이 길면 이유가 있다」 / 「줄은 유행일 뿐이다」 → 줄은 유행일 뿐이다",
+    "answer": "줄 서서 먹었는데 실망한 적이 너무 많아서요. 줄은 유행일 때가 많고, 직접 먹어 보고 판단해야 해요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": "voice",
+    "format": "rewrite",
+    "question": "아래 문장을 내 계정에 올린다고 생각하고, 평소 말투로 다시 써 주세요.",
+    "extra": "예시 문장: 줄이 길다고 다 맛있는 건 아니에요. 직접 먹어 보고 판단해요.",
+    "answer": "줄 길다고 다 맛있는 거 아니에요. 평일, 주말 두 번씩 직접 먹어 보고 가도 되는지 말아야 하는지 솔직하게 말해 드릴게요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 5,
+    "lens": "quirk",
+    "format": "open",
+    "question": "디저트 가게에 가면 남들은 신경 안 쓰는데 나는 꼭 확인하는 것 하나가 있나요?",
+    "extra": "",
+    "answer": "웨이팅 줄이 어느 정도 되는지, 그리고 앉을 자리가 있는지 꼭 봐요. 맛도 중요하지만 줄 서서 자리까지 없으면 실망이 크더라고요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": "reason",
+    "format": "open",
+    "question": "줄 서서 실망했던 경험이 많다고 하셨죠. 그 뒤로 '내가 직접 먹어 보고 솔직하게 남겨야겠다' 싶었던 계기가 있었나요?",
+    "extra": "",
+    "answer": "딱 한 번 큰 계기라기보다, 줄 서서 먹고 실망한 걸 친구들한테 솔직하게 말해 줬더니 다들 \"그럼 거긴 안 갈래\" 하면서 고마워하더라고요. 그래서 이걸 적어 두면 도움이 되겠다 싶었어요.",
+    "answerKind": "text"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 0,
+  "seconds": 162,
+  "maxSimilarity": 0.17,
+  "distinctLenses": 5,
+  "formats": [
+   "open",
+   "this_or_that",
+   "rewrite"
+  ],
+  "profile": {
+   "outcome": "needs_more",
+   "voiceRules": [],
+   "pillars": [],
+   "accountLine": null
+  }
+ },
+ {
+  "persona": "minji",
+  "kind": "AI 생성",
+  "version": "v2",
+  "questions": [
+   {
+    "no": 1,
+    "lens": null,
+    "format": "open",
+    "question": "최근 한 달 안에 직접 만들거나 공부한 디자인 작업 중, 친구들에게 과정을 보여 주고 싶었던 것 하나를 떠올려 주세요. 어떤 작업이었나요?",
+    "extra": "",
+    "answer": "교내 축제 포스터 공모전에 냈던 포스터요. 처음 아이디어 스케치부터 최종안까지 열두 번 넘게 갈아엎었는데, 그 과정을 친구들한테 보여 주고 싶어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 2,
+    "lens": null,
+    "format": "open",
+    "question": "수업 말고 따로 시간을 내서 공부하거나 연습한 디자인 기술이나 방법이 있다면, 하나만 알려 주세요. 무엇이었나요?",
+    "extra": "",
+    "answer": "손 스케치로 썸네일 시안을 한 번에 여러 개 그려 보는 연습이요. 툴을 잘 못 다뤄서 종이에 먼저 많이 그려 보고, 왜 버렸는지 한 줄씩 적어 두는 습관이 생겼어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": null,
+    "format": "open",
+    "question": "공모전이나 대외활동, 포트폴리오를 준비하면서 직접 겪은 일 중 친구들에게 알려 주고 싶은 것 하나만 떠올려 주세요. 어떤 일이었나요?",
+    "extra": "",
+    "answer": "축제 포스터 공모전 준비하면서 시안을 열두 번 넘게 갈아엎었는데, 버린 시안마다 왜 버렸는지 적어 둔 게 나중에 최종안 고를 때 제일 도움 됐어요. 친구들도 버린 이유를 꼭 적어 두면 좋겠어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": null,
+    "format": "open",
+    "question": "축제 포스터 말고, 최근 디자인과 관련해 해 본 일(대외활동·스터디·툴 연습 등) 중 하나만 알려 주세요. 어떤 일이었나요?",
+    "extra": "",
+    "answer": "잘 모르겠어요",
+    "answerKind": "unknown"
+   },
+   {
+    "no": 5,
+    "lens": null,
+    "format": "open",
+    "question": "축제 포스터 말고, 최근 디자인과 관련해 해 본 것에 가장 가까운 걸 골라 주세요. 짧게 한마디만 덧붙여도 좋아요.",
+    "extra": "",
+    "answer": "툴 연습이 제일 가까워요. 제가 툴을 잘 못 다뤄서 손으로 스케치한 걸 툴로 옮기는 연습을 조금씩 하고 있어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": null,
+    "format": "open",
+    "question": "수업 과제나 개인 작업 중 “이건 나중에 포트폴리오에 넣고 싶다”고 생각한 작업이 있다면, 어떤 작업인가요?",
+    "extra": "",
+    "answer": "교내 축제 포스터 공모전에서 입상한 포스터요. 아이디어 스케치부터 최종안까지 열두 번 넘게 갈아엎었는데, 그 과정까지 같이 넣고 싶어요.",
+    "answerKind": "text"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 1,
+  "seconds": 153,
+  "maxSimilarity": 0.28,
+  "distinctLenses": null,
+  "formats": [
+   "open"
+  ],
+  "profile": {
+   "outcome": "needs_more",
+   "voiceRules": [],
+   "pillars": [],
+   "accountLine": null
+  }
+ },
+ {
+  "persona": "minji",
+  "kind": "AI 생성",
+  "version": "v3",
+  "questions": [
+   {
+    "no": 1,
+    "lens": "experience",
+    "format": "open",
+    "question": "최근 일주일 안에 디자인 공부하거나 작업하다가 기억에 남는 장면 하나만 들려주세요.",
+    "extra": "",
+    "answer": "이번 주에 스케치 시안 여러 장을 책상에 쭉 펴놓고 보다가, 제일 맘에 들었던 걸 결국 버린 장면이 기억나요. 왜 버리는지 옆에 적어 두려고 하니까 \"예뻐서 아깝다\"밖에 안 써져서 좀 웃기더라고요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 2,
+    "lens": "opinion",
+    "format": "this_or_that",
+    "question": "포트폴리오 계정이라면 어느 쪽을 더 먼저 보여 주고 싶으세요?",
+    "extra": "「깔끔한 완성작」 / 「버린 시안과 과정」 → 버린 시안과 과정",
+    "answer": "완성작만 예쁘게 올리는 건 피하고 싶어요. 버린 시안이랑 왜 버렸는지를 먼저 보여 주고 싶어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 3,
+    "lens": "voice",
+    "format": "rewrite",
+    "question": "아래 문장을 평소 친구에게 말하듯, 내 말투로 다시 써 주세요.",
+    "extra": "예시 문장: 완성작보다 버린 시안을 먼저 보여 주려고 해요. 왜 버렸는지도 함께 적어 둘게요.",
+    "answer": "완성작보다 버린 시안을 먼저 올려 보려고요. 왜 버렸는지도 같이 적어 둘 거예요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 4,
+    "lens": "struggle",
+    "format": "open",
+    "question": "시각디자인 공부하면서 요즘 가장 오래 붙잡고 헤맨 건 뭐예요?",
+    "extra": "",
+    "answer": "시안을 여러 개 그려 놓고 어떤 걸 버리고 어떤 걸 남길지 고르는 거요. 축제 포스터도 열두 번 넘게 갈아엎었는데, 그때마다 왜 이게 더 나은지 기준을 못 잡아서 제일 오래 헤맸어요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 5,
+    "lens": "quirk",
+    "format": "this_or_that",
+    "question": "시안을 고르거나 버릴 때, 나는 어느 쪽에 더 가깝나요?",
+    "extra": "「출력해서 펴 놓고 고르기」 / 「화면에서 바로 비교하기」 → 출력해서 펴 놓고 고르기",
+    "answer": "손 스케치를 많이 하는 편이라 시안을 쭉 펴 놓고 봐야 왜 버릴지 바로 보여요.",
+    "answerKind": "text"
+   },
+   {
+    "no": 6,
+    "lens": "reason",
+    "format": "open",
+    "question": "\"완성작만 예쁘게 올리는 건 피하고 싶다\"고 하셨는데, 그렇게 생각하게 된 계기가 있나요?",
+    "extra": "",
+    "answer": "포스터를 열두 번 넘게 갈아엎으면서, 결과물보다 버린 시안이랑 왜 버렸는지가 더 많이 남는다는 걸 느꼈어요. 완성작만 올리면 그 과정이 다 사라지는 것 같아서 싫더라고요.",
+    "answerKind": "text"
+   }
+  ],
+  "followupFailed": 0,
+  "rewrites": 0,
+  "seconds": 190,
+  "maxSimilarity": 0.09,
+  "distinctLenses": 6,
+  "formats": [
+   "open",
+   "this_or_that",
+   "rewrite"
+  ],
+  "profile": {
+   "outcome": "needs_more",
+   "voiceRules": [],
+   "pillars": [],
+   "accountLine": null
+  }
+ }
+]

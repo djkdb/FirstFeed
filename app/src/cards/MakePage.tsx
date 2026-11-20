@@ -1,15 +1,23 @@
 // 카드뉴스 만들기 (FR-MK-1): 소재 붙여넣기 → 표지 제목 후보(고정 틀로 그린 PNG) → 고르기 → 본문 → 세트.
 // 2회 재작성 뒤에도 넘친 카드는 어느 칸이 약 몇 자 넘쳤는지 보이고 직접 줄이게 한다(줄여야 저장).
 // 긴 AI 작업은 진행·취소를 보이고, 새로고침해도 이어서 보도록 작업 ID 를 이 브라우저에 임시 저장한다
+import { loadError } from '../loadError.ts';
+import { TistoryPanel } from '../blog/TistoryPanel.tsx';
 import { useCallback, useEffect, useState } from 'react';
+import { cardImageName, withCharacter } from '../../../server/src/cards/imageName.ts';
+import { notifyChanged } from '../changed.ts';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { localTime } from '../time.ts';
 import { PublishPanel } from './PublishPanel.tsx';
+import { ChatPanel } from './ChatPanel.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { useJob, type JobView } from '../useJob.ts';
 import { StageLine } from '../StageLine.tsx';
 import { fieldOf, reasonLines, wordDiff } from './rewriteText.ts';
+
+/** 강조 표시(**)를 뺀 제목 — 화면 글 · 단추 이름에 */
+const plain = (t: string) => t.replace(/\*\*/g, '').replace(/\s*\n\s*/g, ' ');
 
 type State = InferResponseType<typeof api.api.cards.$get>;
 interface Candidate {
@@ -151,7 +159,10 @@ function RewriteLine({ setId }: { setId: number }) {
   const steps = [...r.cover.map((x) => ({ ...x, part: 'cover' as const })), ...r.body.map((x) => ({ ...x, part: 'body' as const }))];
   return (
     <details className="small rewrites">
-      <summary>AI 가 고친 곳 {steps.length}개{steps.length === 0 ? ' (한 번에 규칙 통과, 또는 기록 기능 전에 만든 세트)' : ''}</summary>
+      {/* 다시 쓴 횟수와 고친 곳 수가 달라 「고친 곳 1개」 아래 세 줄이 보였다(사용자 시뮬레이션 2026-11-09) — 횟수로 센다 */}
+      <summary>
+        {steps.length === 0 ? 'AI 가 다시 쓴 것 없음 (한 번에 규칙 통과, 또는 기록 기능 전에 만든 세트)' : `AI 가 규칙에 걸려 다시 쓴 것 ${steps.length}번 · 고친 곳 ${steps.reduce((n, st) => n + reasonLines(st.issues, st.part).length, 0)}곳`}
+      </summary>
       <ul>
         {steps.map((st, i) => (
           <li key={i}>
@@ -188,9 +199,13 @@ function SetView({ setId }: { setId: number }) {
   const [set, setSet] = useState<{
     coverImage: string | null;
     createdAt: string;
-    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
+    cards: Array<{ idx: number; kind: string; pngFile: string; edited: boolean; photo?: string | null; image: { prompt: string; filename: string } | null; glosses: Array<{ sentence: string; term: string; checkedAt?: string | null }> | null; render: { scale: number; browser: string; reference: boolean } }>;
   } | null>(null);
+  /** 계정 캐릭터(있으면) — 그림 프롬프트를 복사할 때 고정 설명을 앞에 붙인다 */
+  const [character, setCharacter] = useState<{ name: string; dna: string } | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  /** 이 세트의 시안에 본문 사진 칸이 있는가 (G · I · J) */
+  const [bodyPhoto, setBodyPhoto] = useState(false);
   // 같은 주소의 PNG 를 다시 그렸을 때 화면이 옛 그림을 보이지 않게
   const [rev, setRev] = useState(0);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -199,10 +214,12 @@ function SetView({ setId }: { setId: number }) {
     () =>
       api.api.cards.sets[':id']
         .$get({ param: { id: String(setId) } })
-        .then((r) => r.json() as Promise<{ set?: unknown; draftId?: string | null }>)
+        .then((r) => r.json() as Promise<{ set?: unknown; draftId?: string | null; bodyPhoto?: boolean }>)
         .then((b) => {
           setSet((b.set as never) ?? null);
+          setCharacter((b as { character?: { name: string; dna: string } | null }).character ?? null);
           setDraftId(b.draftId ?? null);
+          setBodyPhoto(b.bodyPhoto === true);
           setRev((n) => n + 1);
         }),
     [setId],
@@ -220,6 +237,21 @@ function SetView({ setId }: { setId: number }) {
       if (b.ok) setMsg({ ok: true, text: `표지를 그림 바탕으로 다시 그렸어요${b.shade ? ` (글자 뒤 띠 진하기 ${Math.round(b.shade * 100)}%)` : ''}.` });
       else setMsg({ ok: false, text: b.error ?? b.problems?.join(' ') ?? '표지를 다시 그리지 못했습니다.' });
       await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+  // 본문 사진 칸: 카드 한 장만 다시 그린다. file 이 null 이면 사진을 빼고 글만 있는 모양으로
+  const cardPhoto = async (idx: number, file: File | null) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await fetch(`/api/cards/sets/${setId}/cards/${idx}/photo`, file ? { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: file } : { method: 'DELETE' });
+      const b = (await r.json()) as { ok?: boolean; problems?: string[]; error?: string };
+      if (b.ok) setMsg({ ok: true, text: file ? `${idx + 1}번 카드에 사진을 넣어 다시 그렸어요.` : `${idx + 1}번 카드의 사진을 뺐어요.` });
+      else setMsg({ ok: false, text: b.error ?? (b.problems?.length ? `사진을 넣으면 글이 넘쳐요: ${b.problems.join(' ')}` : '카드를 다시 그리지 못했습니다.') });
+      await load();
+      notifyChanged();
     } finally {
       setBusy(false);
     }
@@ -254,20 +286,39 @@ function SetView({ setId }: { setId: number }) {
               {c.render.scale < 1 && <span className="muted"> · 글자 {Math.round(c.render.scale * 100)}%</span>}
               {c.edited && <span className="tag">직접 고침</span>}
             </figcaption>
+            {bodyPhoto && c.kind === 'body' && (
+              <div className="card-photo small">
+                <label className="file-button">
+                  {c.photo ? '사진 바꾸기' : '사진 넣기'}
+                  <input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => (e.target.files?.[0] && void cardPhoto(c.idx, e.target.files[0]), (e.target.value = ''))} />
+                </label>
+                {c.photo && (
+                  <button type="button" className="small" disabled={busy} onClick={() => void cardPhoto(c.idx, null)}>
+                    빼기
+                  </button>
+                )}
+              </div>
+            )}
             {c.glosses?.map((g) => (
-              <GlossItem key={g.sentence} setId={setId} idx={c.idx} gloss={g} onChanged={() => void load()} />
+              <GlossItem key={g.sentence} setId={setId} idx={c.idx} gloss={g} onChanged={() => (void load(), notifyChanged())} />
             ))}
             {c.image && (
               <details className="small">
-                <summary>그림 프롬프트 · {c.image.filename}</summary>
-                <pre>{c.image.prompt}</pre>
+                <summary>그림 프롬프트 · {cardImageName(c.idx, c.image.filename)}</summary>
+                <pre>{withCharacter(c.image.prompt, character)}</pre>
+                {character && <p className="muted">캐릭터 {character.name} 의 고정 설명을 앞에 붙였어요 — 그림 도구가 생김새를 알게. 캐릭터 시트 그림이 있으면 참고 그림으로 같이 넣으세요.</p>}
+                <button type="button" className="small" onClick={() => void navigator.clipboard.writeText(withCharacter(c.image!.prompt, character)).then(() => setMsg({ ok: true, text: '그림 프롬프트를 복사했어요.' }))}>
+                  복사
+                </button>
               </details>
             )}
           </figure>
         ))}
       </div>
       <p className="muted small">찍은 브라우저: {set.cards[0]?.render.browser}{set.cards[0] && !set.cards[0].render.reference && ' · 기준 브라우저 아님'}</p>
+      <ChatPanel setId={setId} cardCount={set.cards.length} pngOf={(i) => `/api/cards/sets/${setId}/png/${set.cards[i]?.pngFile}?v=${rev}`} onChanged={() => (void load(), notifyChanged())} />
       <PublishPanel setId={setId} cardUnchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} onChanged={() => void load()} />
+      <TistoryPanel setId={setId} unchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} />
     </>
   );
 }
@@ -275,6 +326,12 @@ function SetView({ setId }: { setId: number }) {
 /** 홈의 「이 칸으로 만들기」로 왔을 때(#/make?slot=N) 그 칸 번호 */
 const slotFromHash = (): number | null => {
   const v = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('slot');
+  return v !== null && /^\d+$/.test(v) ? Number(v) : null;
+};
+
+/** 작업 콘솔에서 왔을 때(#/make?set=N) 열 세트 */
+const setFromHash = (): number | null => {
+  const v = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('set');
   return v !== null && /^\d+$/.test(v) ? Number(v) : null;
 };
 
@@ -292,7 +349,20 @@ export function MakePage() {
   const [covers, setCovers] = useState<CoversResult | null>(null);
   const [bodyResult, setBodyResult] = useState<BodyResult | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
-  const [viewSet, setViewSet] = useState<number | null>(null);
+  const [viewSet, setViewSet] = useState<number | null>(setFromHash);
+  // 작업 콘솔의 줄(#/make?set=N)을 누르면 그 세트를 연다 — 같은 탭 안에서 주소만 바뀌어도
+  useEffect(() => {
+    const onHash = () => {
+      const id = setFromHash();
+      if (id === null) return;
+      setViewSet(id);
+      setTimeout(() => {
+        void document.getElementById('set-view')?.scrollIntoView({ block: 'start' });
+      }, 300);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -324,7 +394,7 @@ export function MakePage() {
         setSlot(null);
         window.history.replaceState(null, '', '#/make');
       })
-      .catch((e: Error) => setSlotNotice(`세트는 만들었지만 ${n + 1}번 칸에 잇지 못했어요(${e.message}). 홈에서 「이 칸에 잇기」로 이으세요.`));
+      .catch((e: unknown) => setSlotNotice(`${loadError(e, `세트는 만들었지만 ${n + 1}번 칸에 잇지`)} 홈에서 「이 칸에 잇기」로 이으세요.`));
   };
 
   const coverJob = useJob(coverJobId, (j) => {
@@ -412,11 +482,21 @@ export function MakePage() {
   const notReady = !state.ready.profile ? '「정체성」에서 프로필을 먼저 확정하세요.' : !state.ready.template ? '「템플릿」에서 틀을 먼저 고정하세요. 카드 글자 수는 고정한 틀에서 정해져요.' : null;
   const coverRunning = coverJobId !== null && !covers && (coverJob.job === null || coverJob.job.phase === 'running');
   const bodyRunning = bodyJobId !== null && !bodyResult && (bodyJob.job === null || bodyJob.job.phase === 'running');
+  // 지금 어느 단계인가 — 실제 상태(작업 · 결과 · 연 세트)에서만 정한다(가짜 진행 표시 금지, 결정 2026-10-24)
+  const step = bodyRunning || bodyResult?.status === 'needs_edit' ? 2 : coverRunning || (covers && !bodyResult) ? 1 : viewSet !== null ? 3 : 0;
 
   return (
     <>
       <section className="card">
         <h2>카드뉴스 만들기</h2>
+        <ol className="stepper" aria-label="만드는 단계">
+          {['소재 붙여 넣기', '표지 고르기', '본문 카드', '다듬기 · 캡션', '업로드 폴더'].map((label, i) => (
+            <li key={label} className={i < step ? 'done' : i === step ? 'now' : ''} aria-current={i === step ? 'step' : undefined}>
+              <span className="stepper-n">{i < step ? '✓' : i + 1}</span>
+              {label}
+            </li>
+          ))}
+        </ol>
         {notReady ? (
           <p className="note">{notReady}</p>
         ) : (
@@ -440,12 +520,16 @@ export function MakePage() {
           </p>
         )}
         {slotNotice && <p className="status ok small">{slotNotice}</p>}
-        <label className="block small">
-          소재 원문 (메모·공식 문서·릴리스 노트 등 — 숫자·이름은 여기 있는 것만 카드에 들어가요)
-          <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} />
+        <label className="field">
+          <span className="field-label">소재 원문</span>
+          <span className="field-hint">메모 · 공식 문서 · 릴리스 노트를 그대로 붙여 넣으세요. 숫자 · 이름은 여기 있는 것만 카드에 들어가요.</span>
+          <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} placeholder="예) 직접 써 본 도구의 공식 발표문이나, 써 보며 적어 둔 메모" />
         </label>
-        <label className="block small">
-          메모 (선택 — 내가 직접 쓴 말이라 카드에 써도 되는 사실이 돼요)
+        <label className="field">
+          <span className="field-label">
+            메모 <span className="muted">(선택)</span>
+          </span>
+          <span className="field-hint">내가 직접 쓴 말이라 카드에 써도 되는 사실이 돼요.</span>
           <input value={memo} onChange={(e) => setMemo(e.target.value)} disabled={!!notReady} />
         </label>
         <div className="actions">
@@ -460,10 +544,10 @@ export function MakePage() {
               ))}
             </select>
           </label>
-          <button type="button" className="primary" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
+          <button type="button" className="primary big" disabled={!!notReady || body.trim().length < 20 || coverRunning} onClick={() => void startCovers()}>
             표지 제목 후보 만들기
           </button>
-          <span className="muted small">AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1분 안쪽</span>
+          <span className="muted small">보통 1분 · AI 2번(규칙에 걸리면 더)</span>
         </div>
         {error && <p className="status error">{error}</p>}
       </section>
@@ -474,15 +558,18 @@ export function MakePage() {
         <section className="card">
           <h2>표지 고르기</h2>
           <p className="muted small">
-            AI 호출 {covers.calls}번 · 재작성 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개. 표지를 누르면 본문을 만들어요(AI 호출 2번, 재작성하면 2번씩 더 · 보통 1~2분, 재작성이 겹치면 5분 넘게 걸리기도 해요).
+            표지를 누르면 그 표지로 본문 카드를 만들어요 — 보통 1~2분, 다시 쓰기가 겹치면 5분 넘게 걸리기도 해요.
+            <br />
+            AI {covers.calls}번 · 다시 쓴 것 {covers.rewrites}번 · 규칙에 걸려 뺀 후보 {covers.dropped.length}개
           </p>
           <div className="frames">
             {covers.candidates.map((c) => (
               <figure key={c.index} className="frame">
-                <button type="button" className="pick-cover" disabled={bodyRunning} onClick={() => void choose(c.index)}>
-                  <img src={c.png} alt={c.headline} />
+                {/* 단추 이름이 비어 화면 읽기 · 자동화가 표지를 고르지 못했고, 그림 설명에 강조 표시(**)가 그대로 보였다(사용자 시뮬레이션 2026-11-09) */}
+                <button type="button" className="pick-cover" disabled={bodyRunning} aria-label={`표지 「${plain(c.headline)}」로 본문 만들기`} onClick={() => void choose(c.index)}>
+                  <img src={c.png} alt="" />
                 </button>
-                <figcaption className="small">{c.headline.replace(/\*\*/g, '')}</figcaption>
+                <figcaption className="small">{plain(c.headline)}</figcaption>
               </figure>
             ))}
           </div>
@@ -553,7 +640,7 @@ export function MakePage() {
       )}
 
       {viewSet !== null && (
-        <section className="card">
+        <section className="card" id="set-view">
           <h2>카드 세트 #{viewSet}</h2>
           <SetView setId={viewSet} />
         </section>

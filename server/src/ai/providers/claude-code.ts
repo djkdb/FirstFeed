@@ -70,6 +70,22 @@ export function subscriptionEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.P
   return env;
 }
 
+/**
+ * 설정 탭에 저장한 구독 토큰(`claude setup-token` 으로 만든 것 — OS 키체인에 있다)을 하위 프로세스에 넘기는 길(2026-11-20 사용자 지시).
+ * 서버가 시작할 때 키체인에서 읽어 메모리에만 두고 여기로 건넨다 — 이 파일은 키체인을 모른다. 바뀌면 판 번호를 올려 기억해 둔 로그인 확인을 버린다
+ */
+let extraEnv: () => Record<string, string> = () => ({});
+let envGen = 0;
+export function setClaudeExtraEnv(fn: () => Record<string, string>): void {
+  extraEnv = fn;
+  envGen++;
+}
+export function claudeEnvChanged(): void {
+  envGen++;
+}
+/** 실제 호출 · 로그인 확인이 쓰는 환경: 지금 환경 + 저장한 토큰 − 구독을 우회하는 변수 */
+const callEnv = () => subscriptionEnv({ ...process.env, ...extraEnv() });
+
 /** `claude auth status --json` 중 쓰는 칸 */
 export interface AuthStatus {
   loggedIn?: boolean;
@@ -135,7 +151,7 @@ export class ClaudeCodeProvider implements AiProvider {
   private readonly isolation: NonNullable<ClaudeCodeOptions['isolation']>;
   private readonly authCacheMs: number;
   private readonly acceptAuth: NonNullable<ClaudeCodeOptions['acceptAuth']>;
-  private authCache: { status: AuthStatus | null; at: number } | null = null;
+  private authCache: { status: AuthStatus | null; at: number; gen: number } | null = null;
 
   constructor(opts: ClaudeCodeOptions = {}) {
     this.bin = opts.bin ?? 'claude';
@@ -146,15 +162,15 @@ export class ClaudeCodeProvider implements AiProvider {
 
   /** 실제 호출과 같은 환경으로 로그인 상태를 읽는다. fresh 가 아니면 잠깐 기억해 둔 값을 쓴다 */
   private async readAuth(fresh: boolean): Promise<AuthStatus | null> {
-    if (!fresh && this.authCache && Date.now() - this.authCache.at < this.authCacheMs) return this.authCache.status;
-    const r = await runProcess(this.bin, ['auth', 'status', '--json'], { timeoutMs: DETECT_TIMEOUT_MS, env: subscriptionEnv() });
+    if (!fresh && this.authCache && this.authCache.gen === envGen && Date.now() - this.authCache.at < this.authCacheMs) return this.authCache.status;
+    const r = await runProcess(this.bin, ['auth', 'status', '--json'], { timeoutMs: DETECT_TIMEOUT_MS, env: callEnv() });
     let status: AuthStatus | null;
     try {
       status = JSON.parse(r.stdout) as AuthStatus;
     } catch {
       status = null;
     }
-    this.authCache = { status, at: Date.now() };
+    this.authCache = { status, at: Date.now(), gen: envGen };
     return status;
   }
 
@@ -170,7 +186,7 @@ export class ClaudeCodeProvider implements AiProvider {
       supported: true,
       hint: null,
     };
-    const ver = await runProcess(this.bin, ['--version'], { timeoutMs: DETECT_TIMEOUT_MS, env: subscriptionEnv() });
+    const ver = await runProcess(this.bin, ['--version'], { timeoutMs: DETECT_TIMEOUT_MS, env: callEnv() });
     if (ver.notFound || ver.code !== 0) {
       return {
         ...base,
@@ -189,7 +205,7 @@ export class ClaudeCodeProvider implements AiProvider {
       };
     }
     const loggedIn = parsed.loggedIn === true;
-    const subscription = this.acceptAuth(parsed, subscriptionEnv());
+    const subscription = this.acceptAuth(parsed, callEnv());
     return {
       ...base,
       installed: true,
@@ -209,7 +225,7 @@ export class ClaudeCodeProvider implements AiProvider {
     if (auth && auth.loggedIn !== true) {
       throw new AiError('not_logged_in', 'Claude Code 에 로그인되어 있지 않습니다.', NOT_LOGGED_IN_HINT);
     }
-    if (auth && !this.acceptAuth(auth, subscriptionEnv())) {
+    if (auth && !this.acceptAuth(auth, callEnv())) {
       throw new AiError(
         'not_subscription',
         `Claude Code 가 구독(claude.ai)이 아닌 방식(${auth.authMethod ?? '알 수 없음'}${auth.apiProvider && auth.apiProvider !== 'firstParty' ? ` · ${auth.apiProvider}` : ''})으로 인증되어 있어 호출을 막았습니다.`,
@@ -260,7 +276,7 @@ export class ClaudeCodeProvider implements AiProvider {
       if (imageNames.length > 0) args.push('--add-dir', tmp);
 
       const sw = startStopwatch();
-      const r = await runProcess(this.bin, args, { cwd, stdin: prompt, timeoutMs: input.timeoutMs, signal: input.signal, env: subscriptionEnv() });
+      const r = await runProcess(this.bin, args, { cwd, stdin: prompt, timeoutMs: input.timeoutMs, signal: input.signal, env: callEnv() });
       const durationMs = sw.wallMs();
 
       if (r.notFound) {

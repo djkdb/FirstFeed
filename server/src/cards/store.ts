@@ -107,6 +107,8 @@ export interface SavedCard {
   edited: boolean;
   pngFile: string;
   render: { browser: string; reference: boolean; scale: number };
+  /** 본문 사진 칸에 올린 그림(data/brand-assets 안 이름) — 없으면 null */
+  photo: string | null;
 }
 
 export function getSet(db: Db, id: number) {
@@ -123,6 +125,7 @@ export function getSet(db: Db, id: number) {
       edited: Number(c.edited) === 1,
       pngFile: String(c.png_file),
       render: JSON.parse(String(c.render_json)) as SavedCard['render'],
+      photo: (c.photo as string | null) ?? null,
     }),
   );
   return {
@@ -200,6 +203,10 @@ export function replaceCard(
     fs.rmSync(tmp, { force: true });
     throw err;
   }
+}
+
+export function setCardPhoto(db: Db, setId: number, idx: number, name: string | null): void {
+  db.prepare('UPDATE cards SET photo = ? WHERE set_id = ? AND idx = ?').run(name, setId, idx);
 }
 
 export function setCoverImage(db: Db, setId: number, name: string): void {

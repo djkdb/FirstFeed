@@ -4,7 +4,8 @@ import type { Db } from '../db/index.ts';
 import { normalizeForQuote } from '../rules/grounding.ts';
 import { resolveLook } from '../templates/look.ts';
 import { draftById } from '../templates/index.ts';
-import { renderFrame } from '../templates/render-frame.ts';
+import { renderPhotoFrame } from '../templates/render-frame.ts';
+import { bodyPhotoUrl } from './card-photo.ts';
 import { getTemplateVersion } from '../templates/store.ts';
 import type { BodyContent } from '../templates/types.ts';
 import { getSet, replaceCard, updateCardGlosses, type GlossMark } from './store.ts';
@@ -79,7 +80,8 @@ export async function editGloss(
   const tv = getTemplateVersion(db, set.templateVersionId);
   const draft = tv ? draftById(tv.draftId) : undefined;
   if (!tv || !draft) throw new GlossError('이 세트를 그린 템플릿 판을 찾지 못했습니다.');
-  const r = await renderFrame(db, draft, resolveLook(tv.look, dataDir), next);
+  // 본문 사진 칸에 그림이 있으면 그 그림 그대로 다시 그린다
+  const r = await renderPhotoFrame(db, draft, resolveLook(tv.look, dataDir), next, bodyPhotoUrl(dataDir, draft, card));
   if (!r.ok || !r.png) return { ok: false, problems: [...r.shorten.map((x) => x.message), ...r.problems.map((x) => x.message)].slice(0, 3) };
   replaceCard(db, dataDir, setId, idx, {
     content: next,

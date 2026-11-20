@@ -1,15 +1,21 @@
 // 브랜딩 키트 (FR-BR-1~4). 글(아이디·이름·바이오)과 시각(팔레트·폰트·그림 프롬프트)을 따로 만든다 — 결정 2026-10-14.
 // 후보를 누르면 바로 저장된다(이력으로 남음). 생성은 몇 분 걸려서 진행·취소를 보여 주고,
 // 새로고침해도 진행 중이던 작업을 이어서 보도록 작업 ID 를 이 브라우저에 임시 저장한다.
+import { loadError } from '../loadError.ts';
 import { useCallback, useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from './loadFonts.ts';
 import { ProfileImage } from './ProfileImage.tsx';
+import { FontPicker } from './FontPicker.tsx';
+import { LitlyPanel } from '../blog/LitlyPanel.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { countNote } from './countNote.ts';
 import { StageLine } from '../StageLine.tsx';
+import { CharacterBuilder } from './CharacterBuilder.tsx';
+import { notifyChanged } from '../changed.ts';
+import { NextStep } from '../NextStep.tsx';
 
 type BrandState = InferResponseType<typeof api.api.brand.$get>;
 type Kind = 'words' | 'visual';
@@ -18,8 +24,8 @@ type Patch = Parameters<typeof api.api.brand.selection.$put>[0]['json'];
 const RUN_LABEL: Record<string, string> = { generate: '생성', json_retry: 'JSON 재요청', rewrite: '재작성', review: '자기 평가' };
 // 시간은 측정값(tests/results/2026-10-14-brand-v1-v1.md, 3명 × 2회 평균: 글 58~82초, 시각 37~44초)
 const COST: Record<Kind, string> = {
-  words: 'AI 호출 2번(생성 + 자기 평가, 재작성하면 더) · 보통 1~1.5분',
-  visual: 'AI 호출 1번(규칙에 걸려 다시 쓰면 더) · 보통 40초 안팎',
+  words: '보통 1~1.5분 · AI 2번(규칙에 걸리면 더)',
+  visual: '보통 40초 · AI 1번(규칙에 걸리면 더)',
 };
 const jobKey = (k: Kind) => `firstfeed.brandJob.${k}`;
 
@@ -240,7 +246,7 @@ export function BrandPage() {
     () =>
       fetchBrand()
         .then(setState)
-        .catch((e: unknown) => setError(`불러오지 못했습니다 (${String(e)}). 서버가 켜져 있는지 확인하고 새로고침하세요.`)),
+        .catch((e: unknown) => setError(loadError(e))),
     [],
   );
 
@@ -260,12 +266,12 @@ export function BrandPage() {
     }
     setNotice('저장했어요.');
     await refresh();
+    notifyChanged();
     return true;
   };
 
   if (!state) return <section className="card">{error ?? '불러오는 중…'}</section>;
-  const { activeProfile, words, visual, selection, fonts, limits } = state;
-  const stale = (kit: { profileId: number } | null) => kit !== null && activeProfile !== null && kit.profileId !== activeProfile.id;
+  const { activeProfile, words, visual, selection, fonts, limits, wordsStale, visualStale } = state;
   const font = (id: string) => fonts.find((f) => f.id === id);
 
   return (
@@ -281,13 +287,14 @@ export function BrandPage() {
         )}
         {notice && <p className="status ok small">{notice}</p>}
         {error && <p className="status error">{error}</p>}
+        {selection.handle && selection.palette && selection.titleFont && <NextStep after="brand" />}
       </section>
 
       <section className="card">
         <h2>
           아이디 · 표시 이름 · 바이오 <PremadeBadge createdAt={words?.createdAt} />
         </h2>
-        {stale(words) && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
+        {wordsStale && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
         <KitJob kind="words" label={words ? '글 후보 다시 만들기' : '글 후보 만들기'} onDone={() => void refresh()} />
         {words && (
           <>
@@ -322,18 +329,48 @@ export function BrandPage() {
         <h2>
           색 · 폰트 · 그림 <PremadeBadge createdAt={visual?.createdAt} />
         </h2>
-        {stale(visual) && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
+        {visualStale && <p className="note">이 후보를 만든 뒤 프로필이 바뀌었어요 — 아래 버튼으로 다시 만드세요.</p>}
         <KitJob kind="visual" label={visual ? '시각 후보 다시 만들기' : '시각 후보 만들기'} onDone={() => void refresh()} />
         {visual && (
           <>
             <h3>색 팔레트</h3>
-            <div className="palettes">
-              {visual.candidates.palettes.map((p) => (
-                <PaletteCard key={p.name} p={p} on={selection.palette?.name === p.name} min={limits.minContrast} save={save} />
-              ))}
-            </div>
+            {/* 후보가 없어도(예: 직접 고른 팔레트만 있음) 제목만 덩그러니 남지 않게 — 지금 쓰는 것을 보이거나 할 일을 알린다 */}
+            {visual.candidates.palettes.length === 0 ? (
+              selection.palette ? (
+                <div className="palettes">
+                  <PaletteCard
+                    p={{
+                      ...selection.palette,
+                      // 직접 고른 팔레트에는 서버가 잰 명암비가 없어 화면에서 같은 식으로 잰다(보이기만 — 저장 규칙은 서버가)
+                      contrast: {
+                        textOnBackground: contrast(selection.palette.colors.text, selection.palette.colors.background),
+                        bestOnPrimary: Math.max(contrast(selection.palette.colors.text, selection.palette.colors.primary), contrast(selection.palette.colors.background, selection.palette.colors.primary)),
+                      },
+                    }}
+                    on
+                    min={limits.minContrast}
+                    save={save}
+                  />
+                </div>
+              ) : (
+                <p className="empty-state">팔레트 후보가 없어요. 위 「시각 후보 다시 만들기」로 만들어 보세요.</p>
+              )
+            ) : (
+              <div className="palettes">
+                {visual.candidates.palettes.map((p) => (
+                  <PaletteCard key={p.name} p={p} on={selection.palette?.name === p.name} min={limits.minContrast} save={save} />
+                ))}
+              </div>
+            )}
 
             <h3>폰트 짝 (제목 + 본문)</h3>
+            {visual.candidates.fontPairs.length === 0 && (
+              <p className="empty-state">
+                {selection.titleFont && selection.bodyFont
+                  ? `지금 쓰는 짝: ${font(selection.titleFont)?.name ?? selection.titleFont} + ${font(selection.bodyFont)?.name ?? selection.bodyFont}. 다른 짝을 보려면 「시각 후보 다시 만들기」.`
+                  : '폰트 짝 후보가 없어요. 위 「시각 후보 다시 만들기」로 만들어 보세요.'}
+              </p>
+            )}
             <div className="fontpairs">
               {visual.candidates.fontPairs.map((f) => {
                 const t = font(f.title);
@@ -353,10 +390,17 @@ export function BrandPage() {
                     <span className="muted small">
                       라이선스: {[t, b].filter((x, i, a) => x && a.indexOf(x) === i).map((x) => `${x!.name} — ${x!.license.name}${x!.license.reservedFontName ? ` (예약 이름 "${x!.license.reservedFontName}")` : ''}`).join(' · ')}
                     </span>
+                    {[...new Set([t?.noticeKo, b?.noticeKo].filter(Boolean))].map((n) => (
+                      <span key={n} className="muted small">
+                        {n}
+                      </span>
+                    ))}
                   </button>
                 );
               })}
             </div>
+
+            <FontPicker fonts={fonts} titleFont={selection.titleFont} bodyFont={selection.bodyFont} sample="본문은 이렇게 보여요. 써 보고 정리한 내용을 한 장에. 0123" save={save} />
 
             <h3>그림 프롬프트</h3>
             <p className="muted small">그림 생성 도구에 붙여 넣어 쓰세요. 만든 그림은 아래 「프로필 사진」에서 올리면 그대로 적용돼요.</p>
@@ -369,11 +413,13 @@ export function BrandPage() {
             <ul className="prompts">
               {visual.candidates.imagePrompts.map((p) => (
                 <li key={p.filename}>
-                  <strong>{p.target === 'profile' ? '프로필 사진' : `하이라이트 커버 · ${p.label}`}</strong> <span className="muted small">{p.filename}</span>
+                  <div className="prompt-head">
+                    <strong>{p.target === 'profile' ? '프로필 사진' : `하이라이트 커버 · ${p.label}`}</strong> <span className="muted small">{p.filename}</span>
+                    <button type="button" className="small ghost" onClick={() => void navigator.clipboard.writeText(p.prompt).then(() => setNotice('프롬프트를 복사했어요.'))}>
+                      복사
+                    </button>
+                  </div>
                   <pre>{p.prompt}</pre>
-                  <button type="button" className="small" onClick={() => void navigator.clipboard.writeText(p.prompt).then(() => setNotice('프롬프트를 복사했어요.'))}>
-                    복사
-                  </button>
                 </li>
               ))}
             </ul>
@@ -383,6 +429,8 @@ export function BrandPage() {
       </section>
 
       <ProfileImage selection={selection} fonts={fonts} save={save} />
+      <LitlyPanel />
+      <CharacterBuilder palette={selection.palette?.colors ?? null} hasProfile={!!activeProfile} />
     </>
   );
 }

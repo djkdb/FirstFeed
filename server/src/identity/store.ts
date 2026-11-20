@@ -3,7 +3,7 @@ import type { Db } from '../db/index.ts';
 import type { AnswerKind, TurnLike } from './sources.ts';
 import type { SurveyAnswers } from './survey.ts';
 import type { ProfileContent, VersionReason } from './model.ts';
-import type { Followup } from './followup.ts';
+import type { Followup, Format, Lens } from './followup.ts';
 
 export type SessionStatus = 'interview' | 'ready' | 'profiled';
 export interface SessionNote {
@@ -17,6 +17,12 @@ export interface Turn extends TurnLike {
   examples: string[];
   options: string[];
   target: string | null;
+  /** 인터뷰 다양화(v3) — 예전 질문 · 고정 질문은 lens null · format open */
+  lens: Lens | null;
+  format: Format;
+  sample: string | null;
+  scale: { left: string; right: string } | null;
+  pick: string | null;
 }
 
 export interface SavedProfile extends ProfileContent {
@@ -70,14 +76,32 @@ export function listTurns(db: Db, sessionId: number): Turn[] {
     target: (r.target as string | null) ?? null,
     answer: (r.answer as string | null) ?? null,
     answerKind: (r.answer_kind as AnswerKind | null) ?? null,
+    lens: (r.lens as Lens | null) ?? null,
+    format: ((r.format as Format | null) ?? 'open') as Format,
+    sample: (r.sample as string | null) ?? null,
+    scale: r.scale_json ? json<{ left: string; right: string }>(r.scale_json) : null,
+    pick: (r.pick as string | null) ?? null,
   }));
 }
 
 export function addTurn(db: Db, sessionId: number, f: Followup, jobId: string): number {
   const next = listTurns(db, sessionId).length + 1;
   db.prepare(
-    'INSERT INTO interview_turns (session_id, turn_no, question, why, examples_json, options_json, target, job_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-  ).run(sessionId, next, f.question, f.why, JSON.stringify(f.examples), JSON.stringify(f.options), f.target, jobId);
+    'INSERT INTO interview_turns (session_id, turn_no, question, why, examples_json, options_json, target, job_id, lens, format, sample, scale_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  ).run(
+    sessionId,
+    next,
+    f.question,
+    f.why,
+    JSON.stringify(f.examples),
+    JSON.stringify(f.options),
+    f.target,
+    jobId,
+    f.lens,
+    f.format,
+    f.format === 'rewrite' ? f.sample : null,
+    f.format === 'scale' ? JSON.stringify({ left: f.scaleLeft, right: f.scaleRight }) : null,
+  );
   return next;
 }
 
@@ -89,10 +113,11 @@ export function addAnsweredTurn(db: Db, sessionId: number, question: string, ans
   ).run(sessionId, next, question, answer, kind);
 }
 
-export function saveAnswer(db: Db, sessionId: number, turnNo: number, answer: string, kind: AnswerKind): void {
-  db.prepare("UPDATE interview_turns SET answer = ?, answer_kind = ?, answered_at = datetime('now') WHERE session_id = ? AND turn_no = ?").run(
+export function saveAnswer(db: Db, sessionId: number, turnNo: number, answer: string, kind: AnswerKind, pick: string | null = null): void {
+  db.prepare("UPDATE interview_turns SET answer = ?, answer_kind = ?, pick = ?, answered_at = datetime('now') WHERE session_id = ? AND turn_no = ?").run(
     answer,
     kind,
+    pick,
     sessionId,
     turnNo,
   );

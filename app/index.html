@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 파비콘: 소개 페이지와 같은 로고(3×2 칸). 없으면 브라우저가 /favicon.ico 를 찾다 404(사용자 시뮬레이션 2026-11-09) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2318181B'/%3E%3Cg fill='%23F4F4F5'%3E%3Crect x='7' y='9' width='5' height='6' rx='1'/%3E%3Crect x='20' y='9' width='5' height='6' rx='1'/%3E%3Crect x='13.5' y='17' width='5' height='6' rx='1'/%3E%3C/g%3E%3Cg fill='%2352525B'%3E%3Crect x='13.5' y='9' width='5' height='6' rx='1'/%3E%3Crect x='7' y='17' width='5' height='6' rx='1'/%3E%3Crect x='20' y='17' width='5' height='6' rx='1'/%3E%3C/g%3E%3C/svg%3E" />
+    <!-- 밝은 · 어두운 판: 고른 값이 있으면 화면을 그리기 전에 먼저 걸어 깜박이지 않게(theme.ts 와 같은 저장 이름) -->
+    <script>
+      try { var t = localStorage.getItem('ff.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}
+    </script>
     <title>퍼스트피드</title>
   </head>
   <body>

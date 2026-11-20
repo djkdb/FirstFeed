@@ -73,6 +73,19 @@ export class JobStore {
     return { ...state, runs, stage: state.phase === 'running' ? (this.contexts.get(jobId)?.stage ?? null) : null };
   }
 
+  /** 진행 중인 작업 전부 — 작업 콘솔이 「지금 도는 것」을 보이려고(어느 화면에서 시작했든) */
+  running(): Array<Pick<JobState, 'jobId' | 'task' | 'startedAt'> & { stage: JobStage | null }> {
+    return [...this.jobs.values()]
+      .filter((j) => j.phase === 'running')
+      .map((j) => ({ jobId: j.jobId, task: j.task, startedAt: j.startedAt, stage: this.contexts.get(j.jobId)?.stage ?? null }));
+  }
+
+  /** 메모리에 남은 작업의 끝난 모양(서버를 다시 켜면 비어 있다 — 그때는 ai_runs 로 짐작) */
+  phaseOf(jobId: string): { phase: JobPhase; error: JobState['error']; result: unknown } | null {
+    const j = this.jobs.get(jobId);
+    return j ? { phase: j.phase, error: j.error, result: j.result } : null;
+  }
+
   cancel(jobId: string): boolean {
     return this.ai.cancel(jobId);
   }

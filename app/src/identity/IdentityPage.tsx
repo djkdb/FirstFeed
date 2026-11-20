@@ -1,5 +1,7 @@
 // 정체성 찾기: 설문 → 인터뷰 → 프로필 초안 → 확정. 진행 상태는 서버(DB)에 있어 새로고침해도 이어서 한다.
+import { loadError } from '../loadError.ts';
 import { useEffect, useState } from 'react';
+import { notifyChanged } from '../changed.ts';
 import { api } from '../api.ts';
 import { useJob, type JobView } from '../useJob.ts';
 import { Interview } from './Interview.tsx';
@@ -33,7 +35,7 @@ export function IdentityPage() {
   useEffect(() => {
     fetchCurrent()
       .then(setCurrent)
-      .catch((e: unknown) => setError(`불러오지 못했습니다 (${String(e)}). 서버가 켜져 있는지 확인하고 새로고침하세요.`));
+      .catch((e: unknown) => setError(loadError(e)));
   }, []);
 
   const start = async (kind: JobKind, sessionId: number) => {
@@ -82,12 +84,12 @@ export function IdentityPage() {
     }
   };
 
-  const answer = async (turnNo: number, text: string, unknown: boolean) => {
+  const answer = async (turnNo: number, text: string, unknown: boolean, pick: string | null = null, scale: number | null = null) => {
     if (!current?.state) return;
     setBusy(true);
     setError(null);
     try {
-      const r = await api.api.identity.sessions[':id'].answer.$post({ param: { id: String(current.state.id) }, json: { turnNo, answer: text, unknown } });
+      const r = await api.api.identity.sessions[':id'].answer.$post({ param: { id: String(current.state.id) }, json: { turnNo, answer: text, unknown, pick, scale } });
       const body = await r.json();
       if ('error' in body) throw new Error(body.error);
       setCurrent(body);
@@ -109,6 +111,7 @@ export function IdentityPage() {
     await api.api.identity.profiles[':id'].confirm.$post({ param: { id: String(profileId) } });
     await refresh();
     setBusy(false);
+    notifyChanged();
   };
 
   if (!current) return <section className="card">{error ? <p className="status error">{error}</p> : <p className="muted">불러오는 중…</p>}</section>;
@@ -146,7 +149,7 @@ export function IdentityPage() {
       )}
 
       {state && state.status !== 'profiled' && (
-        <Interview state={state} minTurns={current.minTurns} maxTurns={current.maxTurns} busy={busy || running} onAnswer={(n, a, u) => void answer(n, a, u)} />
+        <Interview state={state} minTurns={current.minTurns} maxTurns={current.maxTurns} busy={busy || running} onAnswer={(n, a, u, p, sc) => void answer(n, a, u, p, sc)} />
       )}
 
       {running && job && (

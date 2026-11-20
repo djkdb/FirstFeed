@@ -1,0 +1,124 @@
+{
+ "note": "AI 생성 예시 문장(개인정보 없음) — 모션 제안 측정용 고정 입력(2026-11-08). id 는 고정",
+ "doc": {
+  "version": 1,
+  "name": "사진 장면",
+  "bg": {
+   "kind": "themed",
+   "look": "deep"
+  },
+  "scenes": [
+   {
+    "id": "s1",
+    "name": "훅",
+    "start": 0,
+    "duration": 60,
+    "media": null,
+    "bg": null
+   },
+   {
+    "id": "s2",
+    "name": "사진",
+    "start": 60,
+    "duration": 150,
+    "media": {
+     "src": "/api/reels/1/media/photo-placeholder.png",
+     "kind": "image",
+     "trim": 0
+    },
+    "bg": null
+   },
+   {
+    "id": "s3",
+    "name": "마무리",
+    "start": 210,
+    "duration": 60,
+    "media": null,
+    "bg": null
+   }
+  ],
+  "texts": [
+   {
+    "id": "h7",
+    "start": 0,
+    "duration": 60,
+    "text": "책상 정리,\n이것 하나만",
+    "subtitle": false,
+    "style": {
+     "preset": "title",
+     "font": "title",
+     "size": 120,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 520,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t4",
+    "start": 60,
+    "duration": 81,
+    "text": "모니터 아래 선을 한데 묶어요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t5",
+    "start": 141,
+    "duration": 67,
+    "text": "케이블 정리함 하나면 끝",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   },
+   {
+    "id": "t6",
+    "start": 208,
+    "duration": 62,
+    "text": "다음엔 서랍 차례예요",
+    "subtitle": true,
+    "style": {
+     "preset": "softbox",
+     "font": "body",
+     "size": 64,
+     "color": "auto",
+     "bold": true,
+     "align": "center",
+     "x": 540,
+     "y": 1125,
+     "width": 840,
+     "rotation": 0
+    }
+   }
+  ],
+  "overlays": [],
+  "audio": [],
+  "assets": [],
+  "memo": "",
+  "original": {}
+ }
+}

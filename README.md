@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/djkdb/FirstFeed/actions/workflows/ci.yml/badge.svg)](https://github.com/djkdb/FirstFeed/actions/workflows/ci.yml)
 
-**소개 페이지 → https://djkdb.github.io/FirstFeed/** — 「게시물 하나 올리기 전에, 30일 뒤 내 계정을 먼저」. 화면은 앱으로 만든 데모 브랜드(AI 생성 테스트 자료)다.
+**소개 페이지 → https://djkdb.github.io/FirstFeed/** — 「게시물 하나 올리기 전에, 30일 뒤 내 계정을 먼저」. 화면은 운영자 계정(@zun_it_)을 예시로 앱이 그린 것이고, 계획 칸의 캐릭터 그림은 이미지 AI 로 따로 만들었다(결정 2026-11-04).
 
-인스타그램을 처음 시작하는 사람이 **정체성 찾기 → 브랜딩 → 템플릿 고정 → 카드뉴스 만들기 → 업로드 준비**를 한 곳에서 하는 **로컬 앱**입니다. 자기 컴퓨터에서 웹 화면 + 로컬 서버로 돌고, AI 는 사용자 본인의 Claude 구독(Claude Code CLI)으로 부릅니다.
+인스타그램을 처음 시작하는 사람이 **정체성 찾기 → 브랜딩 → 템플릿 고정 → 카드뉴스 만들기 → 업로드 준비**를 한 곳에서 하는 **로컬 앱**입니다. 그 밖에 30일 뒤 내 계정 미리보기 · 「오늘 올릴 것」 홈 · 카드뉴스 채팅으로 고치기 · 릴스(mp4 뽑기) · 티스토리 발행 · 리틀리 채우기 · 설정 탭이 있습니다. 자기 컴퓨터에서 웹 화면 + 로컬 서버로 돌고, AI 는 사용자 본인의 Claude 구독(Claude Code CLI)으로 부릅니다.
 
 CUVIC 바이브 코딩 대회(개인전) 출품작입니다.
 
@@ -16,10 +16,13 @@ CUVIC 바이브 코딩 대회(개인전) 출품작입니다.
 
 | 무엇 | 비고 |
 |---|---|
-| macOS | 지금은 macOS 에서만 써 봤습니다. Windows 는 최종 발표까지 확인 목표(확인 필요) |
+| macOS | 지금은 macOS 에서만 써 봤습니다(자동 테스트는 Linux CI 에서도 돎 — `.github/workflows/ci.yml`, 브라우저 테스트 제외). Windows 는 최종 발표까지 확인 목표(확인 필요) |
 | Node.js 24 이상 | `package.json` 의 `engines`. 설치 방법은 이 레포에 정리돼 있지 않습니다(확인 필요) |
-| Claude Code CLI 설치와 로그인 | 설치는 앱 안내 그대로: 「https://claude.com/claude-code 의 안내대로 설치」. 로그인도 앱 안내 그대로: 「터미널에서 `claude` 를 실행해 로그인한 뒤 [다시 확인]을 누르세요」 |
+| Claude Code CLI 설치와 로그인 | 설치는 앱 안내 그대로: 「https://claude.com/claude-code 의 안내대로 설치」. 로그인도 앱 안내 그대로: 「터미널에서 `claude` 를 실행해 로그인한 뒤 [다시 확인]을 누르세요」. 대신 `claude setup-token` 으로 받은 구독 토큰을 앱의 설정 탭에 넣어도 된다(OS 키체인에 저장 — 맞는지는 점검의 「AI 시험 호출」로 확인) |
 | Claude 유료 구독 | 앱은 AI 를 부르기 직전에 `claude auth status` 로 구독 로그인인지 확인하고, 구독이 아니면(API 키 등) 호출하지 않습니다 |
+| (선택) ffmpeg | 릴스 음량 맞추기(−14 LUFS). 없으면 음량을 맞추지 않고 뽑는다 |
+| (선택) faster-whisper | 릴스 받아쓰기 — `pip install faster-whisper` 를 한 사람만. 소리는 이 컴퓨터 밖으로 안 나간다 |
+| (Linux 만) `secret-tool` | 설정 탭에 토큰 · 키를 저장할 OS 키체인 도구(libsecret). 없으면 저장하지 않고 설치 안내만 — 평문으로 대신 저장하지 않는다 |
 
 ## 설치와 실행
 
@@ -70,7 +73,9 @@ AI 를 실제로 부르는 측정 명령(구독 사용량이 듦)은 [CLAUDE.md]
 | 문서 | 무엇 |
 |---|---|
 | [docs/PRD.md](docs/PRD.md) | 제품 요구사항 문서 v0.2 — 기준 문서 |
-| [docs/spec/](docs/spec/) | [기능명세서](docs/spec/기능명세서.md) · [유저플로우](docs/spec/유저플로우.md) |
+| [docs/spec/](docs/spec/) | [기능명세서](docs/spec/기능명세서.md) · [유저플로우](docs/spec/유저플로우.md) — 2026-10-20 스냅숏(갱신 안 함, 그 뒤 결정은 PRD · CLAUDE.md) |
 | [docs/process/](docs/process/) | 요구사항 상태표 · 프로세스 측정 · 구조 점검 · 남은 일 추정 |
+| [docs/contest/](docs/contest/) | 대회 문서 — 심사 기준 · 중간 보고서 초안 · 발표 준비 · 제출물 체크리스트 |
+| [docs/service/](docs/service/) | 설계서 — 사용자 경험 설계 · 릴스 계획 · 서비스화 계획 |
 | [docs/devlog/](docs/devlog/README.md) | 세션별 개발 기록(한 일 · 결정 · 오류 → 원인 → 해결 · 측정) |
 | [CLAUDE.md](CLAUDE.md) | 작업 규칙과 「이미 내린 결정」 · 「겪은 오류」 — PRD 와 부딪히면 이쪽이 우선 |

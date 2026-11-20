@@ -47,14 +47,38 @@ export async function askNext(ai: AiService, sessionId: number, job?: JobContext
   return { kind: 'asked', turnNo, readyForProfile: ready };
 }
 
-export function answerTurn(ai: AiService, sessionId: number, turnNo: number, answer: string, unknown: boolean): void {
+/**
+ * 답 저장. 방식마다 무엇이 「사용자가 직접 쓴 글」인지 서버가 정한다(화면이 보낸 표시를 믿지 않는다):
+ *  - 둘 중 고르기: 고른 쪽은 AI 가 쓴 선택지라 보조 근거(choice). 이유를 쓰면 답 글 = 이유만(직접 입력) — 선택지 글이 주 근거로 섞이지 않게
+ *  - 말투 척도: 고른 칸은 보조 근거(choice), 덧붙인 말을 쓰면 그 말이 답 글
+ *  - 고쳐 쓰기: 보인 예시 문장과 정규화 뒤 같으면 「예시를 그대로 보냄」(근거 아님), 조금이라도 고쳤으면 직접 입력
+ */
+export function answerTurn(ai: AiService, sessionId: number, turnNo: number, answer: string, unknown: boolean, pick: string | null = null, scale: number | null = null): void {
   const turns = listTurns(ai.db, sessionId);
   const turn = turns.find((t) => t.turnNo === turnNo);
   if (!turn) throw new FlowError(`${turnNo}번 질문이 없습니다.`, '화면을 새로고침한 뒤 다시 답하세요.');
   if (turn.answer !== null) throw new FlowError(`${turnNo}번 질문에는 이미 답했습니다.`, '다음 질문으로 넘어가세요.');
-  const text = unknown ? '잘 모르겠어요' : answer.trim();
-  if (!text) throw new FlowError('답이 비어 있습니다.', '답을 쓰거나 [잘 모르겠어요]를 누르세요.');
-  saveAnswer(ai.db, sessionId, turnNo, text, classifyAnswer(text, turn.examples, turn.options, unknown));
+  if (unknown) {
+    saveAnswer(ai.db, sessionId, turnNo, '잘 모르겠어요', 'unknown');
+    return;
+  }
+  const typed = answer.trim();
+  if (turn.format === 'this_or_that') {
+    if (!pick || !turn.options.includes(pick)) throw new FlowError('둘 중 하나를 고르지 않았습니다.', '두 선택지 중 하나를 누른 뒤 보내세요.');
+    if (typed) saveAnswer(ai.db, sessionId, turnNo, typed, classifyAnswer(typed, turn.examples, turn.options, false), pick);
+    else saveAnswer(ai.db, sessionId, turnNo, pick, 'choice', pick);
+    return;
+  }
+  if (turn.format === 'scale' && turn.scale) {
+    if (scale === null || !Number.isInteger(scale) || scale < 1 || scale > 5) throw new FlowError('척도에서 칸을 고르지 않았습니다.', '1~5 중 하나를 누른 뒤 보내세요.');
+    const side = scale <= 2 ? `${turn.scale.left} 쪽` : scale >= 4 ? `${turn.scale.right} 쪽` : '가운데';
+    if (typed) saveAnswer(ai.db, sessionId, turnNo, typed, classifyAnswer(typed, turn.examples, [], false), String(scale));
+    else saveAnswer(ai.db, sessionId, turnNo, `${turn.scale.left} ↔ ${turn.scale.right}: 5칸 중 ${scale}(${side})`, 'choice', String(scale));
+    return;
+  }
+  if (!typed) throw new FlowError('답이 비어 있습니다.', '답을 쓰거나 [잘 모르겠어요]를 누르세요.');
+  const examples = turn.format === 'rewrite' && turn.sample ? [turn.sample, ...turn.examples] : turn.examples;
+  saveAnswer(ai.db, sessionId, turnNo, typed, classifyAnswer(typed, examples, turn.options, false));
 }
 
 export interface ProfileStepResult {

@@ -57,9 +57,12 @@ interface Row {
 const rows: Row[] = [];
 fs.rmSync(outDir, { recursive: true, force: true });
 // 변형: 시안마다 그림 없이 한 번 + 그림 바탕 시안은 테스트 그림마다
+const testImage = (ph: string) => `data:image/png;base64,${fs.readFileSync(path.join(env.repoRoot, `tests/fixtures/generated/images/${ph}.png`)).toString('base64')}`;
 const VARIANTS = DRAFTS.filter((d) => !onlyDrafts || onlyDrafts.includes(d.id)).flatMap((d) => [
   { key: d.id, d, photo: null as string | null, pillar: null as number | null },
-  ...(d.id === 'F' ? photos.map((ph) => ({ key: `F·${ph}`, d, photo: `data:image/png;base64,${fs.readFileSync(path.join(env.repoRoot, `tests/fixtures/generated/images/${ph}.png`)).toString('base64')}`, pillar: null })) : []),
+  ...(d.id === 'F' ? photos.map((ph) => ({ key: `F·${ph}`, d, photo: testImage(ph), pillar: null })) : []),
+  // 본문 사진 칸 시안(2026-11-19): 복잡한 그림 하나로 본문 원고만
+  ...(d.bodyPhoto ? [{ key: `${d.id}·사진`, d, photo: testImage('busy'), pillar: null }] : []),
   ...pillars.map((n) => ({ key: `${d.id}·축${n}`, d, photo: null, pillar: n })),
 ]);
 for (const v of VARIANTS)
@@ -69,7 +72,8 @@ for (const v of VARIANTS)
     const dir = path.join(outDir, `${v.key}-${id}`);
     fs.mkdirSync(dir, { recursive: true });
     for (const c of cases) {
-      if ((v.photo || v.pillar !== null) && c.content.kind !== 'cover' && c.content.kind !== 'reel_cover') continue;
+      const coverLike = c.content.kind === 'cover' || c.content.kind === 'reel_cover';
+      if (v.photo && d.bodyPhoto ? c.content.kind !== 'body' : (v.photo || v.pillar !== null) && !coverLike) continue;
       const r = await renderPhotoFrame(db, d, look, c.content, v.photo, { captureEvenIfBad: true, pillarIndex: v.pillar });
       const result: Row['result'] = r.problems.some((p) => p.code === 'font_fallback')
         ? '대체 글꼴'

@@ -5,11 +5,17 @@ import { env } from './config.ts';
 import { openDb } from './db/index.ts';
 import { createApp } from './app.ts';
 import { AiService } from './ai/adapter.ts';
-import { ClaudeCodeProvider } from './ai/providers/claude-code.ts';
+import { ClaudeCodeProvider, setClaudeExtraEnv } from './ai/providers/claude-code.ts';
+import { SecretStore } from './secrets/store.ts';
+import { systemKeychain } from './secrets/keychain.ts';
 
 const db = openDb(path.join(env.dataDir, 'firstfeed.sqlite'));
+// 설정 탭에 저장한 키 · 토큰은 OS 키체인에서 읽어 메모리에만(구독 토큰은 Claude CLI 환경으로)
+const secrets = new SecretStore(systemKeychain());
+await secrets.load();
+setClaudeExtraEnv(() => secrets.claudeEnv());
 const ai = new AiService({ db, provider: new ClaudeCodeProvider() });
-const app = createApp({ db, ai });
+const app = createApp({ db, ai, secrets });
 
 const server = serve({ fetch: app.fetch, hostname: env.host, port: env.port }, (info) => {
   console.log(`[서버] http://${env.host}:${info.port} 에서 실행 중 (데이터: ${env.dataDir})`);

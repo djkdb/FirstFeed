@@ -641,3 +641,40 @@ a.draft-chip img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-r
 .blog-steps { margin: var(--s-2) 0; padding-left: 1.2em; color: var(--muted-strong); }
 .blog-steps li.now { color: var(--ink); font-weight: 600; }
 .blog-posts { margin-top: var(--s-2); padding-left: 1.2em; }
+
+/* 설정 탭 (2026-11-20) — 묶음 카드 안에 「이름 · 설명 | 조작」 줄. 상태는 배지로 */
+.settings-head { margin: 0 0 var(--s-4); }
+.settings-head h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 6px; }
+.settings-nav { position: sticky; top: 0; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 0; margin-top: var(--s-3); background: var(--ground); }
+.settings-nav a { font-size: 13px; font-weight: 600; color: var(--muted-strong); text-decoration: none; padding: 6px 12px; border-radius: 999px; background: var(--surface-2); }
+.settings-nav a:hover { color: var(--ink); background: var(--surface-3); }
+.set-group { scroll-margin-top: 64px; }
+.set-group > h2 { margin-bottom: var(--s-2); }
+.set-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: var(--s-4); align-items: start; padding: var(--s-4) 0; border-top: 1px solid var(--line); }
+.set-group > h2 + .set-row { border-top: 0; padding-top: var(--s-2); }
+.set-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; font-size: 15px; }
+.set-desc { margin-top: 4px; font-size: 13px; line-height: 1.6; color: var(--muted-strong); }
+.set-desc code { font-size: 12px; }
+.set-control { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.set-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.set-inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.set-inline input { margin-top: 0; min-height: 32px; flex: 1; min-width: 160px; }
+.set-control .set-inline { margin-top: 0; justify-content: flex-end; }
+.secret-form { display: flex; flex-direction: column; gap: 8px; }
+.secret-input { position: relative; }
+.secret-input input { margin-top: 0; padding-right: 64px; font-family: var(--mono); font-size: 13px; }
+button.secret-eye { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); min-height: 28px; padding: 0 10px; font-size: 12px; background: none; color: var(--muted-strong); }
+button.secret-eye:hover:not(:disabled) { background: var(--surface-2); }
+.badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; line-height: 1.6; }
+.badge-ok { background: var(--ok-soft); color: var(--ok); }
+.badge-warn { background: var(--warn-soft); color: var(--warn-ink); }
+.badge-off { background: var(--surface-2); color: var(--muted-strong); }
+.seg { display: inline-flex; padding: 2px; gap: 2px; background: var(--surface-2); border-radius: 10px; align-self: flex-end; }
+.seg button { border: 0; border-radius: 8px; min-height: 30px; padding: 0 14px; font-size: 13px; background: none; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / 12%); }
+a.button.small { min-height: 32px; padding: 0 var(--s-3); font-size: 13px; border-radius: 8px; align-self: flex-end; }
+@media (max-width: 700px) {
+  .set-row { grid-template-columns: 1fr; gap: var(--s-2); }
+  .set-actions, .set-control .set-inline { justify-content: flex-start; }
+  .seg, a.button.small { align-self: flex-start; }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SettingsPage } from './settings/SettingsPage.tsx';
 import { onChanged } from './changed.ts';
 import { api } from './api.ts';
 import { AiConnection } from './AiConnection.tsx';
@@ -22,8 +23,8 @@ const THEMES: Array<{ id: ThemeChoice; label: string }> = [
 
 type ServerState = { kind: 'checking' } | { kind: 'ok'; brandName: string | null } | { kind: 'error'; message: string };
 
-type Tab = 'home' | 'identity' | 'brand' | 'template' | 'make' | 'reels' | 'preview' | 'check';
-const TABS: Tab[] = ['home', 'identity', 'brand', 'template', 'make', 'reels', 'preview', 'check'];
+type Tab = 'home' | 'identity' | 'brand' | 'template' | 'make' | 'reels' | 'preview' | 'settings' | 'check';
+const TABS: Tab[] = ['home', 'identity', 'brand', 'template', 'make', 'reels', 'preview', 'settings', 'check'];
 // 「#/make?slot=3」처럼 뒤에 값이 붙어도 그 탭으로. 첫 화면은 「오늘 올릴 것」(설계서 1장 — 계획이 없으면 그 화면이 할 일을 안내)
 const tabFromHash = (): Tab => TABS.find((t) => window.location.hash.split('?')[0] === `#/${t}`) ?? 'home';
 
@@ -49,7 +50,7 @@ const NAV: Array<{
       { tab: 'preview', label: '30일 뒤 미리보기' },
     ],
   },
-  { group: '설정', items: [{ tab: 'check', label: '점검' }] },
+  { group: '설정', items: [{ tab: 'settings', label: '설정' }, { tab: 'check', label: '점검' }] },
 ];
 
 export function App() {
@@ -161,6 +162,7 @@ export function App() {
         {tab === 'make' && <MakePage />}
         {tab === 'reels' && <ReelsPage />}
         {tab === 'preview' && <PreviewPage />}
+        {tab === 'settings' && <SettingsPage theme={theme} setTheme={setTheme} />}
         {tab === 'check' && (
           <>
             <section className="card" aria-live="polite">

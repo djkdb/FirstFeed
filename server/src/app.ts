@@ -18,6 +18,9 @@ import { templateRoutes } from './templates/routes.ts';
 import { cardRoutes } from './cards/routes.ts';
 import { publishRoutes } from './publish/routes.ts';
 import { blogRoutes } from './publish/blog/routes.ts';
+import { settingsRoutes } from './secrets/routes.ts';
+import { SecretStore } from './secrets/store.ts';
+import { memoryKeychain } from './secrets/keychain.ts';
 import { PhoneShare } from './publish/phone-share.ts';
 import { demoRoutes } from './demo/routes.ts';
 import { previewRoutes } from './preview/routes.ts';
@@ -33,6 +36,8 @@ export interface AppDeps {
   dataDir?: string;
   /** 폰으로 받기 서버 (테스트는 127.0.0.1 에 묶은 것) */
   phoneShare?: PhoneShare;
+  /** 설정 탭의 키 · 토큰(OS 키체인). 없으면 메모리 키체인 — 테스트용 */
+  secrets?: SecretStore;
 }
 
 const SmokeBody = z.object({ source: z.string().max(5000).optional() });
@@ -81,6 +86,7 @@ export function createApp(deps: AppDeps) {
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir, deps.phoneShare ?? new PhoneShare()))
     .route('/api/blog', blogRoutes(deps.db, deps.dataDir))
+    .route('/api/settings', settingsRoutes(deps.secrets ?? new SecretStore(memoryKeychain())))
     .route('/api/demo', demoRoutes(deps.db))
     .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/reels', reelRoutes(deps.ai, jobs, deps.dataDir))

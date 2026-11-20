@@ -1,4 +1,6 @@
 // 티스토리 · 리틀리 브라우저 발행 API (사용자 결정 2026-11-20). 작업 ID 를 먼저 돌려주고 화면이 단계를 묻는다
+import fs from 'node:fs';
+import path from 'node:path';
 import type { BrowserContext } from 'playwright';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
@@ -12,12 +14,22 @@ import { getCaption } from '../store.ts';
 import { BlogJobs } from './jobs.ts';
 import { buildLitly, fillLitly } from './litly.ts';
 import { buildPost, tistoryName } from './post.ts';
-import { openContext } from './session.ts';
+import { openContext, waitUntil } from './session.ts';
+import { TISTORY } from './selectors.ts';
 import { addBlogPost, postsForSet, recentPosts } from './store.ts';
 import { publishTistory } from './tistory.ts';
 
 const BRAND_ID = 1;
 const bad = (error: string) => ({ error });
+
+/** 로그인을 확인한 때만 남기는 표시 — 창을 연 것만으로 프로필 폴더가 생겨서 「폴더가 있다 = 로그인됨」으로 볼 수 없다 */
+const MARK = '.firstfeed-login';
+const markLogin = (dataDir: string, site: string) => {
+  const dir = path.join(dataDir, 'browser-profile', site);
+  fs.mkdirSync(dir, { recursive: true });
+  // DB 의 datetime('now') 와 같은 모양(UTC, 초까지) — 화면은 같은 함수(localTime)로 현지 시각
+  fs.writeFileSync(path.join(dir, MARK), new Date().toISOString().slice(0, 19).replace('T', ' '));
+};
 
 export function blogRoutes(db: Db, dataDir = env.dataDir, jobs = new BlogJobs(), hooks: { tistoryTarget?: Partial<Parameters<typeof publishTistory>[2]> } = {}) {
   // 리틀리 창은 사용자가 저장할 때까지 열어 둔다 — 다음 작업을 시작하면 닫는다
@@ -47,6 +59,61 @@ export function blogRoutes(db: Db, dataDir = env.dataDir, jobs = new BlogJobs(),
         return c.json(settings());
       },
     )
+    // 로그인 유지 (설정 탭, 2026-11-20): 앱 전용 창의 로그인 기록이 있는지 · 미리 로그인해 두기 · 지우기(로그아웃)
+    .get('/logins', (c) =>
+      c.json({
+        sites: (['tistory', 'litly'] as const).map((site) => {
+          const mark = path.join(dataDir, 'browser-profile', site, MARK);
+          const savedAt = fs.existsSync(mark) ? fs.readFileSync(mark, 'utf8').trim() : null;
+          return { site, label: site === 'tistory' ? '티스토리' : '리틀리', saved: !!savedAt, savedAt, needs: site === 'tistory' && !getSetting(db, 'blog.tistory.name') ? '블로그 이름을 먼저 넣어 주세요.' : null };
+        }),
+      }),
+    )
+    .post('/logins/:site', (c) => {
+      const site = c.req.param('site');
+      if (site !== 'tistory' && site !== 'litly') return c.json(bad('모르는 사이트예요.'), 404);
+      const blog = getSetting(db, 'blog.tistory.name');
+      if (site === 'tistory' && !blog) return c.json(bad('티스토리 블로그 이름을 먼저 넣어 주세요.'), 400);
+      try {
+        const jobId = jobs.start(site, async (step, signal) => {
+          step('브라우저 창을 여는 중');
+          const ctx = await fresh(site);
+          try {
+            const page = ctx.pages()[0] ?? (await ctx.newPage());
+            const target = site === 'tistory' ? `https://${blog}.tistory.com/manage` : getSetting(db, 'blog.litly.adminUrl');
+            await page.goto(target, { waitUntil: 'domcontentloaded' });
+            const ready =
+              site === 'tistory'
+                ? async () => {
+                    const u = new URL(page.url());
+                    return u.host === new URL(TISTORY.newPost(blog!)).host && u.pathname.startsWith('/manage');
+                  }
+                : async () => !/\/login/.test(page.url()) && (await page.locator('input[type=password]').filter({ visible: true }).count()) === 0 && /admin/.test(page.url());
+            if (!(await ready())) {
+              step('열린 창에서 로그인해 주세요 — 끝나면 창이 저절로 닫혀요');
+              await waitUntil(page, ready, getSetting(db, 'blog.loginWaitMinutes'), signal, '로그인');
+            }
+            markLogin(dataDir, site);
+            step('로그인을 이 앱 전용 창에 저장했어요 — 다음 발행부터는 바로 진행돼요');
+            return { saved: true };
+          } finally {
+            await ctx.close().catch(() => {});
+            if (open === ctx) open = null;
+          }
+        });
+        return c.json({ jobId });
+      } catch (e) {
+        return c.json(bad((e as Error).message), 409);
+      }
+    })
+    .delete('/logins/:site', async (c) => {
+      const site = c.req.param('site');
+      if (site !== 'tistory' && site !== 'litly') return c.json(bad('모르는 사이트예요.'), 404);
+      await open?.close().catch(() => {});
+      open = null;
+      fs.rmSync(path.join(dataDir, 'browser-profile', site), { recursive: true, force: true });
+      return c.json({ ok: true });
+    })
     .get('/sets/:id', (c) => c.json({ posts: postsForSet(db, 'tistory', Number(c.req.param('id'))) }))
     .post(
       '/sets/:id/tistory',
@@ -74,6 +141,7 @@ export function blogRoutes(db: Db, dataDir = env.dataDir, jobs = new BlogJobs(),
             try {
               const r = await publishTistory(ctx, post, { blog, visibility, loginWaitMinutes: getSetting(db, 'blog.loginWaitMinutes'), ...hooks.tistoryTarget }, step, signal);
               addBlogPost(db, BRAND_ID, { site: 'tistory', setId, title: post.title, url: r.url, visibility });
+              markLogin(dataDir, 'tistory');
               step(r.url ? `글 주소: ${r.url}` : visibility === 'private' ? '비공개 글이라 주소는 블로그 관리에서 확인하세요' : '글 주소는 아직 못 찾았어요(블로그 글 목록에서 확인하세요)');
               return { url: r.url, title: post.title, visibility };
             } finally {
@@ -96,6 +164,7 @@ export function blogRoutes(db: Db, dataDir = env.dataDir, jobs = new BlogJobs(),
           step('브라우저 창을 여는 중');
           const ctx = await fresh('litly');
           const r = await fillLitly(ctx, items, getSetting(db, 'blog.litly.adminUrl'), getSetting(db, 'blog.loginWaitMinutes'), step, signal);
+          markLogin(dataDir, 'litly');
           return { ...r, items: items.length };
         });
         return c.json({ jobId, items });

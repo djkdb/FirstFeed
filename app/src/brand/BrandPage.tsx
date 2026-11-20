@@ -9,6 +9,7 @@ import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from './loadFonts.ts';
 import { ProfileImage } from './ProfileImage.tsx';
 import { FontPicker } from './FontPicker.tsx';
+import { LitlyPanel } from '../blog/LitlyPanel.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { countNote } from './countNote.ts';
 import { StageLine } from '../StageLine.tsx';
@@ -428,6 +429,7 @@ export function BrandPage() {
       </section>
 
       <ProfileImage selection={selection} fonts={fonts} save={save} />
+      <LitlyPanel />
       <CharacterBuilder palette={selection.palette?.colors ?? null} hasProfile={!!activeProfile} />
     </>
   );

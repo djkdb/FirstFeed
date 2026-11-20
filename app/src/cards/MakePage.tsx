@@ -2,6 +2,7 @@
 // 2회 재작성 뒤에도 넘친 카드는 어느 칸이 약 몇 자 넘쳤는지 보이고 직접 줄이게 한다(줄여야 저장).
 // 긴 AI 작업은 진행·취소를 보이고, 새로고침해도 이어서 보도록 작업 ID 를 이 브라우저에 임시 저장한다
 import { loadError } from '../loadError.ts';
+import { TistoryPanel } from '../blog/TistoryPanel.tsx';
 import { useCallback, useEffect, useState } from 'react';
 import { cardImageName, withCharacter } from '../../../server/src/cards/imageName.ts';
 import { notifyChanged } from '../changed.ts';
@@ -317,6 +318,7 @@ function SetView({ setId }: { setId: number }) {
       <p className="muted small">찍은 브라우저: {set.cards[0]?.render.browser}{set.cards[0] && !set.cards[0].render.reference && ' · 기준 브라우저 아님'}</p>
       <ChatPanel setId={setId} cardCount={set.cards.length} pngOf={(i) => `/api/cards/sets/${setId}/png/${set.cards[i]?.pngFile}?v=${rev}`} onChanged={() => (void load(), notifyChanged())} />
       <PublishPanel setId={setId} cardUnchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} onChanged={() => void load()} />
+      <TistoryPanel setId={setId} unchecked={set.cards.reduce((n, c) => n + (c.glosses?.filter((g) => !g.checkedAt).length ?? 0), 0)} />
     </>
   );
 }

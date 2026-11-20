@@ -231,6 +231,23 @@ export const DEFAULTS = {
   'preview.titleOverlapThreshold': 0.4,
   /** 캐러셀 최대 장수 — **확인됨**: 인스타 도움말 원문 "You can upload up to 20 photos and videos … as a single post"(help.instagram.com/269314186824048). 넘으면 업로드 폴더를 안 만든다(결정 2026-10-18) */
   'publish.maxCarousel': 20,
+  /**
+   * 티스토리 · 리틀리 브라우저 발행(사용자 결정 2026-11-20 — 티스토리 완전 자동 발행, 리틀리 자동 입력 · 저장은 사용자).
+   * 공식 API 가 없어(티스토리 글쓰기 API 2024 종료, 리틀리 공개 API 못 찾음) 사용자 컴퓨터의 브라우저 창을 열어 사용자가 직접 로그인한 뒤 앱이 화면을 채운다.
+   * 앱은 비밀번호를 받지 않고, 로그인은 이 앱 전용 브라우저 프로필(data 폴더)에만 남는다
+   */
+  /** 티스토리 블로그 이름 — 「이름.tistory.com」 의 이름. null 이면 화면이 먼저 묻는다 */
+  'blog.tistory.name': null as string | null,
+  /** 발행할 때 공개 범위 — public(공개) · private(비공개). 화면에서 바꾸면 DB */
+  'blog.tistory.visibility': 'public' as 'public' | 'private',
+  /** 티스토리 태그 최대 개수 — 캡션 해시태그에서 앞에서부터 */
+  'blog.tistory.maxTags': 10,
+  /** 리틀리 편집 화면 주소 */
+  'blog.litly.adminUrl': 'https://litt.ly/admin',
+  /** 열린 창에서 사용자가 로그인하기를 기다리는 시간(분) — 지나면 그만두고 다시 하라고 알린다 */
+  'blog.loginWaitMinutes': 5,
+  /** 브라우저 창을 띄우지 않고 돌릴지 — 테스트에서만 true(사용자는 창에서 로그인해야 해서 false) */
+  'blog.headless': false,
   /** 릴스에 올리는 영상 · 사진 · 소리 한 개의 최대 크기 — 휴대폰 세로 영상 1분이 보통 100~300MB 라 넉넉히 */
   'reels.maxUploadBytes': 2 * 1024 * 1024 * 1024,
   /**

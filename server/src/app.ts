@@ -17,6 +17,7 @@ import { brandRoutes } from './brand/routes.ts';
 import { templateRoutes } from './templates/routes.ts';
 import { cardRoutes } from './cards/routes.ts';
 import { publishRoutes } from './publish/routes.ts';
+import { blogRoutes } from './publish/blog/routes.ts';
 import { PhoneShare } from './publish/phone-share.ts';
 import { demoRoutes } from './demo/routes.ts';
 import { previewRoutes } from './preview/routes.ts';
@@ -79,6 +80,7 @@ export function createApp(deps: AppDeps) {
     .route('/api/templates', templateRoutes(deps.db, deps.dataDir))
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir, deps.phoneShare ?? new PhoneShare()))
+    .route('/api/blog', blogRoutes(deps.db, deps.dataDir))
     .route('/api/demo', demoRoutes(deps.db))
     .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/reels', reelRoutes(deps.ai, jobs, deps.dataDir))

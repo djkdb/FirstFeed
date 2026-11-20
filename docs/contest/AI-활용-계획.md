@@ -1,6 +1,7 @@
 # AI 활용 계획 (중간 심사 40%)
 
 > 2026-10-21 작성. 숫자·날짜·개수는 모두 레포 안의 파일에서 옮겼고 출처를 옆에 적었다. 출처를 못 찾은 것은 「확인 못 함」.
+> **2026-11-20 갱신**: 개수(프롬프트 · 평가 스크립트 · devlog · 측정 결과)를 다시 세고, CLI 옵션(2026-11-04)과 4장 일정에 날짜를 붙인 → 줄을 더했다. 옛 값은 줄을 그어 남겼다. 중간 보고서 최종본(2026-11-04)에 어느 값을 넣었는지는 [중간보고서-초안.md](중간보고서-초안.md) 머리.
 > PRD v0.1 부록 B(개발 워크플로우)를 지금 레포 기준으로 다시 쓴 것이다 — 원본은 통합본 458~468줄([`docs/source/manyfast-2026-10-20/입력/`](../source/manyfast-2026-10-20/README.md))
 
 이 프로젝트에서 AI 는 두 곳에 있다. **(1) 만드는 도구**(Claude Code 로 개발)와 **(2) 제품 안의 기능**(앱이 사용자 구독의 Claude Code CLI 를 불러 프로필·브랜딩·카드를 만든다). 두 쪽 모두 「AI 가 한 말을 그대로 믿지 않고 코드·측정으로 확인한다」는 같은 원칙을 따른다.
@@ -41,11 +42,11 @@
 | 커밋 전 검사 | `.githooks/pre-commit`(개인정보 → 린트 → 타입 → 테스트) — `npm install` 의 prepare 가 `scripts/setup-git-hooks.ts` 로 켬 | 사람(AI)이 기억해서 돌리는 검사는 빠진다(겪은 오류 2026-10-13) |
 | CI | `.github/workflows/ci.yml` — push 때 ubuntu-latest · Node 24 · lint · typecheck · 단위 테스트 · 개인정보 전체 검사 | 훅을 건너뛴 커밋을 푸시 뒤에 잡는다(devlog 2026-10-21-01) |
 | 카드 렌더링 브라우저 | Playwright `1.64.0`(`server/package.json`) · `npx playwright install chromium` · `server/src/render/browser.ts` · 실제 브라우저 테스트는 `*.browser.test.ts`(`vitest.config.ts` 의 browser 프로젝트) | 넘침 판정의 기준 브라우저를 하나로(결정 2026-10-15) |
-| 프롬프트 판 | `prompts/<이름>/vN.md`(17종 28판) · 활성 판 `server/src/config.ts` `prompts.activeVersions` | 고치지 않고 새 판 → 같은 세트로 전/후 비교 |
-| 평가 스크립트 · 테스트 세트 | `scripts/eval-*.ts`(8개, `npm run eval:*`) · `tests/fixtures/real` · `generated` · `private`(커밋 제외) → `tests/results/` | 기준값을 감으로 정하지 않고 재서 정한다(CLAUDE.md 6장) |
+| 프롬프트 판 | `prompts/<이름>/vN.md`(~~17종 28판~~ 2026-10-21 → **23종 41판** 2026-11-20, `_system` 밖 · 그 밖에 `_system` 3종 3판) · 활성 판 `server/src/config.ts` `prompts.activeVersions` | 고치지 않고 새 판 → 같은 세트로 전/후 비교 |
+| 평가 스크립트 · 테스트 세트 | `scripts/eval-*.ts`(~~8개~~ 2026-10-21 → **12개** 2026-11-20, `npm run eval:*`) · `tests/fixtures/real` · `generated` · `private`(커밋 제외) → `tests/results/` | 기준값을 감으로 정하지 않고 재서 정한다(CLAUDE.md 6장) |
 | 개인정보 | `npm run check:privacy` · `server/src/lib/redact.ts` · `privacy-allowlist.json`(항목마다 이유) | 레포가 공개 |
 | 대화 기록 내보내기 | `npm run export:transcripts -- <세션ID>` / `--all` → `exports/`(`.gitignore`) · `scripts/export-transcripts.ts` · 가림은 `redact.ts` 와 같은 함수 | 제출용 AI 대화 기록(가림 함수 하나를 커밋 검사와 같이 씀 — 결정 2026-10-13) |
-| 앱이 부르는 CLI 격리 | `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence`(`server/src/ai/providers/`) | 개발용 설정이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행을 열지 않게 |
+| 앱이 부르는 CLI 격리 | `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence`(`server/src/ai/providers/`) · 2026-11-04 더함: `--setting-sources ""` · `--disable-slash-commands` · 앱 전용 시스템 프롬프트(`--system-prompt`, `prompts/_system/app/v1.md`) — 호출마다 붙던 고정 토큰 약 −35%(결정 2026-11-04, devlog 2026-11-04-01) | 개발용 설정이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행을 열지 않게 |
 | 모델 배정 | `server/src/config.ts` `ai.taskModels` — sonnet: 인터뷰 왕복·사실 추출 / opus: 프로필·브랜딩·카피·자기 평가 | 왕복이 잦은 곳은 빠른 모델(결정 2026-10-13) |
 
 ---
@@ -59,7 +60,7 @@
 | 계획 | AI 가 쓰고 **사람이 승인** | 큰 작업은 계획을 먼저 보이고 확인받은 뒤 구현(CLAUDE.md 7장) | devlog 「결정」 · CLAUDE.md 「이미 내린 결정」 |
 | 구현 | AI | 한 커밋에 한 변경, 한국어로 무엇+왜(CLAUDE.md 7장) | git 기록 |
 | 검증 | AI 가 돌리고 사람이 화면·그림 확인 | 「에러 없이 돌았다」는 완료가 아니다 — 화면은 열어 보고 PNG 는 눈으로 확인, 기준값은 테스트 세트로 잼(CLAUDE.md 6장). 커밋 전 훅이 개인정보·린트·타입·테스트를 자동으로 막는다(`.githooks/pre-commit`), 푸시 뒤 CI(`.github/workflows/ci.yml`) | `tests/results/` · 커밋 전 훅 |
-| 기록 | AI 가 쓰고 사람이 고침 | 세션마다 한 일 · 결정 · 오류 → 원인 → 해결 · 프롬프트 전/후 · 측정(`docs/devlog/README.md`) | `docs/devlog/` 19편(2026-10-13-01 ~ 2026-10-21-03) |
+| 기록 | AI 가 쓰고 사람이 고침 | 세션마다 한 일 · 결정 · 오류 → 원인 → 해결 · 프롬프트 전/후 · 측정(`docs/devlog/README.md`) | `docs/devlog/` ~~19편(2026-10-13-01 ~ 2026-10-21-03)~~ → 46편(2026-10-13-01 ~ 2026-11-20-03, 2026-11-20 셈) |
 
 ### CLAUDE.md 의 역할
 
@@ -96,7 +97,7 @@
 
 - 모든 AI 호출은 `server/src/ai/adapter.ts` 하나를 거친다. 요청 `{task, prompt, schema, images, web, timeout}` → **스키마로 검증한 JSON**(CLAUDE.md 5장 「AI 호출」)
 - 공급자는 `server/src/ai/providers/` — 지금은 Claude Code CLI 하나. 기능 테스트는 모두 가짜 공급자(`server/src/ai/testing/`)로 같은 계약을 쓴다(status.md FR-AI-2)
-- CLI 는 `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence` 로 실행 — 개발용 CLAUDE.md·사용자 훅이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행은 절대 열지 않게(결정 2026-10-13 · 뼈대 계획 확인)
+- CLI 는 `--safe-mode` + 빈 임시 폴더 + `--tools ""` + `--strict-mcp-config` + `--no-session-persistence` 로 실행 — 개발용 CLAUDE.md·사용자 훅이 앱 프롬프트에 섞이지 않게, 파일 쓰기·명령 실행은 절대 열지 않게(결정 2026-10-13 · 뼈대 계획 확인). 2026-11-04 에 `--setting-sources ""` · `--disable-slash-commands` · 앱 전용 시스템 프롬프트를 더했다(결정 2026-11-04 — 격리가 더 강해지는 쪽)
 - 모델은 과제별 설정(`ai.taskModels`), 동시 호출 수 설정(기본 1), 실행 중 취소 가능(cancelled 로 기록)
 
 ### 생성 → 코드 규칙 검사 → 자기 평가 → 재작성
@@ -141,14 +142,14 @@
 ### 버전 관리
 
 - 프롬프트는 코드 안에 쓰지 않고 `prompts/<이름>/vN.md` 파일로 둔다. **기존 파일을 고치지 않고 새 버전을 만든다** → 같은 테스트 세트로 전/후를 나란히 잴 수 있다(결정 2026-10-13)
-- 지금 프롬프트 17종 · 버전 파일 28개(`prompts/` 아래, `_system` 제외 — `ls prompts/*/v*.md`)
+- ~~지금 프롬프트 17종 · 버전 파일 28개(`prompts/` 아래, `_system` 제외 — `ls prompts/*/v*.md`)~~(2026-10-21 셈) → **2026-11-20: 23종 · 버전 파일 41개**(같은 세는 법 — 개발용 시험 `smoke_context_probe` · 측정용 가상 응답자 `eval_persona_answer` 포함). `_system` 은 3종 3판(`app` · `json_retry` · `rewrite`)
 - 활성 버전은 설정 `prompts.activeVersions` 한 곳(`server/src/config.ts`)
 
 ### 평가 스크립트와 테스트 세트
 
-- 평가 스크립트: `eval:identity` · `eval:followup` · `eval:alternatives` · `eval:brand` · `eval:templates` · `eval:cards` · `eval:gloss-review` · `eval:feeling-review`(`package.json`)
+- 평가 스크립트: `eval:identity` · `eval:followup` · `eval:alternatives` · `eval:brand` · `eval:templates` · `eval:cards` · `eval:gloss-review` · `eval:feeling-review`(`package.json`) — 2026-11-20 까지 더해진 것: `eval:tokens` · `eval:motion` · `eval:interview` · `eval:character`(12개)
 - 테스트 세트는 **실제 자료 우선, 부족한 부분만 AI 생성** — AI 가 만든 세트로 AI 를 평가하면 순환이 되어서(결정 2026-10-13). 결과도 **실제·공개 / 실제·비공개(숫자만) / AI 생성**으로 나눈다(CLAUDE.md 6장, `tests/fixtures/real` · `private` · `generated`)
-- 측정 결과 파일: `tests/results/` (48개 항목, 2026-10-21 기준 `ls`)
+- 측정 결과 파일: `tests/results/` (48개 항목, 2026-10-21 기준 `ls` → 87개 항목, 2026-11-20 같은 방법)
 
 ### 수정 전후 숫자
 
@@ -170,15 +171,17 @@
 
 ### F(최종까지 반드시) 13개 — PRD v0.2 9장 일정 순서
 
+> 2026-10-21 에 쓴 표다. **2026-11-20: F 는 25개**(끝남 6 · 진행 4 · 안 함 15 — [status.md](../process/status.md) 2026-11-20 다시 셈). 그 사이 새로 생긴 F: FR-PB-5 · FR-HM-1~3 · FR-MK-4 · FR-MK-10~13 · FR-PB-6 · 7 · FR-BR-8(CLAUDE.md 결정 2026-10-24 ~ 2026-11-20). 아래 표의 지난 줄에는 → 로 결과를 붙였다
+
 | 순서 | 기간(PRD v0.2 9장) | FR |
 |---|---|---|
-| 1 | 2026-10-19 ~ ~~11-01~~ 11-03(보고서 최종본 · 제출 11-04 23시, 2026-10-25 확정 공지) | **FR-AC-6** 설치 점검 명령 (+ M 의 FR-PB-1 마무리, 처음부터 끝까지 점검) |
-| 2 | ~~중간 발표(11-02 또는 11-04)~~ 중간 보고서 제출(11-04) 뒤 ~ 11-15 | **FR-MK-7** 캡션(지금 「진행」 — 댓글 유도 없음, status.md) · **FR-MK-3** 말로 고치기 |
-| 3 | 11-16 ~ 11-29 | **FR-IN-2 ~ 6** 성과 분석(5개) |
+| 1 | 2026-10-19 ~ ~~11-01~~ 11-03(보고서 최종본 · 제출 11-04 23시, 2026-10-25 확정 공지) | **FR-AC-6** 설치 점검 명령 (+ M 의 FR-PB-1 마무리, 처음부터 끝까지 점검) → 지난 기간 · FR-AC-6 **끝남**(2026-10-22, status.md) |
+| 2 | ~~중간 발표(11-02 또는 11-04)~~ 중간 보고서 제출(11-04) 뒤 ~ 11-15 | **FR-MK-7** 캡션(지금 「진행」 — 댓글 유도 없음, status.md) · **FR-MK-3** 말로 고치기 → 지난 기간 · FR-MK-3 **끝남**(2026-11-05 채팅으로 고치기, status.md) · FR-MK-7 은 2026-11-20 에도 **진행** |
+| 3 | 11-16 ~ 11-29 | **FR-IN-2 ~ 6** 성과 분석(5개) → 2026-11-20 지금 이 기간 · 다섯 개 모두 **안 함**(status.md). 11-29 까지 안 끝나면 아래 4번 조건이 걸린다 |
 | 4 | 11-30 ~ 12-06 | **FR-OP-1·2·4·5** 대외활동 — **조건부 F**: 11월 29일까지 FR-IN-2~6 이 안 끝나면 W |
 | — | 일정표에 없음 | **FR-ID-3** 내 자료 올리기 — PRD v0.2 9장 일정에 이름이 없다. 순서는 사용자 확인 필요 |
 
-- 11월 15일까지 실사용자 2명이 시작하지 못하면 성과 분석·대외활동을 성과 분석 하나로 합친다(PRD v0.2 9장)
+- 11월 15일까지 실사용자 2명이 시작하지 못하면 성과 분석·대외활동을 성과 분석 하나로 합친다(PRD v0.2 9장) → 2026-11-20: 실사용자 2명이 시작해 **합치지 않는다**(사용자 답, CLAUDE.md 1장 · PRD 9장). FR-OP-1·2·4·5 를 W 로 옮길지는 11-29 점검 때
 - 12-07 부터는 기능 추가를 멈추고 측정·정리(12월 7일은 임시 날짜)
 
 ### AI 연결 선택은 S(여유가 있으면)

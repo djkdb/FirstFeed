@@ -1,5 +1,6 @@
 // 「오늘 올릴 것」 홈 (FR-HM-1~3 · 결정 2026-10-24): 30일 계획에서 오늘 할 칸 → 만들기 · 업로드 준비 → 「올렸어요」.
 // 「올렸어요」는 사용자 표시일 뿐이라 화면에도 「내가 표시」로 적는다(인스타에 실제로 올라갔는지 확인하지 않음)
+import { loadError } from '../loadError.ts';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.ts';
 import { StartChecklist } from '../NextStep.tsx';
@@ -61,7 +62,7 @@ export function HomePage() {
   useEffect(() => {
     call('GET', '/api/home')
       .then(setHome)
-      .catch((e: Error) => setError(`불러오지 못했어요 (${e.message}). 서버가 켜져 있는지 확인하고 새로고침하세요.`));
+      .catch((e: unknown) => setError(loadError(e)));
   }, []);
 
   // 표지는 차례로 묻는다 — 서버가 한 번에 하나씩 그리므로(계획 칸 표지 캐시가 있으면 바로 온다)

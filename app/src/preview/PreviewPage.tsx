@@ -3,6 +3,7 @@
 // 붙이고 게시물 수도 나눠 보인다 — 계획을 실제로 만든 것처럼 보이게 하지 않는다. 표지가 틀에 안 들어가면 그 칸만 자리표시와 이유.
 // 격자 칸은 인스타 프로필처럼 카드의 양옆을 가린다(서버가 넘긴 render.safeArea.feed 값 그대로).
 // 처음 들어오거나 계획을 새로 만들면 바이오가 타이핑되고 9칸이 왼쪽 위부터 뒤집히며 채워진다(CSS 만 · 움직임 줄이기 설정이면 끔).
+import { loadError } from '../loadError.ts';
 import { useCallback, useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
@@ -79,7 +80,7 @@ export function PreviewPage() {
           setCovers(await loadCovers(b));
           if (replay) setPlay((n) => n + 1);
         })
-        .catch((e: unknown) => setError(`불러오지 못했어요 (${String(e)}). 서버가 켜져 있는지 확인하고 새로고침하세요.`)),
+        .catch((e: unknown) => setError(loadError(e))),
     [loadCovers],
   );
   useEffect(() => {

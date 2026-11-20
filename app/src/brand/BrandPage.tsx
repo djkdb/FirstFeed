@@ -1,12 +1,14 @@
 // 브랜딩 키트 (FR-BR-1~4). 글(아이디·이름·바이오)과 시각(팔레트·폰트·그림 프롬프트)을 따로 만든다 — 결정 2026-10-14.
 // 후보를 누르면 바로 저장된다(이력으로 남음). 생성은 몇 분 걸려서 진행·취소를 보여 주고,
 // 새로고침해도 진행 중이던 작업을 이어서 보도록 작업 ID 를 이 브라우저에 임시 저장한다.
+import { loadError } from '../loadError.ts';
 import { useCallback, useEffect, useState } from 'react';
 import type { InferResponseType } from 'hono/client';
 import { api } from '../api.ts';
 import { useJob } from '../useJob.ts';
 import { loadBrandFonts } from './loadFonts.ts';
 import { ProfileImage } from './ProfileImage.tsx';
+import { FontPicker } from './FontPicker.tsx';
 import { PremadeBadge } from '../premade.tsx';
 import { countNote } from './countNote.ts';
 import { StageLine } from '../StageLine.tsx';
@@ -243,7 +245,7 @@ export function BrandPage() {
     () =>
       fetchBrand()
         .then(setState)
-        .catch((e: unknown) => setError(`불러오지 못했습니다 (${String(e)}). 서버가 켜져 있는지 확인하고 새로고침하세요.`)),
+        .catch((e: unknown) => setError(loadError(e))),
     [],
   );
 
@@ -396,6 +398,8 @@ export function BrandPage() {
                 );
               })}
             </div>
+
+            <FontPicker fonts={fonts} titleFont={selection.titleFont} bodyFont={selection.bodyFont} sample="본문은 이렇게 보여요. 써 보고 정리한 내용을 한 장에. 0123" save={save} />
 
             <h3>그림 프롬프트</h3>
             <p className="muted small">그림 생성 도구에 붙여 넣어 쓰세요. 만든 그림은 아래 「프로필 사진」에서 올리면 그대로 적용돼요.</p>

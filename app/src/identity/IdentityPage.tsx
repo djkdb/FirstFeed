@@ -1,4 +1,5 @@
 // 정체성 찾기: 설문 → 인터뷰 → 프로필 초안 → 확정. 진행 상태는 서버(DB)에 있어 새로고침해도 이어서 한다.
+import { loadError } from '../loadError.ts';
 import { useEffect, useState } from 'react';
 import { notifyChanged } from '../changed.ts';
 import { api } from '../api.ts';
@@ -34,7 +35,7 @@ export function IdentityPage() {
   useEffect(() => {
     fetchCurrent()
       .then(setCurrent)
-      .catch((e: unknown) => setError(`불러오지 못했습니다 (${String(e)}). 서버가 켜져 있는지 확인하고 새로고침하세요.`));
+      .catch((e: unknown) => setError(loadError(e)));
   }, []);
 
   const start = async (kind: JobKind, sessionId: number) => {

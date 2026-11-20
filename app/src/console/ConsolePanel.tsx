@@ -46,7 +46,7 @@ function meta(it: Item): string {
   const parts = [`AI ${a.calls}번`];
   if (a.rewrites > 0) parts.push(`다시 쓰기 ${a.rewrites}번`);
   if (a.durationMs != null) parts.push(secs(a.durationMs));
-  if (a.inputTokens != null && a.outputTokens != null) parts.push(`토큰 ${kTok(a.inputTokens)} → ${kTok(a.outputTokens)}`);
+  if (a.inputTokens != null && a.outputTokens != null) parts.push(`입력 ${kTok(a.inputTokens)} · 출력 ${kTok(a.outputTokens)} 토큰`);
   return parts.join(' · ');
 }
 

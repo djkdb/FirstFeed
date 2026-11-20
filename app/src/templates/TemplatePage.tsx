@@ -1,5 +1,6 @@
 // 템플릿 고정 (FR-TP-1·3). 시안들을 지금 브랜드로 그려 나란히 보여 주고, 하나를 고정한다.
 // 그리기는 서버(Playwright)가 한다 — 화면은 PNG 를 받아 보여 줄 뿐이라 화면과 결과물이 어긋나지 않는다
+import { loadError } from '../loadError.ts';
 import { useCallback, useEffect, useState } from 'react';
 import { notifyChanged } from '../changed.ts';
 import { NextStep } from '../NextStep.tsx';
@@ -73,7 +74,7 @@ export function TemplatePage() {
       setFrames((f) => ({ ...f, [draftId]: b.frames ?? { error: b.error ?? '그리지 못했습니다.' } }));
     } catch (e) {
       // 응답이 없거나 JSON 이 아니어도 「그리는 중」에 머물지 않게 (CLAUDE.md 겪은 오류: 화면은 실패를 반드시 보인다)
-      setFrames((f) => ({ ...f, [draftId]: { error: `서버에 닿지 못했습니다 (${String(e)}). npm run dev 가 실행 중인지 확인하세요.` } }));
+      setFrames((f) => ({ ...f, [draftId]: { error: loadError(e, '그리지') } }));
     }
   }, []);
 
@@ -124,10 +125,33 @@ export function TemplatePage() {
         <PillarVariant />
       </section>
 
+      {/* 한눈에 보기 — 시안이 11개라 섹션을 하나씩 내려 봐야 했다(사용자 시뮬레이션 2026-11-20). 표지만 나란히, 누르면 그 시안으로 */}
+      {state.missing.length === 0 && (
+        <section className="card">
+          <h2>한눈에 보기</h2>
+          <div className="draft-strip">
+            {state.drafts.map((d) => {
+              const f = frames[d.id];
+              const cover = Array.isArray(f) ? f.find((x) => x.kind === 'cover')?.png : null;
+              return (
+                <a key={d.id} href={`#draft-${d.id}`} className={state.fixed?.draftId === d.id ? 'draft-chip on' : 'draft-chip'} onClick={(e) => { e.preventDefault(); document.getElementById(`draft-${d.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+                  {cover ? <img src={cover} alt="" /> : <span className="draft-chip-empty">{f === 'loading' || !f ? '그리는 중' : '못 그림'}</span>}
+                  <span className="small">
+                    {d.id} · {d.name}
+                    {state.fixed?.draftId === d.id && ' · 고정'}
+                    {'bodyPhoto' in d && d.bodyPhoto && ' · 사진 칸'}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {state.drafts.map((d) => {
         const f = frames[d.id];
         return (
-          <section key={d.id} className="card">
+          <section key={d.id} id={`draft-${d.id}`} className="card draft-section">
             <div className="card-head">
               <h2>
                 시안 {d.id} · {d.name}

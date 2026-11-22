@@ -53,6 +53,9 @@ describe('키 · 토큰 저장 (설정 탭)', () => {
     expect(b.items[0]!.tail).toBe('••••5678');
     expect((await app.request('/secrets/nope', { method: 'PUT', headers: H, body: JSON.stringify({ value: 'x' }) })).status).toBe(404);
     expect((await app.request('/secrets/fish.apiKey', { method: 'PUT', headers: H, body: JSON.stringify({ value: 'bad key' }) })).status).toBe(400);
+    // 앱이 따로 관리하는 Metricool 토큰 묶음은 이 API 로 넣거나 지울 수 없다
+    expect((await app.request('/secrets/metricool.oauth', { method: 'PUT', headers: H, body: JSON.stringify({ value: 'abcd' }) })).status).toBe(404);
+    expect((await app.request('/secrets/metricool.oauth', { method: 'DELETE' })).status).toBe(404);
   });
 });
 

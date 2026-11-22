@@ -20,17 +20,28 @@ export interface ProfileInput {
   unknown: string[];
 }
 
-export function profileForGeneration(db: Db, brandId: number): ProfileInput {
+/**
+ * 만료일이 지난 항목은 생성 입력에서 뺀다(FR-IN-6 「수락한 변경은 3주가 지나면 자동으로 빠진다」 · 결정 2026-11-22).
+ * 판을 고치지 않고 읽을 때 거른다 — 지운 기록 없이도 「언제부터 빠졌는지」가 만료일 그대로 남고, 되돌리기 · 이력도 그대로
+ */
+export function isLive(item: { expiresAt: string | null }, now: number = Date.now()): boolean {
+  if (!item.expiresAt) return true;
+  const t = Date.parse(item.expiresAt);
+  return Number.isNaN(t) || t > now;
+}
+
+export function profileForGeneration(db: Db, brandId: number, now: number = Date.now()): ProfileInput {
   const p = activeProfile(db, brandId);
   if (!p) throw new FlowError('적용 중인 브랜드 프로필이 없습니다.', '「정체성」에서 프로필을 만들고 확정한 뒤 다시 시도하세요.');
+  const live = <T extends { expiresAt: string | null }>(xs: T[]) => xs.filter((x) => isLive(x, now));
   return {
     profileId: p.id,
     version: p.version,
     accountLine: p.accountLine,
     audience: p.audience,
-    pillars: p.pillars.map((x) => ({ id: x.id, name: x.name, description: x.description })),
-    voiceRules: p.voiceRules.map((v) => v.text),
-    avoid: p.avoid.map((v) => v.text),
+    pillars: live(p.pillars).map((x) => ({ id: x.id, name: x.name, description: x.description })),
+    voiceRules: live(p.voiceRules).map((v) => v.text),
+    avoid: live(p.avoid).map((v) => v.text),
     presence: p.presence?.text ?? null,
     unknown: p.unknown,
   };

@@ -26,6 +26,7 @@ import { demoRoutes } from './demo/routes.ts';
 import { previewRoutes } from './preview/routes.ts';
 import { homeRoutes } from './home/routes.ts';
 import { reelRoutes } from './reels/routes.ts';
+import { insightsRoutes } from './insights/routes.ts';
 
 export interface AppDeps {
   db: Db;
@@ -38,6 +39,8 @@ export interface AppDeps {
   phoneShare?: PhoneShare;
   /** 설정 탭의 키 · 토큰(OS 키체인). 없으면 메모리 키체인 — 테스트용 */
   secrets?: SecretStore;
+  /** 성과(Metricool) 요청 — 테스트는 가짜 fetch 를 넣는다(실제 Metricool 을 부르지 않게) */
+  metricoolFetch?: typeof fetch;
 }
 
 const SmokeBody = z.object({ source: z.string().max(5000).optional() });
@@ -50,6 +53,8 @@ export function defaultSmokeSource(): string {
 
 export function createApp(deps: AppDeps) {
   const jobs = new JobStore(deps.ai);
+  // 설정 탭 · 성과(Metricool 연결)가 같은 키체인 저장소를 쓴다
+  const secrets = deps.secrets ?? new SecretStore(memoryKeychain());
   const app = new Hono()
     .use('*', localOnly)
     .get('/api/health', (c) => {
@@ -86,11 +91,12 @@ export function createApp(deps: AppDeps) {
     .route('/api/cards', cardRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/publish', publishRoutes(deps.ai, jobs, deps.dataDir, deps.phoneShare ?? new PhoneShare()))
     .route('/api/blog', blogRoutes(deps.db, deps.dataDir))
-    .route('/api/settings', settingsRoutes(deps.secrets ?? new SecretStore(memoryKeychain())))
+    .route('/api/settings', settingsRoutes(secrets))
     .route('/api/demo', demoRoutes(deps.db))
     .route('/api/preview', previewRoutes(deps.ai, jobs, deps.dataDir))
     .route('/api/reels', reelRoutes(deps.ai, jobs, deps.dataDir))
-    .route('/api/home', homeRoutes(deps.db));
+    .route('/api/home', homeRoutes(deps.db))
+    .route('/api/insights', insightsRoutes(deps.ai, jobs, secrets, { fetch: deps.metricoolFetch }));
   return app;
 }
 

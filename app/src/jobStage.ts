@@ -22,6 +22,7 @@ export const TASK_LABEL: Record<string, string> = {
   caption_min: '캡션',
   series_plan: '첫 9개 게시물 계획',
   reel_motion: '릴스 모션 제안',
+  insight_suggest: '다음에 할 것 제안',
   smoke_extract: 'AI 시험 호출',
 };
 export const taskLabel = (task: string) => TASK_LABEL[task] ?? task;
@@ -40,6 +41,7 @@ const WRITING: Record<string, string> = {
   caption_min: '캡션 쓰는 중',
   series_plan: '첫 9개 게시물 제목 계획하는 중',
   reel_motion: '글자 · 장면마다 움직임 고르는 중',
+  insight_suggest: '성과 표에서 더 할 것 · 줄일 것 고르는 중',
   smoke_extract: '원문에서 사실 뽑는 중',
 };
 
@@ -51,6 +53,7 @@ const CHECKING: Record<string, string> = {
   identity_followup: '규칙 확인 중 — 앞 질문과 겹치지 않는지 · 각도 · 답하는 방식',
   series_plan: '규칙 확인 중 — 글자 수 · 축 · 숫자 근거 · 거의 같은 제목',
   reel_motion: '규칙 확인 중 — 프레임마다 격자 가이드 안인지 · 읽을 틈 · 강조 명암비',
+  insight_suggest: '규칙 확인 중 — 인용한 값이 표와 같은지 · 표에 없는 숫자 · 표본 부족 묶음',
 };
 
 /** 이유 한 줄은 이만큼만 — 화면 한 줄에 들어가게 */

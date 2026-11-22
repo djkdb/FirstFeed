@@ -1,5 +1,5 @@
 // 설정 탭 (사용자 지시 2026-11-20 「설정탭에서 로그인 토큰 저장해놓기, ui도 실제 서비스 수준으로」).
-// 묶음: AI 연결(Claude 구독 토큰) · 연결된 계정(티스토리 · 리틀리 로그인 유지) · API 키(Fish Audio) · 업로드 · 화면.
+// 묶음: AI 연결(Claude 구독 토큰) · 연결된 계정(Metricool 성과 · 티스토리 · 리틀리 로그인 유지) · API 키(Fish Audio) · 업로드 · 화면.
 // 키 · 토큰은 서버가 OS 키체인에 저장하고 화면에는 끝 4자리만 돌아온다. 이 화면은 값을 들고 있지 않는다(보내고 나면 칸을 비운다)
 import { useCallback, useEffect, useState } from 'react';
 import { blogCall, JobSteps, useBlogJob } from '../blog/useBlogJob.tsx';
@@ -181,6 +181,127 @@ function LoginRow({ s, onChanged, children }: { s: LoginSite; onChanged: () => v
   );
 }
 
+interface MetricoolConn {
+  connected: boolean;
+  needsReconnect: boolean;
+  brandId: string | null;
+}
+interface MetricoolBrand {
+  id: string;
+  label: string;
+  timezone: string | null;
+  instagram: string | null;
+}
+
+/** Metricool 한 줄(성과 분석, 결정 2026-11-22) — 앱이 Metricool 공식 MCP 서버에 직접 붙어 숫자를 읽기만 한다(범위 mcp:read). 토큰은 키체인에만 */
+function MetricoolRow() {
+  const [st, setSt] = useState<MetricoolConn | null>(null);
+  const [brands, setBrands] = useState<MetricoolBrand[] | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const load = useCallback(
+    () =>
+      blogCall<MetricoolConn>('GET', '/api/insights/metricool').then((r) => {
+        if (r.ok) setSt(r.data);
+        return r.ok ? r.data : null;
+      }),
+    [],
+  );
+  useEffect(() => {
+    void load();
+  }, [load]);
+  const on = !!st?.connected && !st.needsReconnect;
+  // 연결돼 있을 때만 브랜드 목록을 읽는다(Metricool 을 부르는 요청) — 연결이 끊기면 목록은 보이지 않는다(아래 on 조건)
+  useEffect(() => {
+    if (!on) return;
+    void blogCall<{ brands: MetricoolBrand[] }>('GET', '/api/insights/metricool/brands').then((r) => (r.ok ? setBrands(r.data.brands) : setMsg({ ok: false, text: r.data.error ?? '브랜드를 읽지 못했어요.' })));
+  }, [on]);
+  // 로그인 창에서 돌아오기를 기다린다 — 2초마다, 10분까지
+  useEffect(() => {
+    if (!waiting) return;
+    const until = Date.now() + 10 * 60_000;
+    const t = setInterval(() => {
+      void load().then((s) => {
+        if (s?.connected && !s.needsReconnect) {
+          setWaiting(false);
+          setMsg({ ok: true, text: 'Metricool 을 연결했어요.' });
+        } else if (Date.now() > until) {
+          setWaiting(false);
+          setMsg({ ok: false, text: '로그인을 기다리다 그만뒀어요. 다시 「연결」을 누르세요.' });
+        }
+      });
+    }, 2000);
+    return () => clearInterval(t);
+  }, [waiting, load]);
+  const connect = async () => {
+    setMsg(null);
+    // 창은 누른 그 순간 연다(주소를 받은 뒤 열면 팝업 차단에 걸려서). 열린 창이 이 화면을 건드리지 못하게 opener 를 끊는다
+    const w = window.open('', '_blank');
+    if (w) w.opener = null;
+    const r = await blogCall<{ url: string }>('POST', '/api/insights/metricool/connect');
+    if (!r.ok) {
+      w?.close();
+      return setMsg({ ok: false, text: r.data.error ?? '연결을 시작하지 못했어요.' });
+    }
+    if (w) w.location.href = r.data.url;
+    else window.location.assign(r.data.url);
+    setWaiting(true);
+  };
+  const disconnect = async () => {
+    if (!window.confirm('Metricool 연결을 끊을까요? 이 컴퓨터의 연결 토큰을 지워요. 이미 받아 둔 성과 숫자는 그대로 남아요.')) return;
+    const r = await blogCall<MetricoolConn>('DELETE', '/api/insights/metricool');
+    if (r.ok) setSt(r.data);
+    setMsg({ ok: true, text: '연결을 끊었어요.' });
+  };
+  const pick = async (brandId: string) => {
+    const r = await blogCall<MetricoolConn>('PUT', '/api/insights/metricool/brand', { brandId: brandId || null });
+    if (r.ok) setSt(r.data);
+  };
+  return (
+    <div className="set-row">
+      <div className="set-label">
+        <div className="set-title">
+          Metricool {!st ? <Badge tone="off">확인하는 중…</Badge> : on ? <Badge tone="ok">연결됨 · 읽기만</Badge> : st.needsReconnect ? <Badge tone="warn">다시 연결 필요</Badge> : <Badge tone="off">연결 안 됨</Badge>}
+        </div>
+        <div className="set-desc">
+          「성과」에서 쓰는 게시물 숫자를 Metricool 에서 이 앱이 직접 받아 와요(AI 를 거치지 않아요). 읽기 권한(mcp:read)만 받고, 연결 토큰은 이 컴퓨터의 키체인에만 저장해요. 무료 요금제로도 돼요.
+          {on && brands && brands.length > 1 && (
+            <span className="block">
+              <label className="small">
+                쓸 브랜드{' '}
+                <select value={st?.brandId ?? ''} onChange={(e) => void pick(e.target.value)}>
+                  <option value="">고르세요</option>
+                  {brands.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.label}
+                      {b.instagram ? ` (@${b.instagram})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </span>
+          )}
+          {on && brands && brands.length === 1 && <span className="block">브랜드: {brands[0]!.label}{brands[0]!.instagram ? ` (@${brands[0]!.instagram})` : ''}</span>}
+        </div>
+      </div>
+      <div className="set-control">
+        <div className="set-actions">
+          <button type="button" className="small" disabled={waiting} onClick={() => void connect()}>
+            {waiting ? '로그인 기다리는 중…' : on ? '다시 연결' : '연결'}
+          </button>
+          {st?.connected && (
+            <button type="button" className="small ghost" onClick={() => void disconnect()}>
+              연결 끊기
+            </button>
+          )}
+        </div>
+        {waiting && <p className="muted small">열린 창에서 Metricool 에 로그인하고 허용을 누르세요.</p>}
+        {msg && <p className={`status small ${msg.ok ? 'ok' : 'error'}`}>{msg.text}</p>}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsPage({ theme, setTheme }: { theme: ThemeChoice; setTheme: (t: ThemeChoice) => void }) {
   const [secrets, setSecrets] = useState<Secrets | null>(null);
   const [claude, setClaude] = useState<Claude | null>(null);
@@ -286,6 +407,7 @@ export function SettingsPage({ theme, setTheme }: { theme: ThemeChoice; setTheme
 
       <section id="set-accounts" className="card set-group">
         <h2>연결된 계정</h2>
+        <MetricoolRow />
         {logins.map((s) => (
           <LoginRow key={s.site} s={s} onChanged={loadLogins}>
             {s.site === 'tistory' && blog && (

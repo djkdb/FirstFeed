@@ -56,6 +56,7 @@ const RESULT_HREF: Record<string, string> = {
   card_chat: '#/make',
   caption_min: '#/make',
   reel_motion: '#/reels',
+  insight_suggest: '#/insights',
   smoke_extract: '#/check',
 };
 

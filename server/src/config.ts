@@ -64,6 +64,8 @@ export const DEFAULTS = {
     caption_set: 'opus',
     // 중간 발표용 최소 캡션 (결정 2026-10-18 · FR-PB-1)
     caption_min: 'opus',
+    // 성과 표 → 다음에 더 할 것 / 줄일 것(FR-IN-5 · 결정 2026-11-22). 숫자는 받기만 하고 만들지 않는다 — 표의 값만 인용(코드 규칙)
+    insight_suggest: 'opus',
     self_review: 'opus',
   } as Record<string, ModelAlias>,
 
@@ -97,6 +99,7 @@ export const DEFAULTS = {
     card_body: 480_000,
     card_chat: 360_000,
     caption_min: 240_000,
+    insight_suggest: 240_000,
   } as Record<string, number>,
   /** 웹 검색 호출 제한 시간(ms) — 검색은 1~3분 걸린다 (PRD 6-3) */
   'ai.webTimeoutMs': 300_000,
@@ -266,6 +269,63 @@ export const DEFAULTS = {
   'reels.motion': { minHoldFrames: 12, subtitleMaxEnter: 8, subtitleMaxExit: 6, maxEnterFrames: 30, maxExitFrames: 20, maxTransitionFrames: 20, maxEmphasis: 2 },
   /** 선택 기능 받아쓰기(faster-whisper) 모델 — 클수록 정확하고 느리다(결정 2026-11-06) */
   'reels.whisperModel': 'small',
+  /**
+   * 성과 분석(FR-IN-2~6 · 사용자 결정 2026-11-22). 숫자는 앱이 Metricool 공식 MCP 서버에서 직접 받는다(AI 를 거치지 않음).
+   * mcpUrl 은 2026-11-22 에 확인한 주소(인증 없이 POST → 401 + resource_metadata). 인증 서버 주소는 실행할 때 메타데이터에서 읽는다
+   */
+  'insights.metricool.mcpUrl': 'https://ai.metricool.com/mcp',
+  /** 쓸 Metricool 브랜드 ID. null 이면 브랜드가 하나일 때 그것을 쓰고, 여럿이면 설정 탭에서 고르게 한다 */
+  'insights.metricool.brandId': null as string | null,
+  /**
+   * Metricool 측정 항목 ID — 2026-11-22 Metricool 커넥터의 getAnalyticsAvailableMetrics(instagram · posts / reels)로 확인.
+   * 지원 끝난 항목(IGPO09 · 11 · 16 · 18 · 20 · 21, IGRE13 · 15)은 쓰지 않는다. 릴스에는 종류 칸이 없어 종류를 REELS 로 적는다.
+   * 실제 계정의 행 값 모양(날짜 YYYYMMDDHHMMSS 등)은 피드 게시물만 커넥터로 본 것 — 릴스 행은 아직 실제로 받아 보지 못했다
+   */
+  'insights.metricool.postFields': {
+    publishedAt: 'IGPO02',
+    content: 'IGPO03',
+    id: 'IGPO04',
+    url: 'IGPO06',
+    type: 'IGPO07',
+    comments: 'IGPO08',
+    likes: 'IGPO13',
+    reach: 'IGPO14',
+    saved: 'IGPO15',
+    shares: 'IGPO27',
+    views: 'IGPO28',
+  } as Record<string, string>,
+  'insights.metricool.reelFields': {
+    publishedAt: 'IGRE02',
+    content: 'IGRE03',
+    id: 'IGRE04',
+    url: 'IGRE06',
+    comments: 'IGRE07',
+    likes: 'IGRE10',
+    reach: 'IGRE11',
+    saved: 'IGRE12',
+    shares: 'IGRE21',
+    views: 'IGRE23',
+  } as Record<string, string>,
+  /** 불러올 기간(일). FirstFeed 를 쓰기 시작한 날(첫 세트 · 홈 시작일)이 더 앞이면 그날 − 잇기 범위까지 늘린다 */
+  'insights.fetchDays': 90,
+  /** Metricool 요청 하나의 제한 시간(ms) */
+  'insights.fetchTimeoutMs': 60_000,
+  /** 로그인 창에서 돌아오기를 기다리는 시간(분) — 지나면 그 연결 시도(state)는 버린다 */
+  'insights.oauthStateMinutes': 10,
+  /** 접근 토큰이 끝나기 이만큼(초) 전에 미리 새로 받는다 */
+  'insights.tokenRefreshMarginSec': 60,
+  /** 잇기 후보: 「올렸어요」 날짜 앞뒤 이 날수 안에 올라간 게시물만 */
+  'insights.matchWindowDays': 3,
+  /** 게시 뒤 이 시간이 지나야 분석에 쓴다(FR-IN-3). 그 전에는 「집계 중」 */
+  'insights.matureHours': 48,
+  /** 묶음의 사용 가능한 표본이 이보다 적으면 결론을 내지 않는다(FR-IN-4) */
+  'insights.minSamples': 3,
+  /** 수락한 성과 변경이 프로필에 머무는 날수(FR-IN-6 「3주」) — 지나면 생성 입력에서 빠진다 */
+  'insights.acceptDays': 21,
+  /** 제안 최대 개수(FR-IN-5) */
+  'insights.maxSuggestions': 3,
+  /** 제안 한 문장의 최대 글자 수 */
+  'insights.suggestionMaxChars': 80,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
@@ -303,6 +363,9 @@ export const DEFAULTS = {
     // (preview.titleOverlapThreshold) 위반 둘 다 0, 사람이 읽고 만든 카드 소재 반복 v3 1 → v4 0 (devlog 2026-10-24-01)
     series_plan: 'v4',
     reel_motion: 'v1',
+    // 성과 제안(2026-11-22) — 첫 판. 실제 AI 로는 아직 재지 않았다(devlog 2026-11-22-01)
+    insight_suggest: 'v1',
+    insight_suggest_review: 'v1',
   } as Record<string, string>,
 };
 

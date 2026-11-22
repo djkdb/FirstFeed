@@ -3,11 +3,15 @@ import { claudeEnvChanged } from '../ai/providers/claude-code.ts';
 import { checkValue, KeychainError, type Keychain } from './keychain.ts';
 
 export const SECRETS = {
-  'claude.oauthToken': { label: 'Claude 구독 토큰', env: 'CLAUDE_CODE_OAUTH_TOKEN' },
-  'fish.apiKey': { label: 'Fish Audio API 키', env: null },
+  'claude.oauthToken': { label: 'Claude 구독 토큰', env: 'CLAUDE_CODE_OAUTH_TOKEN', internal: false },
+  'fish.apiKey': { label: 'Fish Audio API 키', env: null, internal: false },
+  // Metricool 연결(성과 분석, 결정 2026-11-22) — 사용자가 붙여 넣는 키가 아니라 앱이 OAuth 로 받은 토큰 묶음(base64url JSON).
+  // 설정 탭의 키 목록에는 내보내지 않고(끝 4자리도) 연결 상태로만 보인다 — server/src/insights/metricool/oauth.ts
+  'metricool.oauth': { label: 'Metricool 연결', env: null, internal: true },
 } as const;
 export type SecretName = keyof typeof SECRETS;
-export const isSecretName = (n: string): n is SecretName => n in SECRETS;
+/** 설정 탭 API 로 넣고 지울 수 있는 이름 — 앱이 따로 관리하는 것(internal)은 뺀다 */
+export const isSecretName = (n: string): n is SecretName => n in SECRETS && !SECRETS[n as SecretName].internal;
 
 export class SecretStore {
   private cache = new Map<SecretName, string>();
@@ -31,7 +35,7 @@ export class SecretStore {
   status() {
     return {
       keychain: { kind: this.keychain.kind, ...this.ready },
-      items: (Object.keys(SECRETS) as SecretName[]).map((n) => {
+      items: (Object.keys(SECRETS) as SecretName[]).filter((n) => !SECRETS[n].internal).map((n) => {
         const v = this.cache.get(n);
         return { name: n, label: SECRETS[n].label, saved: !!v, tail: v ? `••••${v.slice(-4)}` : null };
       }),

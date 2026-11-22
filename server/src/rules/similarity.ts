@@ -20,3 +20,16 @@ export function similarity(a: string, b: string): number {
   for (const x of A) if (B.has(x)) inter++;
   return inter / (A.size + B.size - inter);
 }
+
+/**
+ * 짧은 글(a)의 두 글자 묶음이 긴 글(b)에 얼마나 들어 있나 — 0~1. 짧은 표지 제목과 긴 캡션처럼 길이가 크게 다르면
+ * 자카드(similarity)는 늘 작게 나와서, 제목이 캡션 안에 있는지를 따로 잰다(성과 잇기 후보, 2026-11-22)
+ */
+export function containment(a: string, b: string): number {
+  const A = bigrams(a);
+  if (A.size === 0) return 0;
+  const B = bigrams(b);
+  let inter = 0;
+  for (const x of A) if (B.has(x)) inter++;
+  return inter / A.size;
+}

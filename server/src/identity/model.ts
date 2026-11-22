@@ -1,13 +1,14 @@
 // 저장되는 브랜드 프로필의 모양 (FR-ID-4·5·6). 결정: CLAUDE.md 2026-10-14 · FR-ID-5·6 설계
 // - 출처(origin)는 항목 단위 (PRD 5장은 프로필 단위 — 다른 결정)
 // - 축마다 고정 ID: 수정·되돌리기는 유지, 다른 방향에서 고른 축은 새 ID (기존 축과 이어 붙이지 않는다)
-// - 만료일(expiresAt)은 칸만 둔다. 자동으로 빼는 로직은 FR-IN-6(F) 때
+// - 만료일(expiresAt): 성과에서 온 항목(insight)에 붙는다. 지나면 생성 입력에서 빠진다(for-generation.ts isLive · FR-IN-6, 2026-11-22)
 import { randomBytes } from 'node:crypto';
 
 /** 항목이 어디서 왔는가 */
 export type ItemOrigin = 'interview' | 'edit' | 'insight' | 'alternative';
 /** 판이 왜 생겼는가 */
-export type VersionReason = 'interview' | 'edit' | 'alternative' | 'rollback';
+/** insight: 성과 제안을 사용자가 수락해 생긴 판(FR-IN-6 · 결정 2026-11-22) */
+export type VersionReason = 'interview' | 'edit' | 'alternative' | 'rollback' | 'insight';
 
 export interface StoredEvidence {
   quote: string;

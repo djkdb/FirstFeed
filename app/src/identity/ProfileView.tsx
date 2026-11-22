@@ -1,7 +1,9 @@
 // 브랜드 프로필 초안 (FR-ID-4): 축마다 원문 인용과 출처. 근거 부족으로 뺀 축도 숨기지 않고 보여 준다.
+import { useState } from 'react';
 import { PremadeBadge } from '../premade.tsx';
 import type { Profile } from './types.ts';
 import { NextStep } from '../NextStep.tsx';
+import { isoLocal } from '../time.ts';
 
 export function ProfileView({ profile, active, busy, onConfirm }: { profile: Profile; active: boolean; busy: boolean; onConfirm: () => void }) {
   return (
@@ -70,11 +72,11 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
       <div className="profile-lists">
         <div>
           <h4>말투 규칙</h4>
-          <ul>{profile.voiceRules.map((v) => <li key={v.text}>{v.text}</li>)}</ul>
+          <ul>{profile.voiceRules.map((v) => <li key={v.text}>{v.text}<InsightTag item={v} /></li>)}</ul>
         </div>
         <div>
           <h4>피할 것</h4>
-          <ul>{profile.avoid.map((v) => <li key={v.text}>{v.text}</li>)}</ul>
+          <ul>{profile.avoid.map((v) => <li key={v.text}>{v.text}<InsightTag item={v} /></li>)}</ul>
         </div>
         {profile.unknown.length > 0 && (
           <div>
@@ -85,4 +87,13 @@ export function ProfileView({ profile, active, busy, onConfirm }: { profile: Pro
       </div>
     </div>
   );
+}
+
+/** 성과에서 온 변경(FR-IN-6) — 만료일이 지나면 생성 입력에서 빠진다(서버 for-generation.ts) */
+function InsightTag({ item }: { item: { origin: string; expiresAt: string | null } }) {
+  // 화면을 연 때 기준 — 렌더링마다 시계를 읽지 않게
+  const [now] = useState(() => Date.now());
+  if (item.origin !== 'insight') return null;
+  const expired = item.expiresAt !== null && Date.parse(item.expiresAt) <= now;
+  return <span className="tag">{expired ? '성과에서 온 변경 · 만료됨' : `성과에서 온 변경${item.expiresAt ? ` · ${isoLocal(item.expiresAt, false)}까지` : ''}`}</span>;
 }

@@ -678,3 +678,56 @@ a.button.small { min-height: 32px; padding: 0 var(--s-3); font-size: 13px; borde
   .set-actions, .set-control .set-inline { justify-content: flex-start; }
   .seg, a.button.small { align-self: flex-start; }
 }
+
+/* 성과 (FR-IN-2~6 · 2026-11-22) */
+.insights .card-head h2 { margin-bottom: 0; }
+.ins-conn { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); }
+.ins-scroll { overflow-x: auto; margin-top: var(--s-3); -webkit-overflow-scrolling: touch; }
+.ins-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.ins-table th, .ins-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.ins-table th { color: var(--muted); font-weight: 500; font-size: 12.5px; white-space: nowrap; }
+.ins-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ins-form { display: flex; flex-direction: column; gap: var(--s-3); margin: var(--s-3) 0; }
+.ins-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted-strong); }
+.ins-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-3); }
+.ins-nums { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--s-2); }
+.ins-nums input { width: 100%; box-sizing: border-box; }
+.ins-cand { padding: var(--s-3) 0; border-top: 1px solid var(--line); }
+.ins-cand:first-of-type { border-top: 0; }
+.ins-cand-set { display: flex; flex-direction: column; gap: 2px; margin-bottom: var(--s-2); }
+.ins-cand-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.ins-cand-list li { display: flex; gap: var(--s-3); align-items: center; justify-content: space-between; padding: var(--s-3); background: var(--surface-2); border-radius: var(--r-md); }
+.ins-cand-post { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.ins-sugs { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: var(--s-3); }
+.ins-sug { background: var(--surface-2); border-radius: var(--r-lg); padding: var(--s-4); }
+.ins-sug.rejected { opacity: 0.6; }
+.ins-sug-head { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.ins-sug-text { margin: var(--s-2) 0; font-size: 15px; font-weight: 600; }
+.ins-sug p.small { margin: var(--s-2) 0; }
+.ins-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ins-chip { font-size: 12.5px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px 10px; }
+.ins-accepted { list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.ins-accepted li { padding: var(--s-3) 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.ins-accepted li:first-child { border-top: 0; }
+@media (max-width: 560px) {
+  .ins-cand-list li { flex-direction: column; align-items: stretch; }
+  .insights .card-head { align-items: flex-start; }
+}
+.ins-posts { list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.ins-post { padding: var(--s-4) 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.ins-post:first-child { border-top: 0; }
+.ins-post-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px var(--s-2); }
+.ins-post-when { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ins-post-actions { margin-left: auto; display: inline-flex; gap: 4px; }
+.ins-post-text { overflow-wrap: anywhere; }
+.ins-post-set select { max-width: 100%; font-size: 13px; min-height: 30px; }
+.ins-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-2); margin: 4px 0 0; padding: var(--s-2) var(--s-3); background: var(--surface-2); border-radius: var(--r-md); }
+.ins-stats dt { font-size: 12px; color: var(--muted); }
+.ins-stats dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .ins-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ins-table td:first-child { min-width: 6.5em; }
+@media (max-width: 560px) {
+  .ins-table th, .ins-table td { padding: 8px 4px; }
+  .ins-table .num, .ins-table .badge { white-space: normal; }
+  .ins-table td:first-child { min-width: 5em; }
+}

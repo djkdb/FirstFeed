@@ -7,3 +7,13 @@ export function localTime(dbUtc: string): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
+
+/** ISO 시각(「2026-11-18T00:23:31.000Z」 처럼 시간대가 붙은 것) → 이 컴퓨터의 현지 시각. 모르는 모양은 그대로 */
+export function isoLocal(iso: string, withTime = true): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t) || !/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)) return iso;
+  const d = new Date(t);
+  const p = (n: number) => String(n).padStart(2, '0');
+  const day = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return withTime ? `${day} ${p(d.getHours())}:${p(d.getMinutes())}` : day;
+}

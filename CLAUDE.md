@@ -50,7 +50,7 @@ app/                    화면 (React + Vite)
   src/api.ts            타입을 쓰는 서버 호출(Hono RPC, AI 작업 폴링 useJob.ts 포함). 파일 올리기와 일부 화면 요청
                         (블로그 작업 blog/useBlogJob.tsx · 홈 · 업로드 · 폰으로 받기 · 채팅 · 미리보기 · 릴스 미디어)은
                         화면별 도우미가 fetch 를 직접 쓴다(결정 2026-11-20)
-  src/<화면>/           identity · brand · templates · cards · preview · home · reels · blog · settings(설정 탭) · console
+  src/<화면>/           identity · brand · templates · cards · preview · home · reels · blog · insights(성과) · settings(설정 탭) · console
 server/src/
   index.ts              서버 시작점 (127.0.0.1:4317)
   app.ts                라우트 정의 + AppType 내보내기
@@ -63,6 +63,7 @@ server/src/
   cards/                카드뉴스(표지 · 본문 · 풀이 · 채팅으로 고치기 · 표지 그림 · 본문 사진)
   preview/ home/        30일 뒤 미리보기(계획 · 격자 · 공유 이미지) / 「오늘 올릴 것」
   publish/              업로드 폴더 · 캡션 · 폰으로 받기 · blog/(티스토리 발행 · 리틀리 채우기)
+  insights/             성과 분석 — metricool/(OAuth · MCP 클라이언트 · 도구 결과 읽기) · 불러오기 · 분석 · 잇기 후보 · 제안 · 수락
   reels/                릴스 편집 · 모션 · 영상 뽑기 · 받아쓰기
   secrets/              OS 키체인 저장(토큰 · API 키)
   console/ demo/ tasks/ 작업 콘솔 / 「미리 만든 결과」 / 스모크 과제
@@ -537,6 +538,18 @@ exports/                대화 원본 내보내기 결과 (.gitignore)
 - **최종 심사 기준(사용자가 다시 붙여 넣음 — 공지 문장 그대로, [docs/contest/README.md](docs/contest/README.md) 와 같음)**: 프롬프팅 및 트러블슈팅 40% · 결과물 완성도 30% · 경험과 성장 20% · 발표 및 시연 10%
 - **일의 순서는 「비중 × 지금 빈 정도」** — 점수표는 `docs/contest/최종-고도화-계획.md` 한 곳, 일을 끝낼 때마다 고친다
 - **대회 문서 · 발표 자료는 내(운영자) 입장으로 쓴다** — 주어는 나. 코드 대부분을 AI 가 쓴 것은 숨기지 않고, **내가 무엇을 요구했고 · 어떻게 확인했고 · 어디서 AI 를 멈춰 세웠는지**를 보여 준다(「AI 가 다 했다」도 「내가 다 짰다」도 아니다). devlog 는 지금처럼 사실 기록
+
+### 2026-11-22 · 성과 분석 — Metricool 직접 연결 (사용자 결정, devlog: [2026-11-22-01](docs/devlog/2026-11-22-01-성과-분석-메트리쿨.md))
+- **성과 숫자의 출처는 Metricool — 앱이 Metricool 공식 MCP 서버(`https://ai.metricool.com/mcp`, 설정 `insights.metricool.mcpUrl`)에 직접 붙는다. AI 를 거치지 않는다** — 숫자는 도구 결과에서 바로 DB(`insight_posts`)로 간다. AI 가 숫자를 읽거나 옮기면 숫자 자체가 지어낼 수 있는 값이 돼서. Metricool 무료 요금제로 된다(사용자 확인). 인스타 캡처 읽기(FR-IN-2 원안)는 만들지 않는다
+- **연결은 OAuth 2.1 — 동적 클라이언트 등록(공개 클라이언트) + PKCE S256 + `resource` + 범위 `mcp:read` 하나**(읽기만). 인증 서버 주소는 실행할 때 메타데이터(`/.well-known/oauth-protected-resource` → `/.well-known/oauth-authorization-server`)에서 읽는다 — 2026-11-22 인증 없이 확인: MCP POST → 401 + resource_metadata, S256 · `none` · 등록 주소 있음. 돌아오는 주소는 `http://127.0.0.1:4317/api/insights/metricool/callback`(최상위 GET 이라 Origin 이 없어 localOnly 를 그대로 통과). `state` 는 메모리 · 10분 · 한 번만
+- **토큰은 OS 키체인의 앱 전용 이름 `metricool.oauth` 하나에만(base64url JSON)** — 설정 탭 키 목록 · 설정 API 에는 나오지 않는다(`internal`). 로그 · 화면 · DB 에 토큰을 남기지 않는다. 연결 끊기 = 이 컴퓨터의 토큰만 지운다(메타데이터에 취소 주소 없음). 401 이면 한 번 새로 받아 다시, 그래도 안 되면 「설정 → 연결된 계정에서 다시 연결」
+- **도구 이름(`getBrandSettings` · `getAnalyticsDataByMetrics`) · 인자 · 결과 모양은 Claude 의 Metricool 커넥터로 본 것 — 앱이 실제 서버에서 직접 부른 적은 아직 없다**(이 세션에서는 사용자 로그인을 못 함). 측정 항목 ID(피드 IGPO · 릴스 IGRE, 지원 끝난 항목 제외)는 커넥터의 `getAnalyticsAvailableMetrics` 로 확인해 설정에 뒀다. 브랜드 정보는 id · 이름 · 시간대 · 인스타 아이디만 남기고 이메일 등은 버린다
+- **Metricool 에 없는 게시물만 직접 입력**(대비책). 모르는 수치는 비워 두면 NULL — 「입력 안 됨」으로 보이고 계산에서 빠진다. Metricool 에서 받은 숫자는 화면에서 고칠 수 없다(다시 불러오기)
+- **게시물 ↔ 세트 잇기는 앱이 후보만 내고 사용자가 「맞아요」를 눌러야 잇는다** — 후보는 홈에서 「올렸어요」한 세트의 날짜 ±`insights.matchWindowDays`(3)일 안 · 아직 잇지 않은 Metricool 게시물, 점수는 글자 두 개 묶음(캡션 자카드와 표지 제목 포함 정도 중 큰 값). 「아니에요」는 기억한다. 잇지 않은 게시물은 형식 표에만 들어간다. 한 세트는 게시물 하나에만
+- **분석 규칙**: 게시 뒤 `insights.matureHours`(48)시간 지난 것만(그 전 「집계 중」) · 저장률 = 저장 ÷ 도달, 공유율 = 공유 ÷ 도달(분자나 도달이 비었거나 도달 0 이면 그 계산에서 뺌, 0 으로 치지 않음) · 묶음마다 게시물별 비율의 평균 · 값 있는 표본이 `insights.minSamples`(3) 미만이면 「표본 부족 — 결론 없음」, 제안에도 못 씀
+- **제목 유형 첫 판(코드 한 함수 `titleType`)**: 「?」 또는 「…까 · 나요 · 가요」로 끝나면 질문형(먼저) → 숫자가 있으면 숫자형 → 그 외. 이은 세트의 표지 제목으로 정한다
+- **제안(FR-IN-5)은 AI 1번 + 자기 평가, 입력은 표(결론 낼 수 있는 묶음만)와 프로필뿐** — 재작성 사유(코드): 표에 없는 묶음 · 표본 부족 묶음 · 근거 값이 표의 글과 다름 · 문장에 표에 없는 숫자 · 영문 · **규칙 문장에 숫자(아예 금지)** · 길이 · 3개 초과. 결론 낼 묶음이 없으면 AI 를 부르지 않는다. 규칙 문장의 숫자 금지는 지시보다 엄하게 정했다(규칙이 프로필 = 이후 생성의 허용 출처가 되므로) — **사용자 확인 대기**
+- **수락하면(FR-IN-6) 지금 프로필을 복사해 규칙 한 줄(출처 `insight`, 만료 `insights.acceptDays` = 21일 뒤)을 더한 새 판(이유 `insight`, 바로 적용 · 되돌리기 가능)** — more → 말투 규칙, less → 피할 것. 수락 없이는 프로필을 바꾸지 않는다. **만료는 읽을 때 거른다**(`profileForGeneration` 의 `isLive`) — 판을 고치지 않아 만료일이 그대로 기록이고, 화면은 「성과에서 온 변경 · 만료됨」. 새 판에는 이미 만료된 성과 항목을 옮기지 않는다(직접 수정 화면의 개수 한도 때문, 옛 판에는 남음)
 
 ## 겪은 오류
 

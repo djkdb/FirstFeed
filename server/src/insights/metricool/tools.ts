@@ -36,28 +36,21 @@ export function tzOffsetMs(tz: string, utcMs: number): number {
   return asUtc - Math.floor(utcMs / 1000) * 1000;
 }
 
-/** 그 시간대의 벽시계 시각(연 · 월 · 일 · 시 · 분 · 초) → UTC ms. 시간대를 모르면 null */
-export function zonedToUtc(tz: string, y: number, mo: number, d: number, h: number, mi: number, s: number): number | null {
-  try {
-    const guess = Date.UTC(y, mo - 1, d, h, mi, s);
-    let utc = guess - tzOffsetMs(tz, guess);
-    utc = guess - tzOffsetMs(tz, utc); // 서머타임 경계에서 한 번 더 맞춘다
-    return utc;
-  } catch {
-    return null;
-  }
-}
-
-/** Metricool 날짜 값 → ISO(UTC). 「20261118092331」(YYYYMMDDHHMMSS)는 브랜드 시간대의 시각으로 읽는다. 모르는 모양은 null */
-export function parseStamp(v: unknown, tz: string | null): string | null {
+/**
+ * Metricool 날짜 값 → ISO(UTC). 「20261118092331」(YYYYMMDDHHMMSS)는 **UTC** 시각이다 — 브랜드 시간대(Asia/Seoul)가 아니다.
+ * 확인(2026-11-24): 인스타 게시물 ID 앞부분에 든 만든 시각((id >> 23) + 1314220021721 ms)과 피드 게시물은 초까지 같고,
+ * 릴스는 몇 초~몇 분 늦을 뿐(올림 → 게시) 9시간 차이는 한 번도 없었다. 모르는 모양은 null
+ */
+export function parseStamp(v: unknown): string | null {
   if (typeof v !== 'string' && typeof v !== 'number') return null;
   const s = String(v).trim();
   const m = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(s);
   if (m) {
     const [y, mo, d, h, mi, se] = m.slice(1).map(Number) as [number, number, number, number, number, number];
     if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 || se > 59) return null;
-    const utc = tz ? zonedToUtc(tz, y, mo, d, h, mi, se) : null;
-    return utc === null ? null : new Date(utc).toISOString();
+    const utc = Date.UTC(y, mo - 1, d, h, mi, se);
+    // 2월 30일처럼 없는 날은 Date.UTC 가 다음 달로 넘기므로 되돌려 비교해 버린다
+    return new Date(utc).getUTCDate() === d ? new Date(utc).toISOString() : null;
   }
   // 시간대가 붙은 ISO 면 그대로 믿는다(시간대 없는 글은 어느 시각인지 몰라 버린다)
   if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/.test(s)) {
@@ -107,7 +100,7 @@ export function metricOrder(fields: Record<string, string>): Array<[key: string,
 }
 
 /** { rows: [[…]] } → 게시물. ID 가 없는 행은 버린다(어느 게시물인지 몰라 고칠 수 없어서) */
-export function parseRows(v: unknown, fields: Record<string, string>, tz: string | null, fixedType: string | null): FetchedPost[] {
+export function parseRows(v: unknown, fields: Record<string, string>, fixedType: string | null): FetchedPost[] {
   const rows = (v as { rows?: unknown })?.rows;
   if (!Array.isArray(rows)) return [];
   const order = metricOrder(fields);
@@ -124,7 +117,7 @@ export function parseRows(v: unknown, fields: Record<string, string>, tz: string
         externalId: id.trim(),
         url: str(at('url')),
         type: fixedType ?? str(at('type')),
-        publishedAt: parseStamp(at('publishedAt'), tz),
+        publishedAt: parseStamp(at('publishedAt')),
         content: str(at('content')),
         reach: num(at('reach')),
         saved: num(at('saved')),

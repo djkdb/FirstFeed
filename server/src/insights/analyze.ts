@@ -23,13 +23,15 @@ export const formatLabel = (t: string) => FORMAT_LABEL[t] ?? t;
 export const plainTitle = (t: string) => t.replace(/\*\*/g, '').replace(/\s+/g, ' ').trim();
 
 /**
- * 제목 유형 — 첫 판(결정 2026-11-22), 코드만 한 곳에서. 질문형을 먼저 본다(「?」 로 끝나거나 「…까 · …나요 · …가요」로 끝남),
- * 그다음 숫자가 하나라도 있으면 숫자형, 나머지는 그 외. 「다섯 가지」 같은 한글 수사는 숫자형으로 세지 않는다(근거 규칙과 같은 한계)
+ * 제목 유형 — 첫 판(결정 2026-11-22, 2026-11-24 고침), 코드만 한 곳에서. 질문형을 먼저 본다:
+ * 「?」(반각 · 전각)로 끝나거나 「…까 · …까요」(「할까」 「될까요」 「뭘 할 수 있을까」)로 끝나면 질문형.
+ * 「…나요 · …가요」만으로는 질문형으로 보지 않는다 — 「주말에 놀러 가요」 「자꾸 생각나요」 같은 평서문과 글자로 가를 수 없어서(「?」 가 붙으면 질문형).
+ * 그다음 숫자(\p{Nd})가 하나라도 있으면 숫자형, 나머지는 그 외. 「다섯 가지」 같은 한글 수사는 숫자형으로 세지 않는다(근거 규칙과 같은 한계)
  */
 export function titleType(title: string): TitleType {
   const t = plainTitle(title).replace(/[\s!.…~]+$/u, '');
-  if (/[?？]$/.test(t) || /(까|나요|가요)$/.test(t)) return 'question';
-  if (/\d/.test(t)) return 'number';
+  if (/[?？]$/u.test(t) || /까요?$/u.test(t)) return 'question';
+  if (/\p{Nd}/u.test(t)) return 'number';
   return 'other';
 }
 

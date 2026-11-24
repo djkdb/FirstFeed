@@ -1,6 +1,7 @@
 // 아주 작은 MCP 클라이언트(Streamable HTTP) — Metricool 공식 MCP 서버의 도구를 앱이 직접 부른다(AI 를 거치지 않음, 결정 2026-11-22).
 // 새 의존성 없이 필요한 만큼만: initialize → notifications/initialized → tools/call. 응답은 JSON 이거나 SSE(text/event-stream) 둘 다 받는다.
-// 401 이면 토큰을 한 번 새로 받아 다시 보내고, 그래도 401 이면 다시 연결하라고 알린다
+// 401 이면 토큰을 한 번 새로 받아 다시 보내고, 그래도 401 이면 다시 연결하라고 알린다.
+// initialize 뒤의 요청에는 서버가 고른 판(protocolVersion)을 MCP-Protocol-Version 으로 보낸다. 세션이 끝나 404 면 한 번만 처음부터 다시 잇고 다시 보낸다(스펙)
 import { FlowError } from '../../identity/flow.ts';
 
 export const PROTOCOL_VERSION = '2025-06-18';
@@ -43,6 +44,8 @@ export class McpClient {
   private readonly timeoutMs: number;
   private session: string | null = null;
   private initialized = false;
+  /** initialize 응답에서 서버가 고른 판. 그 전에는 우리가 요청하는 판(PROTOCOL_VERSION) */
+  private protocol: string | null = null;
   private nextId = 1;
 
   constructor(o: { url: string; tokens: TokenSource; fetch?: typeof fetch; timeoutMs: number }) {
@@ -58,7 +61,7 @@ export class McpClient {
       'content-type': 'application/json',
       accept: 'application/json, text/event-stream',
       authorization: `Bearer ${token}`,
-      'mcp-protocol-version': PROTOCOL_VERSION,
+      'mcp-protocol-version': this.protocol ?? PROTOCOL_VERSION,
     };
     if (this.session) headers['mcp-session-id'] = this.session;
     let r: Response;
@@ -76,14 +79,18 @@ export class McpClient {
     return r;
   }
 
-  private async request(method: string, params: unknown): Promise<unknown> {
+  private async request(method: string, params: unknown, sessionRetried = false): Promise<unknown> {
     const id = this.nextId++;
     const r = await this.post({ jsonrpc: '2.0', id, method, params });
     if (r.status === 404 && this.session) {
-      // 세션이 끝났다(스펙: 404) — 처음부터 다시
+      // 세션이 끝났다(스펙: 404) — 세션 없이 처음부터 다시 잇고 한 번만 다시 보낸다
+      await r.body?.cancel().catch(() => undefined);
       this.session = null;
       this.initialized = false;
-      throw new FlowError('Metricool 연결이 중간에 끊겼어요.', '「불러오기」를 다시 누르세요.');
+      this.protocol = null;
+      if (sessionRetried || method === 'initialize') throw new FlowError('Metricool 연결이 중간에 끊겼어요.', '「불러오기」를 다시 누르세요.');
+      await this.init();
+      return this.request(method, params, true);
     }
     if (!r.ok) throw new FlowError(`Metricool 이 요청을 거절했어요(${r.status}).`, '잠시 뒤 다시 불러오세요. 계속되면 직접 입력을 쓰세요.');
     const type = r.headers.get('content-type') ?? '';
@@ -106,7 +113,10 @@ export class McpClient {
 
   private async init(): Promise<void> {
     if (this.initialized) return;
-    await this.request('initialize', { protocolVersion: PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: 'FirstFeed', version: '0.1.0' } });
+    const res = (await this.request('initialize', { protocolVersion: PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: 'FirstFeed', version: '0.1.0' } })) as { protocolVersion?: unknown } | null;
+    // 서버가 고른 판(날짜 모양)만 받는다 — 이상한 값이면 우리가 요청한 판 그대로
+    const v = res?.protocolVersion;
+    this.protocol = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : PROTOCOL_VERSION;
     // 알림은 응답이 없다(202) — 본문은 읽지 않는다
     const r = await this.post({ jsonrpc: '2.0', method: 'notifications/initialized' });
     await r.body?.cancel();

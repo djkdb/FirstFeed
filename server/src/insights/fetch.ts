@@ -32,15 +32,20 @@ export class Metricool {
     return parseBrands(await client.callTool(TOOL.brands, {}));
   }
 
+  /**
+   * 쓸 브랜드 — 고른 것이 목록에 있으면 그것. 고른 것이 없거나 목록에서 사라졌을 때(다른 Metricool 계정으로 다시 연결 등) 브랜드가 하나뿐이면
+   * 그것을 쓰고 저장한 값을 바꾼다(옛 값 때문에 불러오기가 막히지 않게). 여럿이면 사용자가 고르게 한다
+   */
   chooseBrand(list: MetricoolBrand[]): MetricoolBrand {
     const want = getSetting(this.db, 'insights.metricool.brandId');
-    if (want) {
-      const b = list.find((x) => x.id === want);
-      if (b) return b;
-      throw new FlowError('고른 Metricool 브랜드를 찾지 못했어요.', '설정 → 연결된 계정에서 브랜드를 다시 고르세요.');
-    }
-    if (list.length === 1) return list[0]!;
+    const b = want ? list.find((x) => x.id === want) : undefined;
+    if (b) return b;
     if (list.length === 0) throw new FlowError('Metricool 에 브랜드가 없어요.', 'Metricool 에서 인스타 계정을 브랜드에 연결한 뒤 다시 불러오세요.');
+    if (list.length === 1) {
+      if (want) this.setBrand(list[0]!.id);
+      return list[0]!;
+    }
+    if (want) throw new FlowError('고른 Metricool 브랜드를 찾지 못했어요.', '설정 → 연결된 계정에서 브랜드를 다시 고르세요.');
     throw new FlowError('Metricool 에 브랜드가 여러 개예요.', '설정 → 연결된 계정에서 쓸 브랜드를 고르세요.');
   }
 
@@ -68,7 +73,7 @@ export class Metricool {
     const from = isoInZone(this.rangeStart(brandId), tz);
     const to = isoInZone(this.now(), tz);
     const pull = async (fields: Record<string, string>, fixedType: string | null) =>
-      parseRows(await client.callTool(TOOL.analytics, { brandId: brand.id, from, to, metrics: metricOrder(fields).map(([, id]) => id) }), fields, tz, fixedType);
+      parseRows(await client.callTool(TOOL.analytics, { brandId: brand.id, from, to, metrics: metricOrder(fields).map(([, id]) => id) }), fields, fixedType);
     const posts = await pull(getSetting(this.db, 'insights.metricool.postFields'), null);
     const warnings: string[] = [];
     let reels: typeof posts = [];

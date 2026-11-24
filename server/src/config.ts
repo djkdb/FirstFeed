@@ -326,6 +326,8 @@ export const DEFAULTS = {
   'insights.maxSuggestions': 3,
   /** 제안 한 문장의 최대 글자 수 */
   'insights.suggestionMaxChars': 80,
+  /** 프로필에 더할 규칙 한 줄의 최대 글자 수(말투 규칙 · 피할 것 한 줄) */
+  'insights.ruleMaxChars': 80,
   /** 올리는 그림(프로필 사진 등) 최대 크기. 1080×1080 PNG 가 보통 1~3MB 라 넉넉히 */
   'brand.maxUploadBytes': 8 * 1024 * 1024,
   /**
@@ -364,7 +366,7 @@ export const DEFAULTS = {
     series_plan: 'v4',
     reel_motion: 'v1',
     // 성과 제안(2026-11-22) — 첫 판. 실제 AI 로는 아직 재지 않았다(devlog 2026-11-22-01)
-    insight_suggest: 'v1',
+    insight_suggest: 'v2',
     insight_suggest_review: 'v1',
   } as Record<string, string>,
 };

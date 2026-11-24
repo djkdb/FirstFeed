@@ -203,11 +203,16 @@ const toSuggestion = (r: Row): StoredSuggestion => ({
   createdAt: String(r.created_at),
 });
 
+/**
+ * 받은 제안 저장 + 묶음 줄 하나(마이그레이션 023). 제안이 0개여도 묶음 줄은 남긴다 — 그래야 그 전 묶음이 「가장 최근」으로 남아 고를 수 있게 되지 않는다.
+ * 한 번에(트랜잭션)
+ */
 export function saveSuggestions(db: Db, brandId: number, jobId: string, items: Array<Pick<StoredSuggestion, 'kind' | 'groupKey' | 'text' | 'rule' | 'evidence'>>, table: unknown): void {
   const st = db.prepare('INSERT INTO insight_suggestions (brand_id, job_id, kind, group_key, text, rule, evidence_json, table_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
   db.exec('BEGIN');
   try {
     for (const x of items) st.run(brandId, jobId, x.kind, x.groupKey, x.text, x.rule, JSON.stringify(x.evidence), JSON.stringify(table));
+    db.prepare('INSERT INTO insight_suggestion_batches (brand_id, job_id, count) VALUES (?, ?, ?)').run(brandId, jobId, items.length);
     db.exec('COMMIT');
   } catch (e) {
     db.exec('ROLLBACK');
@@ -215,11 +220,33 @@ export function saveSuggestions(db: Db, brandId: number, jobId: string, items: A
   }
 }
 
-/** 가장 최근에 받은 제안 묶음 */
+/**
+ * 제안을 저장하지 않고 끝난 받기(결론 낼 묶음 없음 · 규칙을 끝내 통과하지 못함)를 빈 묶음으로 남긴다 —
+ * 그 전 묶음이 더는 「지금 고를 제안」으로 보이지 않게. jobId 는 AI 를 부르지 않았으면 null
+ */
+export function recordSuggestionRun(db: Db, brandId: number, jobId: string | null): void {
+  db.prepare('INSERT INTO insight_suggestion_batches (brand_id, job_id, count) VALUES (?, ?, 0)').run(brandId, jobId);
+}
+
+/** 가장 최근 받기 묶음. 한 번도 받지 않았으면 null */
+export function latestSuggestionBatch(db: Db, brandId: number): { jobId: string | null; count: number; createdAt: string } | null {
+  const r = db.prepare('SELECT job_id, count, created_at FROM insight_suggestion_batches WHERE brand_id = ? ORDER BY id DESC LIMIT 1').get(brandId) as Row | undefined;
+  return r ? { jobId: s(r.job_id), count: Number(r.count), createdAt: String(r.created_at) } : null;
+}
+
+/** 가장 최근 받기의 제안만 — 그 받기가 0개로 끝났으면 빈 목록(그 전 묶음은 보이지 않는다) */
 export function latestSuggestions(db: Db, brandId: number): StoredSuggestion[] {
-  const last = db.prepare('SELECT job_id FROM insight_suggestions WHERE brand_id = ? ORDER BY id DESC LIMIT 1').get(brandId) as Row | undefined;
-  if (!last) return [];
-  return (db.prepare('SELECT * FROM insight_suggestions WHERE brand_id = ? AND job_id = ? ORDER BY id').all(brandId, String(last.job_id)) as Row[]).map(toSuggestion);
+  const b = latestSuggestionBatch(db, brandId);
+  if (!b || b.jobId === null || b.count === 0) return [];
+  return (db.prepare('SELECT * FROM insight_suggestions WHERE brand_id = ? AND job_id = ? ORDER BY id').all(brandId, b.jobId) as Row[]).map(toSuggestion);
+}
+
+/** 수락 · 넘기기 전에 — 가장 최근 받기의 제안이 아니면 거절한다(지난 표로 만든 제안이 프로필에 들어가지 않게). 없는 제안은 그냥 지나간다(호출한 쪽이 「찾지 못했어요」) */
+export function assertLatestSuggestion(db: Db, brandId: number, id: number): void {
+  const x = getSuggestion(db, brandId, id);
+  if (!x) return;
+  if (!latestSuggestions(db, brandId).some((y) => y.id === id))
+    throw new FlowError('지난번에 받은 제안이라 반영하거나 넘길 수 없어요.', '화면을 새로고침한 뒤 가장 최근에 받은 제안에서 고르세요. 새로 받으려면 「다음에 할 것 제안 받기」를 누르세요.');
 }
 
 export function getSuggestion(db: Db, brandId: number, id: number): StoredSuggestion | null {

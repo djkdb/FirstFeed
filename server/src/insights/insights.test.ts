@@ -17,7 +17,7 @@ import { fixTemplate } from '../templates/store.ts';
 import { analyze, insightTable, rate, titleType, type SetInfo } from './analyze.ts';
 import { linkCandidates } from './match.ts';
 import { insightsView } from './service.ts';
-import { addManual, linkPost, listPosts, saveSuggestions, upsertFetched, type InsightPost } from './store.ts';
+import { addManual, latestSuggestionBatch, linkPost, listPosts, recordSuggestionRun, saveSuggestions, upsertFetched, type InsightPost } from './store.ts';
 import { acceptSuggestion, rejectSuggestion, suggestRules, type SuggestOut } from './suggest.ts';
 import type { FetchedPost } from './metricool/tools.ts';
 
@@ -120,7 +120,17 @@ describe('분석 계산 (FR-IN-3 · 4)', () => {
   });
 
   it('제목 유형(첫 판): 질문형 먼저 → 숫자형 → 그 외', () => {
-    expect(['뭘 할 수 있을까', '이거 써 봤나요?', '어디서 사나요', '3분 만에 끝내기', '다섯 가지 습관', '질문 3개?'].map(titleType)).toEqual(['question', 'question', 'question', 'number', 'other', 'question']);
+    expect(['뭘 할 수 있을까', '이거 써 봤나요?', '어디서 사나요', '3분 만에 끝내기', '다섯 가지 습관', '질문 3개?'].map(titleType)).toEqual(['question', 'question', 'other', 'number', 'other', 'question']);
+    // 「…나요 · …가요」 평서문은 질문형이 아니다 · 「…까 · …까요」는 「?」 없이도 질문형 · 전각 「？」 · 전각 숫자도 센다
+    expect(['주말에 놀러 가요', '자꾸 생각나요', '오늘 뭐 할까', '이걸로 될까요', '될까요!', '이거 맞아요？', '하루 １번'].map(titleType)).toEqual([
+      'other',
+      'other',
+      'question',
+      'question',
+      'question',
+      'question',
+      'number',
+    ]);
   });
 });
 
@@ -168,7 +178,7 @@ describe('제안 코드 규칙 (FR-IN-5)', () => {
     const { db } = seeded();
     const { groups } = analyzeFrom(db);
     const t = insightTable(groups);
-    return { groups, table: t.rows, grounding: t.grounding, max: 3, maxChars: 80, commonTerms: ['DM'] };
+    return { groups, table: t.rows, grounding: t.grounding, max: 3, maxChars: 80, ruleMaxChars: 80, commonTerms: ['DM'] };
   };
   const analyzeFrom = (db: ReturnType<typeof setup>['db']) => {
     const v = insightsView(db, 1, NOW);
@@ -193,7 +203,9 @@ describe('제안 코드 규칙 (FR-IN-5)', () => {
     expect(suggestRules(small).flatMap((r) => r(d)).map((i) => i.code)).toContain('group_too_small');
   });
   it('표와 다른 값 · 근거에 대상 묶음 없음 · 값 없는 지표', () => {
-    expect(codes(tweak((s) => (s.evidence[0]!.value = '12%')))).toContain('evidence_value_mismatch');
+    expect(codes(tweak((s) => (s.evidence[0]!.value = '13.0%')))).toContain('evidence_value_mismatch');
+    // 「12.0%」 를 「12%」 로 줄여 쓴 것은 같은 값(2026-11-24 — 뜻이 같은데 재작성을 쓰지 않게)
+    expect(codes(tweak((s) => (s.evidence[0]!.value = '12%')))).not.toContain('evidence_value_mismatch');
     expect(codes(tweak((s) => (s.evidence[0]!.groupKey = 'format:FEED_CAROUSEL_ALBUM')))).toContain('evidence_missing_group');
   });
   it('문장에 표에 없는 숫자 · 영문, 규칙 문장에 숫자 · 길이 · 개수', () => {
@@ -331,3 +343,41 @@ function tweakOut(f: (s: SuggestOut['suggestions'][number]) => void): SuggestOut
   f(d.suggestions[0]!);
   return d;
 }
+
+describe('제안 묶음 — 가장 최근 받기만 (2026-11-24 코드 리뷰)', () => {
+  const item = (rule: string) => ({ kind: 'more' as const, groupKey: `pillar:${PA}`, text: 't', rule, evidence: [] });
+  it('0개로 끝난 받기 뒤에는 그 전 제안이 보이지 않고, API 로 수락 · 넘기기도 거절한다(다음 할 일과 함께)', async () => {
+    const { db, ai } = seeded();
+    saveSuggestions(db, 1, 'job-1', [item('질문으로 끝나는 제목을 더 쓴다'), item('써 본 도구 이야기를 더 쓴다')], []);
+    const [a, b] = insightsView(db, 1, NOW).suggestions;
+    expect(a).toMatchObject({ jobId: 'job-1', status: 'pending' });
+    saveSuggestions(db, 1, 'job-2', [], []);
+    expect(latestSuggestionBatch(db, 1)).toMatchObject({ jobId: 'job-2', count: 0 });
+    expect(insightsView(db, 1, NOW).suggestions).toEqual([]);
+    const app = createApp({ db, ai });
+    for (const [id, act] of [
+      [a!.id, 'accept'],
+      [b!.id, 'reject'],
+    ] as const) {
+      const r = await app.request(`/api/insights/suggestions/${id}/${act}`, { method: 'POST', headers: { host: '127.0.0.1:4317' } });
+      expect(r.status).toBe(400);
+      expect(((await r.json()) as { error: string }).error).toMatch(/지난번에 받은 제안이라.*가장 최근에 받은 제안에서 고르세요/);
+    }
+    expect(activeProfile(db, 1)!.reason).toBe('interview');
+    // 새로 받은 묶음은 그대로 고를 수 있다
+    saveSuggestions(db, 1, 'job-3', [item('만든 것 소개를 더 쓴다')], []);
+    const [c] = insightsView(db, 1, NOW).suggestions;
+    const ok = await app.request(`/api/insights/suggestions/${c!.id}/accept`, { method: 'POST', headers: { host: '127.0.0.1:4317' } });
+    expect(ok.status).toBe(200);
+    expect(activeProfile(db, 1)!.voiceRules.at(-1)!.text).toBe('만든 것 소개를 더 쓴다');
+    // 제안을 저장하지 않고 끝난 받기도 빈 묶음으로 남길 수 있다
+    recordSuggestionRun(db, 1, null);
+    expect(insightsView(db, 1, NOW).suggestions).toEqual([]);
+  });
+
+  it('없는 제안은 지금처럼 「찾지 못했어요」', async () => {
+    const { db, ai } = seeded();
+    const r = await createApp({ db, ai }).request('/api/insights/suggestions/999/accept', { method: 'POST', headers: { host: '127.0.0.1:4317' } });
+    expect(((await r.json()) as { error: string }).error).toMatch(/찾지 못했어요/);
+  });
+});

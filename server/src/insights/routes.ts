@@ -9,7 +9,7 @@ import { FlowError } from '../identity/flow.ts';
 import type { SecretStore } from '../secrets/store.ts';
 import { Metricool } from './fetch.ts';
 import { insightsView } from './service.ts';
-import { addManual, deleteManual, linkPost, rejectCandidate, updateManual, type ManualInput } from './store.ts';
+import { addManual, assertLatestSuggestion, deleteManual, linkPost, rejectCandidate, updateManual, type ManualInput } from './store.ts';
 import { acceptSuggestion, generateSuggestions, rejectSuggestion } from './suggest.ts';
 
 const BRAND_ID = 1;
@@ -67,7 +67,9 @@ export function insightsRoutes(ai: AiService, jobs: JobStore, secrets: SecretSto
       .get('/metricool', (c) => c.json(status()))
       .post('/metricool/connect', async (c) => {
         try {
-          return c.json({ url: await mc.auth.startConnect() });
+          // 지금 연결의 시각도 같이 — 화면이 그보다 새 연결이 생길 때까지 기다린다(「다시 연결」을 누르자마자 옛 연결을 보고 「연결했어요」라고 하지 않게)
+          const connectedAt = mc.auth.status().connectedAt;
+          return c.json({ url: await mc.auth.startConnect(), connectedAt });
         } catch (err) {
           if (err instanceof FlowError) return c.json(bad(`${err.message} ${err.hint}`), 400);
           throw err;
@@ -166,7 +168,20 @@ export function insightsRoutes(ai: AiService, jobs: JobStore, secrets: SecretSto
       )
       // ---------- 제안(AI) · 수락 ----------
       .post('/suggest', (c) => c.json({ jobId: jobs.start('insight_suggest', (job) => generateSuggestions(ai, BRAND_ID, job)) }))
-      .post('/suggestions/:id/accept', (c) => act(c, () => acceptSuggestion(db, BRAND_ID, Number(c.req.param('id')), now())))
-      .post('/suggestions/:id/reject', (c) => act(c, () => rejectSuggestion(db, BRAND_ID, Number(c.req.param('id')))))
+      // 가장 최근 받기의 제안만 고를 수 있다(지난 묶음은 지난 표로 만든 것이라)
+      .post('/suggestions/:id/accept', (c) =>
+        act(c, () => {
+          const id = Number(c.req.param('id'));
+          assertLatestSuggestion(db, BRAND_ID, id);
+          return acceptSuggestion(db, BRAND_ID, id, now());
+        }),
+      )
+      .post('/suggestions/:id/reject', (c) =>
+        act(c, () => {
+          const id = Number(c.req.param('id'));
+          assertLatestSuggestion(db, BRAND_ID, id);
+          rejectSuggestion(db, BRAND_ID, id);
+        }),
+      )
   );
 }

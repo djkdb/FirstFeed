@@ -1,0 +1,79 @@
+{
+ "label": "v1",
+ "postsPath": "tests/fixtures/generated/insights/posts.json",
+ "kind": "AI 생성",
+ "rows": [
+  {
+   "run": 1,
+   "kind": "AI 생성",
+   "status": "saved",
+   "rewrites": 0,
+   "calls": 2,
+   "seconds": 23,
+   "reasons": [],
+   "warns": [],
+   "suggestions": [
+    {
+     "kind": "more",
+     "group_key": "pillar:1a73b8075a69b404",
+     "text": "「직접 써 본 새 도구」 축을 더 올린다 — 저장률 8.0%, 「AI로 만든 것」은 5.3%",
+     "rule": "직접 써 본 새 도구 이야기를 더 쓴다",
+     "evidence_json": "[{\"groupKey\":\"pillar:1a73b8075a69b404\",\"metric\":\"saveRate\",\"value\":\"8.0%\"},{\"groupKey\":\"pillar:d504e3e51e772165\",\"metric\":\"saveRate\",\"value\":\"5.3%\"},{\"groupKey\":\"pillar:1a73b8075a69b404\",\"metric\":\"shareRate\",\"value\":\"1.4%\"},{\"groupKey\":\"pillar:d504e3e51e772165\",\"metric\":\"shareRate\",\"value\":\"0.8%\"}]"
+    },
+    {
+     "kind": "more",
+     "group_key": "format:FEED_CAROUSEL_ALBUM",
+     "text": "캐러셀을 더 올린다 — 저장률 6.6%, 릴스는 3.9%",
+     "rule": "여러 장짜리 캐러셀을 더 쓴다",
+     "evidence_json": "[{\"groupKey\":\"format:FEED_CAROUSEL_ALBUM\",\"metric\":\"saveRate\",\"value\":\"6.6%\"},{\"groupKey\":\"format:REELS\",\"metric\":\"saveRate\",\"value\":\"3.9%\"}]"
+    },
+    {
+     "kind": "more",
+     "group_key": "title:number",
+     "text": "숫자형 제목을 더 쓴다 — 저장률 5.4%, 그 외 제목은 3.3%",
+     "rule": "숫자가 들어간 제목을 더 쓴다",
+     "evidence_json": "[{\"groupKey\":\"title:number\",\"metric\":\"saveRate\",\"value\":\"5.4%\"},{\"groupKey\":\"title:other\",\"metric\":\"saveRate\",\"value\":\"3.3%\"},{\"groupKey\":\"title:number\",\"metric\":\"shareRate\",\"value\":\"1.1%\"},{\"groupKey\":\"title:other\",\"metric\":\"shareRate\",\"value\":\"0.5%\"}]"
+    }
+   ],
+   "error": null
+  },
+  {
+   "run": 2,
+   "kind": "AI 생성",
+   "status": "saved",
+   "rewrites": 1,
+   "calls": 4,
+   "seconds": 39,
+   "reasons": [
+    "review_broken",
+    "review_broken",
+    "review_broken"
+   ],
+   "warns": [],
+   "suggestions": [
+    {
+     "kind": "more",
+     "group_key": "pillar:1a73b8075a69b404",
+     "text": "저장률 8.0%로 「AI로 만든 것」 5.3%보다 높았던 「직접 써 본 새 도구」 글을 더 올린다.",
+     "rule": "직접 써 본 새 도구 글을 더 쓴다",
+     "evidence_json": "[{\"groupKey\":\"pillar:1a73b8075a69b404\",\"metric\":\"saveRate\",\"value\":\"8.0%\"},{\"groupKey\":\"pillar:d504e3e51e772165\",\"metric\":\"saveRate\",\"value\":\"5.3%\"},{\"groupKey\":\"pillar:1a73b8075a69b404\",\"metric\":\"shareRate\",\"value\":\"1.4%\"},{\"groupKey\":\"pillar:d504e3e51e772165\",\"metric\":\"shareRate\",\"value\":\"0.8%\"}]"
+    },
+    {
+     "kind": "more",
+     "group_key": "format:FEED_CAROUSEL_ALBUM",
+     "text": "저장률 6.6%로 릴스 3.9%보다 높았던 캐러셀을 더 쓴다.",
+     "rule": "여러 장짜리 캐러셀을 더 쓴다",
+     "evidence_json": "[{\"groupKey\":\"format:FEED_CAROUSEL_ALBUM\",\"metric\":\"saveRate\",\"value\":\"6.6%\"},{\"groupKey\":\"format:REELS\",\"metric\":\"saveRate\",\"value\":\"3.9%\"}]"
+    },
+    {
+     "kind": "more",
+     "group_key": "title:number",
+     "text": "저장률 5.4%로 「그 외」 3.3%보다 높았던 숫자형 제목을 더 쓴다.",
+     "rule": "숫자가 들어간 제목을 더 쓴다",
+     "evidence_json": "[{\"groupKey\":\"title:number\",\"metric\":\"saveRate\",\"value\":\"5.4%\"},{\"groupKey\":\"title:other\",\"metric\":\"saveRate\",\"value\":\"3.3%\"},{\"groupKey\":\"title:number\",\"metric\":\"shareRate\",\"value\":\"1.1%\"},{\"groupKey\":\"title:other\",\"metric\":\"shareRate\",\"value\":\"0.5%\"}]"
+    }
+   ],
+   "error": null
+  }
+ ]
+}

@@ -121,7 +121,12 @@ export function TemplatePage() {
         )}
         {state.fixed && <NextStep after="template" />}
         {notice && <p className="status ok small">{notice}</p>}
-        <p className="muted small">표지·릴스 표지는 인스타 프로필 격자(3:4)에서 잘리는 자리를 피해서 그려요 — 카드 좌우 34px · 릴스 위아래 240px(실제 계정으로 확인한 값).</p>
+        {/* 수치는 고르는 데 필요 없어 접어 둔다 — 처음 쓰는 사람에게 34px · 240px 가 먼저 보였다(AI 가상 사용자 테스트 2026-11-28 ⑤) */}
+        <p className="muted small">표지는 인스타 프로필 격자에서 잘리지 않게 그려요.</p>
+        <details className="muted small">
+          <summary>자세히</summary>
+          격자(3:4)에서 잘리는 자리를 피해요 — 카드 좌우 34px · 릴스 표지 위아래 240px(실제 계정으로 확인한 값).
+        </details>
         <PillarVariant />
       </section>
 
@@ -208,7 +213,7 @@ function PillarVariant() {
       <label>
         <input type="checkbox" checked={on} onChange={(e) => void toggle(e.target.checked)} /> 표지 바탕색을 축마다 다르게(축 색 변형)
       </label>
-      <span className="muted"> — 고정한 틀은 그대로, 표지 바탕만 브랜드 팔레트의 다른 색으로 돌려요(글자색은 명암비 4.5:1 이상으로 자동). 미리보기의 계획 칸과 실제 카드 표지가 같아요.</span>
+      <span className="muted"> — 고정한 틀은 그대로, 표지 바탕만 브랜드 색 안에서 돌려요. 글자는 늘 잘 읽히는 색으로 자동으로 맞춰요.</span>
       {err && <span className="status error"> {err}</span>}
     </p>
   );

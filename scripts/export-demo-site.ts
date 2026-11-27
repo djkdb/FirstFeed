@@ -18,6 +18,7 @@ import { closeBrowser, getBrowser } from '../server/src/render/browser.ts';
 import { planCover, previewDir } from '../server/src/preview/covers.ts';
 import { latestPlan } from '../server/src/preview/plan.ts';
 import { composeGrid } from '../server/src/preview/compose-grid.ts';
+import { staleCovers } from '../server/src/cards/recolor.ts';
 import { homeMarks } from '../server/src/home/marks.ts';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
@@ -36,7 +37,10 @@ const sel = currentSelection(db, 1);
 if (!sel.handle || !sel.displayName || !sel.bio || !sel.palette) fail('브랜딩 선택(아이디 · 이름 · 바이오 · 팔레트)이 다 되지 않았습니다. 앱 「브랜드」에서 고른 뒤 다시 실행하세요.');
 const colors = sel.palette!.colors;
 
-// 격자: 앱 미리보기와 같은 구성(만든 표지 최신순 → 계획 칸 → 빈칸)
+// 격자: 앱 미리보기와 같은 구성(게시 순서 · 최근이 왼쪽 위). 표지 색 규칙도 같다 — 계획 칸은 planCover 가 지금 규칙으로 그리지만
+// 만든 표지는 저장된 PNG 그대로라, 지금 규칙의 색과 다른 표지가 있으면 내보내지 않는다(격자 일부만 옛 색이 되지 않게, 2026-11-04)
+const stale = staleCovers(db, env.dataDir, 1);
+if (stale.length) fail(`만든 카드 ${stale.length}개의 표지가 지금 표지 색 규칙과 다릅니다(세트 ${stale.join(', ')}). 앱 「30일 뒤 미리보기」의 「표지 색 다시 맞추기」를 누른 뒤 다시 실행하세요. 아무것도 쓰지 않았습니다.`);
 const plan = latestPlan(db, 1);
 const cells = composeGrid(listSets(db, 1), plan?.slots ?? [], new Map(profile.pillars.map((p) => [p.id, p.name])), getSetting(db, 'preview.gridCells'), homeMarks(db, 1));
 const safe = getSetting(db, 'render.safeArea').feed;

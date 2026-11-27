@@ -163,8 +163,9 @@ export async function generatePlan(ai: AiService, brandId: number, job?: JobCont
   const slots: PlanSlot[] = r.data.titles.map((t) => ({ title: t.title, pillarId: t.pillar_id, locked: false, origin: 'ai' }));
   // 고정한 칸은 AI 가 다르게 써도 사용자의 것을 지킨다
   for (const { s, i } of locked) if (i < slots.length) slots[i] = s;
-  // 같은 축이 같은 열에 이어지지 않게(결정 2026-10-25 · 줄무늬) — 남길 칸은 그 자리, 나머지만
-  const order = arrangeOrder(slots.map((s) => s.pillarId), new Set(locked.map((x) => x.i)));
+  // 같은 축이 같은 열에 이어지지 않게(결정 2026-10-25 · 줄무늬) — 남길 칸은 그 자리, 나머지만. 표지 색이 위치 바둑판이 된 뒤로는
+  // 색과 상관없어 설정(preview.arrangeByPillar, 기본 끔)일 때만(2026-11-04)
+  const order = getSetting(db, 'preview.arrangeByPillar') ? arrangeOrder(slots.map((s) => s.pillarId), new Set(locked.map((x) => x.i))) : slots.map((_, i) => i);
   return { plan: savePlan(db, brandId, profile.profileId, order.map((i) => slots[i]!), r.jobId), calls: r.calls, rewrites: r.rewrites };
 }
 

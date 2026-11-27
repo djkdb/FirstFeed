@@ -114,7 +114,7 @@ export function TemplatePage() {
         )}
         {notice && <p className="status ok small">{notice}</p>}
         <p className="muted small">표지·릴스 표지는 인스타 격자에서 잘리는 자리를 피해야 해요 — 그 숫자는 아직 앱에서 확인 전이라 엄하게 잡아 두었어요.</p>
-        <PillarVariant />
+        <CoverColorOptions />
       </section>
 
       {state.drafts.map((d) => {
@@ -154,30 +154,71 @@ export function TemplatePage() {
   );
 }
 
-/** 축 색 변형 켜고 끄기(2026-10-25) — 표지 바탕색을 축마다 팔레트의 다른 색으로. 미리보기 계획 칸 · 실제 카드 표지 모두 */
-function PillarVariant() {
-  const [on, setOn] = useState<boolean | null>(null);
+/** 표지 바탕색 규칙(2026-11-04) · 계획 칸 순서 맞추기 — 미리보기 계획 칸 · 실제 카드 표지 · 공유 이미지가 같은 규칙 */
+type Options = { coverColorRule: 'checker' | 'single' | 'pillar'; arrangeByPillar: boolean };
+const RULES: Array<{ id: Options['coverColorRule']; label: string; note: string }> = [
+  { id: 'checker', label: '바둑판', note: '게시 순서대로 바탕색 / 주색을 번갈아 — 격자가 바둑판이 돼요(게시물이 늘어 칸이 밀려도 그대로)' },
+  { id: 'single', label: '한 톤', note: '모든 표지를 고정한 틀 그대로' },
+  { id: 'pillar', label: '축마다 다른 색', note: '축마다 팔레트의 다른 색 — 축 순서에 따라 격자 색이 고르지 않을 수 있어요' },
+];
+
+function CoverColorOptions() {
+  const [opt, setOpt] = useState<Options | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     fetch('/api/templates/options')
-      .then((r) => r.json() as Promise<{ pillarCoverVariant: boolean }>)
-      .then((b) => setOn(b.pillarCoverVariant))
+      .then((r) => r.json() as Promise<Options>)
+      .then(setOpt)
       .catch(() => setErr('설정을 불러오지 못했어요.'));
   }, []);
-  if (on === null) return err ? <p className="status error small">{err}</p> : null;
-  const toggle = (next: boolean) =>
-    fetch('/api/templates/options', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pillarCoverVariant: next }) })
-      .then((r) => r.json() as Promise<{ pillarCoverVariant: boolean }>)
-      .then((b) => setOn(b.pillarCoverVariant))
+  if (opt === null) return err ? <p className="status error small">{err}</p> : null;
+  const save = (patch: Partial<Options>) => {
+    setErr(null);
+    setInfo(null);
+    return fetch('/api/templates/options', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) })
+      .then((r) => r.json() as Promise<Options>)
+      .then(setOpt)
       .catch(() => setErr('바꾸지 못했어요. 다시 시도하세요.'));
+  };
+  // 만든 카드는 만들 때의 색으로 그려져 있다 — 규칙을 바꾼 뒤 표지만 다시 그린다(AI 없음)
+  const recolor = () => {
+    setBusy(true);
+    setErr(null);
+    setInfo(null);
+    fetch('/api/preview/covers/recolor', { method: 'POST' })
+      .then(async (r) => {
+        const b = (await r.json()) as { redrawn?: number[]; failed?: Array<{ reason: string }>; unchanged?: number; error?: string };
+        if (!r.ok) throw new Error(b.error ?? '다시 그리지 못했어요.');
+        setInfo(`표지 ${b.redrawn!.length}개를 다시 그렸어요${b.unchanged ? ` · ${b.unchanged}개는 이미 맞아 그대로` : ''}.`);
+        if (b.failed!.length) setErr(`표지 ${b.failed!.length}개는 그대로 뒀어요: ${b.failed![0]!.reason}`);
+      })
+      .catch((e: Error) => setErr(e.message))
+      .finally(() => setBusy(false));
+  };
   return (
-    <p className="small">
-      <label>
-        <input type="checkbox" checked={on} onChange={(e) => void toggle(e.target.checked)} /> 표지 바탕색을 축마다 다르게(축 색 변형)
-      </label>
-      <span className="muted"> — 고정한 틀은 그대로, 표지 바탕만 브랜드 팔레트의 다른 색으로 돌려요(글자색은 명암비 4.5:1 이상으로 자동). 미리보기의 계획 칸과 실제 카드 표지가 같아요.</span>
-      {err && <span className="status error"> {err}</span>}
-    </p>
+    <div className="small">
+      <p>
+        표지 바탕색:{' '}
+        {RULES.map((r) => (
+          <label key={r.id} title={r.note} style={{ marginRight: '1em' }}>
+            <input type="radio" name="coverColorRule" checked={opt.coverColorRule === r.id} onChange={() => void save({ coverColorRule: r.id })} /> {r.label}
+          </label>
+        ))}
+        <button type="button" disabled={busy} onClick={recolor} title="AI 없이 만든 카드의 표지만 지금 규칙의 색으로 다시 그려요 — 본문 · 마무리는 그대로">
+          {busy ? '표지 다시 그리는 중…' : '표지 색 다시 맞추기'}
+        </button>
+      </p>
+      <p className="muted">{RULES.find((r) => r.id === opt.coverColorRule)!.note}. 고정한 틀은 그대로, 표지 바탕만 브랜드 팔레트 안에서 바꿔요(글자색은 명암비 4.5:1 이상으로 자동). 축은 표지의 축 배지로 보여요.</p>
+      <p>
+        <label>
+          <input type="checkbox" checked={opt.arrangeByPillar} onChange={(e) => void save({ arrangeByPillar: e.target.checked })} /> 계획 칸 순서 맞추기(같은 축이 같은 열에 이어지지 않게)
+        </label>
+        <span className="muted"> — 축마다 다른 색일 때 세로 줄무늬를 막으려던 것이라 기본은 꺼 둬요. 켜면 계획을 만들 때 자동으로, 미리보기에 버튼도 보여요.</span>
+      </p>
+      {err && <p className="status error">{err}</p>}
+      {info && <p className="status ok">{info}</p>}
+    </div>
   );
 }
-

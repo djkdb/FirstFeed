@@ -1,6 +1,7 @@
 // 템플릿 넘침 측정 (FR-TP-4 수용 기준: 결과 PNG 에 글자가 잘리거나 겹친 경우 0건 — 테스트 세트 기준).
 //   npm run eval:templates -- [--label=templates] [--drafts=F] [--photos=light,dark,busy] [--pillars=1,2,3,4]
-// --pillars: 축 색 변형(2026-10-25, templates/variant.ts) — 그 축 번호로 표지 · 릴스 표지 원고만 다시 그린다(본문 · 마무리는 변형 없음)
+// --pillars: 표지 색 규칙(templates/variant.ts) — 그 번호로 표지 · 릴스 표지 원고만 다시 그린다(본문 · 마무리는 그대로). 번호는 지금 규칙
+//   (render.coverColorRule)이 축 색 변형이면 축 번호, 바둑판이면 게시 순번(홀수 = 주색 바탕)
 // 그림 바탕 시안(F)은 테스트 그림(tests/fixtures/generated/images)을 깐 변형도 잰다 — 그림이 깔리는 표지·릴스 표지 원고만(결정 2026-10-18)
 // 시안 × 브랜드(me·doyun·seoyeon 고정 키트) × 넘침 테스트 세트(tests/fixtures/generated/overflow/cases.json).
 // 판정은 DOM 측정(기준 브라우저 Playwright Chromium 으로만). PNG 는 판정이 실패해도 마지막 단계 크기로 남긴다 —
@@ -70,7 +71,7 @@ for (const v of VARIANTS)
     fs.mkdirSync(dir, { recursive: true });
     for (const c of cases) {
       if ((v.photo || v.pillar !== null) && c.content.kind !== 'cover' && c.content.kind !== 'reel_cover') continue;
-      const r = await renderPhotoFrame(db, d, look, c.content, v.photo, { captureEvenIfBad: true, pillarIndex: v.pillar });
+      const r = await renderPhotoFrame(db, d, look, c.content, v.photo, { captureEvenIfBad: true, pillarIndex: v.pillar, postIndex: v.pillar });
       const result: Row['result'] = r.problems.some((p) => p.code === 'font_fallback')
         ? '대체 글꼴'
         : r.problems.some((p) => p.code === 'low_contrast_on_photo')

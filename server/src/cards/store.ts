@@ -49,7 +49,15 @@ export interface CardToSave {
   glosses: GlossMark[];
   edited: boolean;
   png: Buffer;
-  render: { browser: string; reference: boolean; scale: number };
+  render: CardRender;
+}
+
+/** 렌더링 기록. tone = 표지 바탕으로 쓴 색(2026-11-04 · 표지만) — 그 전에 만든 카드에는 없다 */
+export interface CardRender {
+  browser: string;
+  reference: boolean;
+  scale: number;
+  tone?: string;
 }
 
 export interface SetToSave {
@@ -106,7 +114,7 @@ export interface SavedCard {
   glosses: GlossMark[] | null;
   edited: boolean;
   pngFile: string;
-  render: { browser: string; reference: boolean; scale: number };
+  render: CardRender;
 }
 
 export function getSet(db: Db, id: number) {
@@ -127,6 +135,7 @@ export function getSet(db: Db, id: number) {
   );
   return {
     id: Number(r.id),
+    brandId: Number(r.brand_id),
     sourceId: Number(r.source_id),
     profileId: Number(r.profile_id),
     templateVersionId: Number(r.template_version_id),

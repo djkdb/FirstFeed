@@ -224,8 +224,16 @@ describe('30일 뒤 미리보기 API', () => {
     expect(slots.filter((x, i) => i !== 2 && x.title.startsWith('새 ') && !x.locked)).toHaveLength(8);
   });
 
-  it('계획을 만들면 같은 축이 같은 열(3칸 간격)에 이어지지 않게 칸 순서를 맞춘다 — AI 는 축을 차례로 돌려 줘도 (결정 2026-10-25)', async () => {
+  it('칸 순서 맞추기는 기본 끔 — 표지 색이 위치 바둑판이라 AI 가 준 순서 그대로 (결정 2026-11-04)', async () => {
     const t = setup([{ structured: nine() }]);
+    await t.makePlan();
+    expect(latestPlan(t.db, 1)!.slots.map((s) => s.pillarId)).toEqual(nine().titles.map((x) => x.pillar_id));
+    expect(((await t.view()) as unknown as { arrangeByPillar: boolean }).arrangeByPillar).toBe(false);
+  });
+
+  it('설정을 켜면 계획을 만들 때 같은 축이 같은 열(3칸 간격)에 이어지지 않게 칸 순서를 맞춘다 — AI 는 축을 차례로 돌려 줘도 (결정 2026-10-25)', async () => {
+    const t = setup([{ structured: nine() }]);
+    setSetting(t.db, 'preview.arrangeByPillar', true);
     await t.makePlan();
     const ids = latestPlan(t.db, 1)!.slots.map((s) => s.pillarId);
     expect(ids.filter((x, i) => i + 3 < ids.length && x === ids[i + 3])).toHaveLength(0);

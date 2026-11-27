@@ -8,11 +8,11 @@ import type { DatabaseSync } from 'node:sqlite';
 import { activeProfile } from '../identity/store.ts';
 import { draftById } from '../templates/index.ts';
 import { resolveLook } from '../templates/look.ts';
-import { renderFrame } from '../templates/render-frame.ts';
+import { coverLook, renderFrame } from '../templates/render-frame.ts';
 import { fixedTemplate } from '../templates/store.ts';
 import { latestPlan } from './plan.ts';
-import { getSetting } from '../config.ts';
-import { pillarIndexOf } from '../templates/variant.ts';
+import { pillarIndexOf, surfaceColor } from '../templates/variant.ts';
+import { postOrderOf } from './post-order.ts';
 
 export type PlanCover = { ok: true; file: string; cached: boolean } | { ok: false; reason: string; cached: boolean };
 
@@ -37,10 +37,13 @@ export async function planCover(db: DatabaseSync, dataDir: string, brandId: numb
   if (!fixed || !draft) return { ok: false, reason: '고정한 템플릿이 없어 표지로 그릴 수 없어요.', cached: false };
   const pillars = activeProfile(db, brandId)?.pillars ?? [];
   const chip = pillars.find((p) => p.id === slot.pillarId)?.name ?? null;
-  // 축 색 변형(2026-10-25): 실제 카드 표지와 같은 축 번호 · 같은 함수. 켜고 끔 · 번호가 바뀌면 다시 그린다
-  const pillarIndex = pillarIndexOf(pillars, slot.pillarId);
-  const variant = getSetting(db, 'render.pillarCoverVariant') ? pillarIndex : null;
-  const key = crypto.createHash('sha256').update(JSON.stringify([slot.title, chip, fixed.id, variant])).digest('hex').slice(0, 16);
+  // 표지 색 규칙(render.coverColorRule): 실제 카드 표지와 같은 자리(축 번호 · 게시 순번) · 같은 함수.
+  // 그릴 표지 바탕색을 열쇠에 넣는다 — 규칙을 바꾸거나 앞에 세트가 생겨 순번 홀짝이 바뀌면 다시 그린다
+  const place = { pillarIndex: pillarIndexOf(pillars, slot.pillarId), postIndex: postOrderOf(db, brandId).ofSlot(idx) };
+  const content = { kind: 'cover' as const, headline: slot.title, sub: null, chip };
+  const look = resolveLook(fixed.look, dataDir);
+  const tone = surfaceColor(draft.id, coverLook(db, draft, look, content, place));
+  const key = crypto.createHash('sha256').update(JSON.stringify([slot.title, chip, fixed.id, tone])).digest('hex').slice(0, 16);
   const dir = previewDir(dataDir);
   const png = path.join(dir, `plan-${key}.png`);
   const failed = path.join(dir, `plan-${key}.json`);
@@ -48,7 +51,7 @@ export async function planCover(db: DatabaseSync, dataDir: string, brandId: numb
   if (fs.existsSync(failed)) return { ok: false, reason: (JSON.parse(fs.readFileSync(failed, 'utf8')) as { reason: string }).reason, cached: true };
 
   return serial(async () => {
-    const fr = await renderFrame(db, draft, resolveLook(fixed.look, dataDir), { kind: 'cover', headline: slot.title, sub: null, chip }, { pillarIndex });
+    const fr = await renderFrame(db, draft, look, content, place);
     fs.mkdirSync(dir, { recursive: true });
     if (fr.ok && fr.png) {
       fs.writeFileSync(png, fr.png);

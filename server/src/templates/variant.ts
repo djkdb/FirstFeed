@@ -1,4 +1,8 @@
-// 축 색 변형 (사용자 지시 2026-10-25 · 화면 다듬기 B): 고정한 템플릿 판은 그대로 두고, **표지의 바탕색만 축마다 브랜드 팔레트의 다른 색으로**
+// 표지 바탕색 규칙 (설정 render.coverColorRule). 고정한 템플릿 판은 그대로 두고 **표지 바탕색만** 브랜드 팔레트 안에서 바꾼다(역할만 서로 바꾼다).
+// - checker(기본, 2026-11-04): 게시 순번의 홀짝으로 바탕색 / 주색을 번갈아 — 3열 격자라 순번 홀짝이 곧 (행+열) 홀짝이 되어 바둑판이 된다.
+//   축 색 변형은 축 순서가 불규칙해 격자 색이 무작위로 보였다(사용자 지시). 축은 색 대신 표지의 축 배지로 보인다
+// - single: 모든 표지가 고정 판 그대로(한 톤) · pillar: 아래 축 색 변형(2026-10-25)
+// 축 색 변형 (사용자 지시 2026-10-25 · 화면 다듬기 B): **표지의 바탕색만 축마다 브랜드 팔레트의 다른 색으로**
 // 돌린다 — 격자에서 같은 축끼리 같은 색이 되어 리듬이 생기게. 팔레트 밖의 색은 만들지 않는다(역할만 서로 바꾼다).
 // - 시안마다 표지 바탕으로 쓰는 역할이 다르다: A · C = background, B · D · F = primary, E = text(뒤집은 색)
 // - 바탕 역할을 다른 역할과 맞바꾸고, 그 바탕 위 글자색이 명암비 4.5:1 이상이 되게 글자 역할도 팔레트 안에서 고른다. 안 되는 짝은 버린다
@@ -69,3 +73,34 @@ export const pillarIndexOf = (pillars: Array<{ id: string }>, id: string | null 
   const i = id ? pillars.findIndex((p) => p.id === id) : -1;
   return i >= 0 ? i : null;
 };
+
+export type CoverColorRule = 'checker' | 'single' | 'pillar';
+/** 표지 하나의 자리 — 축 번호(pillar 규칙) · 게시 순번(checker 규칙, 0 = 가장 먼저 올리는 것) */
+export interface CoverPlace {
+  pillarIndex?: number | null;
+  postIndex?: number | null;
+}
+
+/**
+ * 표지 바탕을 팔레트의 그 역할 색으로(checker). 이미 그 색이면 그대로, 맞바꾼 짝이 명암비를 못 지키면 원래 모양(팔레트 밖 색을 만들지 않으려고)
+ */
+export function toneLook(draftId: Draft['id'], look: BrandLook, target: 'background' | 'primary'): BrandLook {
+  const surface = COVER_SURFACE[draftId];
+  const p = look.palette;
+  if (p[surface].toLowerCase() === p[target].toLowerCase()) return look;
+  const q = usable(surface, swap(p, surface, target));
+  return q ? { ...look, palette: { ...q, name: p.name } } : look;
+}
+
+/** 순번 홀짝 → 바둑판 색: 짝수(첫 게시물부터) = 바탕색, 홀수 = 주색 */
+export const checkerTone = (postIndex: number): 'background' | 'primary' => (postIndex % 2 === 0 ? 'background' : 'primary');
+
+/** 규칙에 맞는 표지 모양. 자리를 모르면(번호 없음) 원래 모양 */
+export function ruleCoverLook(rule: CoverColorRule, draftId: Draft['id'], look: BrandLook, place: CoverPlace): BrandLook {
+  if (rule === 'pillar') return pillarCoverLook(draftId, look, place.pillarIndex);
+  if (rule === 'checker' && place.postIndex !== null && place.postIndex !== undefined && place.postIndex >= 0) return toneLook(draftId, look, checkerTone(place.postIndex));
+  return look;
+}
+
+/** 표지 바탕으로 쓰인 색 — 만든 표지가 지금 규칙과 맞는지 그리지 않고 비교하려고(카드 render 기록의 tone) */
+export const surfaceColor = (draftId: Draft['id'], look: BrandLook): string => look.palette[COVER_SURFACE[draftId]].toLowerCase();

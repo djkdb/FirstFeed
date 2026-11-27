@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { contrastRatio } from '../brand/limits.ts';
 import { env } from '../config.ts';
 import type { BrandLook, Draft } from './types.ts';
-import { COVER_SURFACE, coverVariants, pillarCoverLook, pillarIndexOf } from './variant.ts';
+import { checkerTone, COVER_SURFACE, coverVariants, pillarCoverLook, pillarIndexOf, ruleCoverLook, surfaceColor, toneLook } from './variant.ts';
 
 const brands = ['real', 'generated']
   .flatMap((set) => {
@@ -46,5 +46,39 @@ describe('축 색 변형 — 팔레트 역할만 바꾸고 명암비 4.5:1 을 �
     expect(pillarIndexOf([{ id: 'a' }, { id: 'b' }], 'b')).toBe(1);
     expect(pillarIndexOf([{ id: 'a' }], 'z')).toBeNull();
     expect(pillarIndexOf([{ id: 'a' }], null)).toBeNull();
+  });
+});
+
+describe('표지 바둑판 색 (2026-11-04) — 바탕색 / 주색 두 가지, 팔레트 안에서, 명암비 4.5:1', () => {
+  for (const b of brands)
+    it(`${b.name}: 모든 시안에서 짝수 순번 = 바탕색, 홀수 = 주색(명암비가 안 되는 짝이면 원래 모양)`, () => {
+      const p = b.look.palette;
+      const colors = new Set(Object.entries(p).filter(([k]) => k !== 'name').map(([, v]) => String(v).toLowerCase()));
+      for (const d of DRAFTS)
+        for (const target of ['background', 'primary'] as const) {
+          const l = toneLook(d, b.look, target);
+          const v = l.palette;
+          expect(contrastRatio(v.text, v.background)).toBeGreaterThanOrEqual(4.5);
+          if (COVER_SURFACE[d] === 'primary') expect(Math.max(contrastRatio(v.text, v.primary), contrastRatio(v.background, v.primary))).toBeGreaterThanOrEqual(4.5);
+          for (const role of ['primary', 'secondary', 'accent', 'background', 'text'] as const) expect(colors.has(v[role].toLowerCase())).toBe(true);
+          if (l !== b.look) expect(surfaceColor(d, l)).toBe(p[target].toLowerCase());
+        }
+    });
+
+  it('테스트 브랜드의 시안 A 는 두 색이 실제로 다르게 나온다(바둑판이 보인다)', () => {
+    for (const b of brands) {
+      const even = ruleCoverLook('checker', 'A', b.look, { postIndex: 0 });
+      const odd = ruleCoverLook('checker', 'A', b.look, { postIndex: 1 });
+      expect(surfaceColor('A', even)).toBe(b.look.palette.background.toLowerCase());
+      expect(surfaceColor('A', odd), b.name).toBe(b.look.palette.primary.toLowerCase());
+    }
+  });
+
+  it('규칙: single = 늘 원래 모양 · checker 는 순번이 없으면 원래 모양 · pillar = 축 색 변형', () => {
+    const look = brands[0]!.look;
+    expect(ruleCoverLook('single', 'A', look, { postIndex: 1, pillarIndex: 1 })).toBe(look);
+    expect(ruleCoverLook('checker', 'A', look, { postIndex: null })).toBe(look);
+    expect(ruleCoverLook('pillar', 'A', look, { postIndex: 0, pillarIndex: 1 })).toEqual(pillarCoverLook('A', look, 1));
+    expect([0, 1, 2, 3].map(checkerTone)).toEqual(['background', 'primary', 'background', 'primary']);
   });
 });

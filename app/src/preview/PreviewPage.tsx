@@ -26,7 +26,24 @@ export function PreviewPage() {
   const [play, setPlay] = useState(0);
   const [saving, setSaving] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
-  /** 같은 축이 같은 열에 이어지지 않게 칸 순서만 맞춘다(AI 없음, 결정 2026-10-25) */
+  /** 다시 그린 만든 표지를 브라우저가 새로 받게(주소가 같아서) */
+  const [coverRev, setCoverRev] = useState(0);
+  const [recoloring, setRecoloring] = useState(false);
+  /** 만든 세트 표지를 지금 색 규칙으로 다시 그린다(AI 없음, 표지만 — 결정 2026-11-04) */
+  const recolor = async () => {
+    setError(null);
+    setInfo(null);
+    setRecoloring(true);
+    const r = await fetch('/api/preview/covers/recolor', { method: 'POST' }).catch(() => null);
+    setRecoloring(false);
+    if (!r?.ok) return setError(((await r?.json().catch(() => null)) as { error?: string } | null)?.error ?? '표지 색을 다시 맞추지 못했어요. 서버가 켜져 있는지 확인하고 다시 시도하세요.');
+    const b = (await r.json()) as { redrawn: number[]; failed: Array<{ setId: number; reason: string }>; unchanged: number };
+    setCoverRev((n) => n + 1);
+    if (b.failed.length) setError(`표지 ${b.failed.length}개는 그대로 뒀어요: ${b.failed[0]!.reason}`);
+    setInfo(`표지 ${b.redrawn.length}개를 다시 그렸어요${b.unchanged ? ` · ${b.unchanged}개는 이미 맞아 그대로` : ''}.`);
+    await load(false);
+  };
+  /** 같은 축이 같은 열에 이어지지 않게 칸 순서만 맞춘다(AI 없음, 결정 2026-10-25) — 설정 preview.arrangeByPillar 를 켰을 때만 보인다 */
   const arrange = async () => {
     setError(null);
     setInfo(null);
@@ -216,7 +233,7 @@ export function PreviewPage() {
           ) : (
             <div className="ig-grid ig-anim" key={`g${play}`}>
               {view.cells.map((c, i) => (
-                <GridCell key={i} i={i} c={c} cover={c.kind === 'plan' ? (covers[c.slot] ?? null) : null} view={view} showHidden={showHidden} selected={c.kind === 'plan' && c.slot === selected} onSelect={setSelected} />
+                <GridCell key={i} i={i} c={c} cover={c.kind === 'plan' ? (covers[c.slot] ?? null) : null} view={view} showHidden={showHidden} selected={c.kind === 'plan' && c.slot === selected} onSelect={setSelected} coverRev={coverRev} />
               ))}
             </div>
           )}
@@ -240,9 +257,16 @@ export function PreviewPage() {
             <button type="button" onClick={() => setPlay((n) => n + 1)}>
               다시 보기
             </button>
-            <button type="button" disabled={!view.plan || !!jobId} onClick={() => void arrange()} title="AI 없이 칸 순서만 — 고정 · 이은 · 올린 칸은 그대로">
-              칸 순서 맞추기
-            </button>
+            {view.arrangeByPillar && (
+              <button type="button" disabled={!view.plan || !!jobId} onClick={() => void arrange()} title="AI 없이 칸 순서만 — 고정 · 이은 · 올린 칸은 그대로">
+                칸 순서 맞추기
+              </button>
+            )}
+            {view.coverColor.stale > 0 && (
+              <button type="button" disabled={recoloring} onClick={() => void recolor()} title="AI 없이 만든 카드의 표지만 지금 색 규칙으로 다시 그려요 — 본문 · 마무리는 그대로">
+                {recoloring ? '표지 다시 그리는 중…' : `표지 색 다시 맞추기(${view.coverColor.stale}개)`}
+              </button>
+            )}
             <button type="button" disabled={saving || covers === null} onClick={saveImage} title="스토리 크기(1080×1920) PNG — 계획 칸의 「계획」 배지는 그대로 남아요">
               {saving ? '이미지 만드는 중…' : '이미지로 저장'}
             </button>
@@ -333,7 +357,9 @@ function GridCell({
   showHidden,
   selected,
   onSelect,
+  coverRev,
 }: {
+  coverRev: number;
   i: number;
   c: Cell;
   cover: Cover | null;
@@ -352,7 +378,7 @@ function GridCell({
   if (c.kind === 'made')
     return (
       <div className="ig-cell ig-made" style={{ aspectRatio: box.aspect, ...anim }}>
-        {img(`/api/cards/sets/${c.setId}/png/01-cover.png`, c.headline.replace(/\*\*/g, ''))}
+        {img(`/api/cards/sets/${c.setId}/png/01-cover.png?r=${coverRev}`, c.headline.replace(/\*\*/g, ''))}
         {showHidden && <Hidden box={box} />}
         <PremadeBadge createdAt={c.createdAt} />
         {badge && (

@@ -12,6 +12,7 @@ import type { CoverContent } from '../templates/types.ts';
 import { cardContext, estimatedLines, profileBlock, type CardContext } from './context.ts';
 import { cardCountClaims, countClaims, countMismatch } from './count.ts';
 import { pillarIndexOf } from '../templates/variant.ts';
+import { postOrderOf } from '../preview/post-order.ts';
 
 export const CoversSchema = z.object({
   titles: z
@@ -152,8 +153,9 @@ export async function generateCovers(
           for (const [i, t] of d.titles.entries()) {
             if (bad.has(i)) continue;
             const content = coverContent(c, t);
-            // 축 색 변형 — 실제 카드 표지도 미리보기 계획 칸과 같은 함수(templates/variant.ts)
-            const fr = await renderFrame(ai.db, c.template.draft, c.template.look, content, { pillarIndex: pillarIndexOf(c.profile.pillars, t.pillar_id) });
+            // 표지 색 규칙 — 실제 카드 표지도 미리보기 계획 칸과 같은 함수(templates/variant.ts). 새 세트는 아직 어느 칸에도 잇지 않아
+            // 「잇지 않은 만든 세트」의 다음 순번(칸에 이으면 순번이 바뀌어 「표지 색 다시 맞추기」로 맞춘다)
+            const fr = await renderFrame(ai.db, c.template.draft, c.template.look, content, { pillarIndex: pillarIndexOf(c.profile.pillars, t.pillar_id), postIndex: postOrderOf(ai.db, brandId).next });
             if (fr.ok && fr.png) drawn.set(JSON.stringify(content), { png: fr.png, scale: fr.scale });
             else out.push(issue(i, fr.problems[0]?.code ?? 'text_overflow', [...fr.shorten.map((s) => s.message), ...fr.problems.map((p) => p.message)].slice(0, 2).join(' ')));
           }

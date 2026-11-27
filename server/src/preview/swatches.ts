@@ -1,5 +1,6 @@
 // 미리보기 · 공유 이미지의 글자 원(결정 2026-10-25, 소개 페이지와 같은 방식): 프로필 사진이 없으면 주색 원 + 이름 첫 글자,
-// 하이라이트는 축 색 원 + 축 이름 첫 글자. 축 색은 그 축 표지의 바탕색(축 색 변형, templates/variant.ts)과 같게 — 격자와 하이라이트가 같은 색으로 묶인다
+// 하이라이트는 축 색 원 + 축 이름 첫 글자. 표지 색 규칙이 축 색 변형(pillar)일 때만 축 색 = 그 축 표지의 바탕색(templates/variant.ts) — 격자와 하이라이트가
+// 같은 색으로 묶인다. 바둑판(checker) · 한 톤(single)이면 표지 색이 축과 상관없어 팔레트 색을 차례로
 import { contrastRatio } from '../brand/limits.ts';
 import type { BrandLook, Draft } from '../templates/types.ts';
 import { COVER_SURFACE, coverVariants } from '../templates/variant.ts';
@@ -22,7 +23,7 @@ export function avatarSwatch(name: string | null, p: Palette): Swatch | null {
 
 /**
  * 하이라이트 원 — 이름이 프로필 축 이름과 같으면 그 축 번호의 색(그 축 표지 바탕색), 아니면 하이라이트 순서대로.
- * 축 색 변형이 꺼져 있으면 팔레트 색을 차례로(주색 · 보조색 · 강조색)
+ * 축 색 변형(pillar 규칙)이 아니면 팔레트 색을 차례로(주색 · 보조색 · 강조색)
  */
 export function highlightSwatches(labels: string[], p: Palette, draftId: Draft['id'] | null, variantOn: boolean, pillarNames: string[] = []): Array<Swatch & { label: string }> {
   const surface = COVER_SURFACE[draftId ?? 'A'];

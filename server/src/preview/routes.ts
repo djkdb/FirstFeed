@@ -23,6 +23,7 @@ import { shareImage } from './share-image.ts';
 import { draftById } from '../templates/index.ts';
 import { avatarSwatch, highlightSwatches } from './swatches.ts';
 import { RenderError } from '../render/browser.ts';
+import { recolorCovers, staleCovers } from '../cards/recolor.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -63,7 +64,7 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
           const labels = (visual?.candidates.imagePrompts ?? []).filter((p) => p.target === 'highlight').map((p) => p.label);
           return {
             avatar: avatarSwatch(sel.displayName ?? sel.handle, pal),
-            highlights: highlightSwatches(labels, pal, (draftById(fixed?.draftId ?? '')?.id ?? null), getSetting(db, 'render.pillarCoverVariant'), (profile?.pillars ?? []).map((x) => x.name)),
+            highlights: highlightSwatches(labels, pal, (draftById(fixed?.draftId ?? '')?.id ?? null), getSetting(db, 'render.coverColorRule') === 'pillar', (profile?.pillars ?? []).map((x) => x.name)),
           };
         })(),
         /** 계획 칸 자리표시를 고정 템플릿의 제목 글꼴로 그리려고 */
@@ -78,6 +79,9 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
         plan: plan ? { id: plan.id, createdAt: plan.createdAt, stale: profile !== null && plan.profileId !== profile.id, slots: plan.slots } : null,
         pillars: (profile?.pillars ?? []).map((p) => ({ id: p.id, name: p.name })),
         premadeBefore: getSetting(db, 'demo.premadeBefore'),
+        /** 표지 색(2026-11-04): 지금 규칙 · 지금 규칙의 색과 다른 만든 표지 수(「표지 색 다시 맞추기」) · 칸 순서 맞추기를 쓰는지 */
+        coverColor: { rule: getSetting(db, 'render.coverColorRule'), stale: staleCovers(db, dataDir, BRAND_ID).length },
+        arrangeByPillar: getSetting(db, 'preview.arrangeByPillar'),
       });
     })
     // 계획 칸을 고정 템플릿 표지로(넘치면 이유) — 칸마다 따로 물어 그 칸만 그린다. 같은 제목·축·판이면 그린 것을 다시 쓴다
@@ -99,6 +103,15 @@ export function previewRoutes(ai: AiService, jobs: JobStore, dataDir = env.dataD
           'cache-control': 'no-store',
           'content-disposition': `attachment; filename="firstfeed-30days.png"; filename*=UTF-8''${encodeURIComponent('퍼스트피드-30일-미리보기.png')}`,
         });
+      } catch (err) {
+        if (err instanceof RenderError) return c.json(bad(`${err.message} ${err.hint}`), 400);
+        throw err;
+      }
+    })
+    // 만든 세트 표지를 지금 색 규칙으로 다시 그리기(AI 없음, 표지만). 이미 맞는 표지는 그대로
+    .post('/covers/recolor', async (c) => {
+      try {
+        return c.json(await recolorCovers(db, dataDir, BRAND_ID));
       } catch (err) {
         if (err instanceof RenderError) return c.json(bad(`${err.message} ${err.hint}`), 400);
         throw err;

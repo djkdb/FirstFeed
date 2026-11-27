@@ -148,10 +148,11 @@ export const DEFAULTS = {
   'cards.minQuoteChars': 8,
   /** 넘칠 때 글자 크기를 줄여 보는 단계 (FR-TP-4). 마지막 단계에서도 넘치면 원고를 줄이라고 되돌린다 */
   /**
-   * 축 색 변형(2026-10-25 · 화면 다듬기 B): 표지 바탕색을 축마다 팔레트의 다른 색으로(templates/variant.ts). 고정 판은 그대로,
-   * 계획 칸 · 실제 카드 표지 모두 같은 함수. 끄면 모든 표지가 원래 모양
+   * 표지 바탕색 규칙(templates/variant.ts). 고정 판은 그대로, 계획 칸 · 실제 카드 표지 · 공유 이미지 · 소개 페이지 내보내기 모두 같은 함수.
+   * - checker(기본, 2026-11-04 사용자 지시): 게시 순번 홀짝으로 바탕색 / 주색 바둑판 — 축 색 변형은 축 순서가 불규칙해 격자 색이 무작위로 보였다
+   * - single: 모든 표지가 고정 판 그대로 · pillar: 축마다 팔레트의 다른 색(2026-10-25 축 색 변형)
    */
-  'render.pillarCoverVariant': true,
+  'render.coverColorRule': 'checker' as 'checker' | 'single' | 'pillar',
   'render.scaleSteps': [1, 0.94, 0.88, 0.82] as number[],
   /**
    * 인스타 프로필 격자에서 잘리는 자리를 뺀 안전 영역 — **확인됨(운영자가 실제 계정 @zun_it_ 의 웹·앱 프로필 격자에서 확인, 2026-10-18)**.
@@ -197,6 +198,11 @@ export const DEFAULTS = {
   'demo.premadeBefore': null as string | null,
   /** 30일 뒤 미리보기 격자 칸 수 = 처음 계획할 게시물 수. 인스타 프로필 격자 3열 × 3줄(사용자 지시 「첫 9개」, 결정 2026-10-21) */
   'preview.gridCells': 9,
+  /**
+   * 계획을 만들 때 같은 축이 같은 열에 이어지지 않게 칸 순서를 맞출지(preview/arrange.ts, 결정 2026-10-25 · 줄무늬).
+   * 축 색 변형 때문에 생긴 것이라, 표지 색이 위치 바둑판(checker)이 된 뒤로는 색과 상관없어 기본 끔(2026-11-04). 켜면 「칸 순서 맞추기」 버튼도 보인다
+   */
+  'preview.arrangeByPillar': false,
   /**
    * 「오늘 올릴 것」 올리는 간격(결정 2026-10-24): every3 = 3일마다 1개(기본) · twice = 주 2회(3일 · 4일 번갈아) · thrice = 주 3회(2 · 2 · 3일).
    * 화면에서 바꾸면 DB

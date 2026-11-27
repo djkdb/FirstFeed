@@ -5,13 +5,10 @@ import fs from 'node:fs';
 import { getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { assetPath, MIME, saveAsset, type ImageType } from '../brand/assets.ts';
-import { resolveLook } from '../templates/look.ts';
 import { draftById } from '../templates/index.ts';
-import { renderPhotoFrame } from '../templates/render-frame.ts';
 import { getTemplateVersion } from '../templates/store.ts';
-import { getSet, replaceCard, setCoverImage } from './store.ts';
-import { getProfile } from '../identity/store.ts';
-import { pillarIndexOf } from '../templates/variant.ts';
+import { getSet, setCoverImage } from './store.ts';
+import { redrawCover } from './recolor.ts';
 
 export class CoverImageError extends Error {}
 
@@ -26,15 +23,12 @@ export async function applyCoverImage(db: Db, dataDir: string, setId: number, by
   const file = assetPath(dataDir, name)!;
   const type = name.split('.').pop() as ImageType;
   const dataUrl = `data:${MIME[type]};base64,${fs.readFileSync(file).toString('base64')}`;
-  const cover = set.cards.find((c) => c.idx === 0)!;
-  // 축 색 변형: 이 세트를 만든 프로필 판의 축 순서로(처음 그릴 때와 같은 번호)
-  const pillars = getProfile(db, set.profileId)?.pillars ?? [];
-  const r = await renderPhotoFrame(db, draft, resolveLook(tv.look, dataDir), cover.content, dataUrl, { pillarIndex: pillarIndexOf(pillars, set.pillarId) });
+  // 표지 색 규칙의 자리(축 번호 · 게시 순번)는 표지 색 다시 맞추기와 같은 길(recolor.ts)
+  const r = await redrawCover(db, dataDir, setId, dataUrl);
   if (!r.ok || !r.png) {
     fs.rmSync(file, { force: true });
     return { ok: false, problems: [...r.shorten.map((x) => x.message), ...r.problems.map((x) => x.message)].slice(0, 3) };
   }
-  replaceCard(db, dataDir, setId, 0, { content: cover.content, png: r.png, render: { browser: `${r.browser.kind} ${r.browser.version}`, reference: r.browser.reference, scale: r.scale }, glosses: cover.glosses ?? [] }, false);
   setCoverImage(db, setId, name);
   return { ok: true, shade: r.shade };
 }

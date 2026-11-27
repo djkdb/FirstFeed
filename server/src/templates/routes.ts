@@ -38,18 +38,21 @@ async function previewFrames(db: Db, draft: Draft, look: BrandLook, dataDir: str
 const renderFail = (err: unknown) => (err instanceof RenderError ? { error: `${err.message} ${err.hint}` } : null);
 
 export function templateRoutes(db: Db, dataDir = env.dataDir) {
+  const options = () => ({ coverColorRule: getSetting(db, 'render.coverColorRule'), arrangeByPillar: getSetting(db, 'preview.arrangeByPillar') });
   return new Hono()
-    // 축 색 변형 켜고 끄기(2026-10-25) — 고정 판은 그대로, 표지 바탕색만 축마다 팔레트의 다른 색(templates/variant.ts)
-    .get('/options', (c) => c.json({ pillarCoverVariant: getSetting(db, 'render.pillarCoverVariant') }))
+    // 표지 바탕색 규칙(2026-11-04: 바둑판 기본 · 한 톤 · 축 색 변형) · 계획 칸 순서 맞추기 켜고 끄기 — 고정 판은 그대로(templates/variant.ts)
+    .get('/options', (c) => c.json(options()))
     .put(
       '/options',
       validator('json', (v, c) => {
-        const b = z.object({ pillarCoverVariant: z.boolean() }).safeParse(v);
-        return b.success ? b.data : c.json({ error: '켜고 끄기를 다시 골라 주세요.' }, 400);
+        const b = z.object({ coverColorRule: z.enum(['checker', 'single', 'pillar']).optional(), arrangeByPillar: z.boolean().optional() }).safeParse(v);
+        return b.success ? b.data : c.json({ error: '표지 색 규칙을 다시 골라 주세요.' }, 400);
       }),
       (c) => {
-        setSetting(db, 'render.pillarCoverVariant', c.req.valid('json').pillarCoverVariant);
-        return c.json({ pillarCoverVariant: getSetting(db, 'render.pillarCoverVariant') });
+        const b = c.req.valid('json');
+        if (b.coverColorRule) setSetting(db, 'render.coverColorRule', b.coverColorRule);
+        if (b.arrangeByPillar !== undefined) setSetting(db, 'preview.arrangeByPillar', b.arrangeByPillar);
+        return c.json(options());
       },
     )
     .get('/', (c) => {

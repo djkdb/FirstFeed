@@ -19,6 +19,7 @@ import { cardCountClaims, countClaims, countMismatch } from './count.ts';
 import { reasonOf } from './covers.ts';
 import { saveSet, type CardToSave } from './store.ts';
 import { pillarIndexOf } from '../templates/variant.ts';
+import { postOrderOf } from '../preview/post-order.ts';
 
 const CardV1 = z.object({
   title: z.string().min(1).max(60),
@@ -187,8 +188,8 @@ export async function renderAll(ai: AiService, c: CardContext, cover: ChosenCove
   const issues: Issue[] = [];
   const fs = frames(c, cover, d);
   for (const [idx, content] of fs.entries()) {
-    // 축 색 변형은 표지에만(renderFrame 이 본문 · 마무리는 그대로 둔다) — 표지 후보 때와 같은 축 번호
-    const result = await renderFrame(ai.db, c.template.draft, c.template.look, content, { pillarIndex: pillarIndexOf(c.profile.pillars, cover.pillarId) });
+    // 표지 색 규칙은 표지에만(renderFrame 이 본문 · 마무리는 그대로 둔다) — 표지 후보 때와 같은 자리(축 번호 · 새 세트의 다음 순번)
+    const result = await renderFrame(ai.db, c.template.draft, c.template.look, content, { pillarIndex: pillarIndexOf(c.profile.pillars, cover.pillarId), postIndex: postOrderOf(ai.db, c.brandId).next });
     rendered.push({ kind: content.kind as RenderedCard['kind'], content, result });
     if (!result.ok)
       issues.push(issue(whereOf(idx, d.cards.length), result.problems[0]?.code ?? 'text_overflow', [...result.shorten.map((s) => s.message), ...result.problems.map((p) => p.message)].slice(0, 2).join(' ')));
@@ -240,7 +241,7 @@ function toSave(rendered: RenderedCard[], d: BodyOutput, editedWheres: Set<strin
       glosses: card ? glossesStillIn(card) : [],
       edited: editedWheres.has(where),
       png: r.result.png!,
-      render: { browser: `${r.result.browser.kind} ${r.result.browser.version}`, reference: r.result.browser.reference, scale: r.result.scale },
+      render: { browser: `${r.result.browser.kind} ${r.result.browser.version}`, reference: r.result.browser.reference, scale: r.result.scale, ...(r.result.tone ? { tone: r.result.tone } : {}) },
     };
   });
 }

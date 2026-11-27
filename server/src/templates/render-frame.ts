@@ -4,13 +4,12 @@ import { getSetting } from '../config.ts';
 import type { Db } from '../db/index.ts';
 import { renderCard, type RenderProblem, type RenderResult } from '../render/render.ts';
 import { FRAME_SIZE, type BrandLook, type Draft, type FrameContent, type PhotoOpts } from './types.ts';
-import { pillarCoverLook } from './variant.ts';
+import { ruleCoverLook, surfaceColor, type CoverPlace } from './variant.ts';
 
-/** 축 색 변형(설정 render.pillarCoverVariant): 표지 · 릴스 표지에만, 축 번호가 있을 때만 */
-export function coverLook(db: Db | null, draft: Draft, look: BrandLook, content: FrameContent, pillarIndex: number | null | undefined): BrandLook {
+/** 표지 바탕색 규칙(설정 render.coverColorRule): 표지 · 릴스 표지에만. 본문 · 마무리는 고정 판 그대로 */
+export function coverLook(db: Db | null, draft: Draft, look: BrandLook, content: FrameContent, place: CoverPlace): BrandLook {
   if (content.kind !== 'cover' && content.kind !== 'reel_cover') return look;
-  if (!getSetting(db, 'render.pillarCoverVariant')) return look;
-  return pillarCoverLook(draft.id, look, pillarIndex);
+  return ruleCoverLook(getSetting(db, 'render.coverColorRule'), draft.id, look, place);
 }
 
 export interface FrameResult extends RenderResult {
@@ -20,6 +19,8 @@ export interface FrameResult extends RenderResult {
   tries: Array<{ scale: number; problems: number }>;
   /** 원고를 줄이라는 안내 (통과하면 빈 배열) */
   shorten: Array<{ slot: string; message: string }>;
+  /** 표지 바탕으로 쓴 색(표지만) — 만든 표지가 지금 색 규칙과 맞는지 다시 그리지 않고 비교하려고 */
+  tone: string | null;
 }
 
 const LAYOUT: ReadonlyArray<RenderProblem['code']> = ['text_overflow', 'too_many_lines', 'text_outside_card', 'text_outside_safe', 'text_overlap'];
@@ -57,10 +58,11 @@ export async function renderFrame(
   look: BrandLook,
   content: FrameContent,
   /** 측정·테스트 세트용: 마지막 단계에서 넘쳐도 PNG 를 만든다 (앱에서는 쓰지 않는다 — 반쯤 만든 결과) */
-  opts: { captureEvenIfBad?: boolean; photo?: PhotoOpts; pillarIndex?: number | null } = {},
+  opts: { captureEvenIfBad?: boolean; photo?: PhotoOpts } & CoverPlace = {},
 ): Promise<FrameResult> {
   const { width, height, safe } = FRAME_SIZE[content.kind];
-  look = coverLook(db, draft, look, content, opts.pillarIndex);
+  look = coverLook(db, draft, look, content, opts);
+  const tone = content.kind === 'cover' || content.kind === 'reel_cover' ? surfaceColor(draft.id, look) : null;
   const safeRect = safe ? getSetting(db, 'render.safeArea')[safe] : null;
   const steps = getSetting(db, 'render.scaleSteps');
   const tries: FrameResult['tries'] = [];
@@ -77,12 +79,12 @@ export async function renderFrame(
     });
     tries.push({ scale, problems: r.problems.length });
     last = r;
-    if (r.ok) return { ...r, scale, tries, shorten: [] };
+    if (r.ok) return { ...r, scale, tries, shorten: [], tone };
     // 대체 글꼴은 크기를 줄여도 안 고쳐진다 — 더 시도하지 않는다
-    if (r.problems.some((p) => p.code === 'font_fallback')) return { ...r, scale, tries, shorten: [] };
+    if (r.problems.some((p) => p.code === 'font_fallback')) return { ...r, scale, tries, shorten: [], tone };
   }
   const scale = steps[steps.length - 1]!;
-  return { ...last!, scale, tries, shorten: shortenHints(last!, content, scale) };
+  return { ...last!, scale, tries, shorten: shortenHints(last!, content, scale), tone };
 }
 
 export interface PhotoFrameResult extends FrameResult {
@@ -103,7 +105,7 @@ export async function renderPhotoFrame(
   look: BrandLook,
   content: FrameContent,
   background: string | null,
-  opts: { captureEvenIfBad?: boolean; pillarIndex?: number | null } = {},
+  opts: { captureEvenIfBad?: boolean } & CoverPlace = {},
 ): Promise<PhotoFrameResult> {
   if (!background || (content.kind !== 'cover' && content.kind !== 'reel_cover')) return { ...(await renderFrame(db, draft, look, content, opts)), shade: null, shadeTries: [] };
   const min = getSetting(db, 'render.photoMinContrast');
@@ -112,7 +114,7 @@ export async function renderPhotoFrame(
   let last: FrameResult | null = null;
   for (const shade of steps) {
     // 측정용(captureEvenIfBad)은 단계마다 넘김 — 넘침은 첫 단계에서 바로 돌려주므로, 마지막 단계에만 넘기면 넘친 PNG 가 안 남는다(측정에서 빈 칸으로 발견)
-    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: opts.captureEvenIfBad === true, pillarIndex: opts.pillarIndex });
+    const r = await renderFrame(db, draft, look, content, { photo: { background, shade }, captureEvenIfBad: opts.captureEvenIfBad === true, pillarIndex: opts.pillarIndex, postIndex: opts.postIndex });
     const worst = Math.min(21, ...(r.contrast ?? []).map((x) => x.ratio));
     shadeTries.push({ shade, worst });
     last = r;

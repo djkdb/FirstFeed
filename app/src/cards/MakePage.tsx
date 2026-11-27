@@ -215,7 +215,7 @@ export function MakePage() {
         {slotNotice && <p className="status ok small">{slotNotice}</p>}
         <label className="field">
           <span className="field-label">소재 원문</span>
-          <span className="field-hint">메모 · 공식 문서 · 릴리스 노트를 그대로 붙여 넣으세요. 숫자 · 이름은 여기 있는 것만 카드에 들어가요.</span>
+          <span className="field-hint">휴대폰 메모 · 정리해 둔 글 · 공지처럼 이미 써 둔 글을 그대로 붙여 넣으세요. 숫자 · 이름은 여기 있는 것만 카드에 들어가요.</span>
           <textarea rows={8} value={body} onChange={(e) => setBody(e.target.value)} disabled={!!notReady} placeholder="예) 직접 써 본 도구의 공식 발표문이나, 써 보며 적어 둔 메모" />
         </label>
         <label className="field">

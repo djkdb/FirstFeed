@@ -14,9 +14,10 @@ export function NextStep({ after }: { after: StepKey }) {
   const next = STEPS[i + 1];
   if (!next) return null;
   return (
-    <p className="next-step">
-      다음 단계 · <a href={next.href}>{next.label} →</a> <span className="muted small">{next.what}</span>
-    </p>
+    // 줄 전체가 링크 — 링크가 「브랜드 만들기 →」 글자뿐이라 줄 앞부분을 눌러도 아무 일이 없었다(AI 가상 사용자 테스트 2026-11-28 ④)
+    <a className="next-step" href={next.href}>
+      다음 단계 · <b>{next.label} →</b> <span className="muted small">{next.what}</span>
+    </a>
   );
 }
 

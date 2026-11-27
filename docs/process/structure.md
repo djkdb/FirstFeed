@@ -1,9 +1,49 @@
 # 구조 점검 (점진적 개발의 「구조 악화」 확인용)
 
-> **2026-10-18 기준 스냅숏 — 그 뒤 다시 재지 않았다(코드 규모 · 남은 일은 지금과 다름).** 지금 FR 상태는 [status.md](status.md)(2026-11-20, 77개) (2026-11-20 추가)
+> **2026-11-27 에 300줄 넘는 파일만 다시 쟀다(바로 아래 0장).** 1장부터는 2026-10-18 기준 스냅숏 그대로다(import 관계 · 반복 코드는 다시 재지 않았다). 지금 FR 상태는 [status.md](status.md)(2026-11-27, 77개)
 >
 > 기준: 커밋 `6069973` 의 `server/src` · `app/src` (`.ts` `.tsx` 146개, 13,825줄) · 2026-10-18 · 고치지 않고 재기만 했다
 > 다시 재는 명령은 문서 끝
+
+## 0. 2026-11-27 다시 잼 — 300줄 넘는 파일
+
+> 기준: 커밋 `8e578ac`(2026-11-27 01:59 KST) 의 `server/src` · `app/src` · 10-18 과 같은 명령(`wc -l`, 빈 줄 · 주석 포함). 10-18 값은 커밋 `6069973` 을 따로 꺼내(`git worktree`) 같은 명령으로 다시 쟀다 — 1장의 숫자와 같다
+
+| | 2026-10-18 (`6069973`) | 2026-11-27 (`8e578ac`) | 배 |
+|---|---:|---:|---:|
+| `.ts` `.tsx` 파일 | 146 | **283** (테스트 89) | 1.9 |
+| 줄 | 13,825 | **32,376** | 2.3 |
+| 300줄 넘는 파일 | 3 | **15** (테스트 2) | 5.0 |
+
+| 순위 | 파일 | 11-27 줄 | 10-18 줄 | 하는 일 |
+|---:|---|---:|---:|---|
+| 1 | `app/src/cards/MakePage.tsx` | **666** | 466 | 「만들기」 탭 — 10-18 의 일 + 채팅 고치기 · 본문 사진 · 단계 막대가 더 붙음 |
+| 2 | `app/src/insights/InsightsPage.tsx` | **548** | 없음 | 「성과」 탭(11-22) |
+| 3 | `app/src/settings/SettingsPage.tsx` | **525** | 없음 | 「설정」 탭(11-20) |
+| 4 | `server/src/insights/metricool.test.ts` (테스트) | 468 | 없음 | Metricool 가짜 서버 테스트 |
+| 5 | `app/src/preview/PreviewPage.tsx` | 441 | 없음 | 30일 뒤 미리보기(10-22) |
+| 6 | `app/src/brand/BrandPage.tsx` | 436 | 369 | 「브랜드」 탭 — 캐릭터 · 프로필 사진 등은 다른 파일로 나뉘어 있어 화면 길이(11-24 점검 6,337px)보다 덜 자랐다 |
+| 7 | `server/src/config.ts` | 435 | 253 | 설정 기본값 한 곳 — 「설정은 한 곳」 규칙대로라 커지는 것이 맞다 |
+| 8 | `server/src/insights/insights.test.ts` (테스트) | 383 | 없음 | 성과 분석 테스트 |
+| 9 | `server/src/cards/body.ts` | 381 | 352 | 카드 본문 |
+| 10 | `server/src/cards/chat.ts` | 378 | 없음 | 채팅으로 고치기(11-05) |
+| 11 | `server/src/insights/metricool/oauth.ts` | 375 | 없음 | Metricool OAuth 2.1 |
+| 12 | `server/src/ai/providers/claude-code.ts` | 345 | 288 | Claude Code CLI 실행 · 구독 판정 · 토큰 기록 |
+| 13 | `server/src/reels/motion.ts` | 328 | 없음 | 릴스 모션 프리셋(11-08) |
+| 14 | `server/src/ai/adapter.ts` | 323 | 279 | AI 어댑터 |
+| 15 | `server/src/reels/model.ts` | 315 | 없음 | 릴스 편집 모델(11-07) |
+
+- 10-18 에 300줄을 넘던 3개는 **셋 다 더 커졌다**(466 → 666 · 369 → 436 · 352 → 381). 15개 중 9개는 10-18 에 없던 파일 — 대부분 11월 기능(성과 · 설정 · 채팅 · 릴스)
+- 10-18 의 다른 상위 파일 중 300줄 아래에 남은 것: `identity/profile.ts` 290(그대로) · `PublishPanel.tsx` 260(245)
+- 250~300줄: 12개(`brand/fonts.ts` 297 · `brand/CharacterBuilder.tsx` 296 · `identity/profile.ts` 290 · `identity/followup.ts` 288 · `insights/store.ts` 287 …) — 다음에 다시 재면 넘을 후보
+
+### 4장 리팩토링 후보 3개는 어떻게 됐나 (11-27 코드로 확인, 고치지 않음)
+
+| 후보 | 지금 | 근거 |
+|---|---|---|
+| 1. 화면의 「AI 작업」 묶음을 하나로 | **일부** — 작업 폴링은 `app/src/useJob.ts` 한 곳으로 모였지만 호출 종류 이름표 `RUN_LABEL` 은 여전히 4벌 | `grep -rln RUN_LABEL app/src` → MakePage · BrandPage · IdentityPage · Alternatives |
+| 2. `cards/body.ts` 나누기 | **안 함** — 352 → 381 줄 | `wc -l` |
+| 3. `MakePage.tsx` 나누기 | **안 함, 더 커짐** — 466 → 666 줄. 채팅 패널은 `ChatPanel.tsx` 로 따로 만들었지만 세트 보기 · 풀이 확인은 그대로 이 파일 | `ls app/src/cards` |
 
 ## 1. 줄 수 상위 15개 파일
 
@@ -105,9 +145,10 @@
 ## 다시 재는 법
 
 ```bash
-# 줄 수 상위 15 · 300줄 넘는 파일 수
+# 줄 수 상위 15 · 300줄 넘는 파일 수 (11-27 에도 같은 명령)
 find server/src app/src -name '*.ts' -o -name '*.tsx' | xargs wc -l | grep -v total | sort -rn | head -15
 find server/src app/src -name '*.ts' -o -name '*.tsx' | xargs wc -l | grep -v total | awk '$1>300' | wc -l
+# 10-18 값을 같은 명령으로: git worktree add --detach /tmp/old 6069973 && (cd /tmp/old && 위 명령) && git worktree remove --force /tmp/old
 
 # 반복 모양 찾기 (예)
 grep -rln "const issue = (" server/src | grep -v test

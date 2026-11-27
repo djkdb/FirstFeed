@@ -443,7 +443,7 @@ git log 6069973 --format='%h %s' | grep -E '정정|고침|되돌림|수정|[Ff][
 git log 6069973 --numstat --format='@%h' | awk -F'\t' '/^@/{h=$0;next} $1!="-" && NF==3 {a+=$1; d+=$2} END{print "+"a" -"d}'
 
 # 4) 「겪은 오류」 건수
-awk '/^## 겪은 오류/{f=1;next} f && /^- \*\*/{n++} END{print n}' CLAUDE.md
+awk '/^## 겪은 오류/{f=1;next} f && /^- \*\*/{n++} END{print n}' docs/errors.md   # 2026-11-27 전 커밋은 CLAUDE.md
 
 # 5) 세션 표·속도 전체: 아래 스크립트를 파일로 저장해
 #    node metrics.mjs . frdone.json 6069973

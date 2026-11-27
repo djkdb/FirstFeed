@@ -1,5 +1,5 @@
 // 생성 → 규칙 검증(코드) → 자기 평가(AI) → 필요하면 재작성 (FR-AI-4).
-// 재작성 사유는 두 가지뿐: 코드 규칙의 error, 자기 평가의 "사실 오류(fact)/깨짐(broken)". 말투·취향은 경고만 (CLAUDE.md 「이미 내린 결정」).
+// 재작성 사유는 두 가지뿐: 코드 규칙의 error, 자기 평가의 "사실 오류(fact)/깨짐(broken)". 말투·취향은 경고만 (docs/decisions.md 「이미 내린 결정」).
 // 끝까지 통과하지 못한 결과는 돌려주지 않는다 — 부르는 쪽이 저장할 수 없게.
 import { z } from 'zod';
 import { getSetting } from '../config.ts';

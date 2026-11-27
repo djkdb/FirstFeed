@@ -22,7 +22,7 @@ const runs = Number(args.find((a) => a.startsWith('--runs='))?.slice(7) ?? 1);
 const label = args.find((a) => a.startsWith('--label='))?.slice(8) ?? 'run';
 const postsPath = args.find((a) => a.startsWith('--posts='))?.slice(8) ?? path.join(env.repoRoot, 'tests/fixtures/generated/insights/posts.json');
 const save = !args.includes('--no-save');
-// 판을 고르면 머리 줄에 그대로 적는다(옛 판으로 잰 줄 모르고 해석한 일 — CLAUDE.md 「겪은 오류」)
+// 판을 고르면 머리 줄에 그대로 적는다(옛 판으로 잰 줄 모르고 해석한 일 — docs/errors.md 「겪은 오류」)
 const versions = { ...getSetting(null, 'prompts.activeVersions'), ...parsePromptArgs(args, path.join(env.repoRoot, 'prompts')) };
 const cloud = args.includes('--cloud-session');
 if (cloud && process.env.CLAUDE_CODE_REMOTE !== 'true') throw new Error('--cloud-session 은 Claude Code 원격 세션 컨테이너(CLAUDE_CODE_REMOTE=true)에서만 씁니다');

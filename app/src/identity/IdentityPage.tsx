@@ -120,7 +120,9 @@ export function IdentityPage() {
   const running = jobId !== null;
   const answered = state?.turns.filter((t) => t.answer !== null).length ?? 0;
   const unanswered = state?.turns.some((t) => t.answer === null) ?? false;
-  const canProfile = state !== null && answered >= current.minTurns && !running && state.status !== 'profiled';
+  // 프로필 만들기에서 한 번 돌아왔으면, AI 가 부족한 것이 채워졌다고 볼 때(ready)나 질문을 다 썼을 때만 다시 보인다 — 서버 makeProfile 과 같은 조건
+  const backFromProfile = state?.note?.kind === 'needs_more' && state.status !== 'ready' && answered < current.maxTurns;
+  const canProfile = state !== null && answered >= current.minTurns && !running && state.status !== 'profiled' && !backFromProfile;
 
   return (
     <section className="card identity">

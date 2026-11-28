@@ -114,6 +114,11 @@ export const DEFAULTS = {
   'identity.minTurns': 3,
   /** 인터뷰 최대 질문 수 — 여기서 멈춘다 */
   'identity.maxTurns': 10,
+  /**
+   * 프로필 만들기가 「근거 있는 축 3개 미만」으로 돌아온 뒤, 다시 만들 수 있게 되기까지 받아야 할 새 답 수.
+   * AI 가상 사용자 테스트(2026-11-28 A0 ①)에서 돌아온 직후 버튼이 그대로 보여, 3문항 더 답하고 눌렀다가 또 71초 기다린 뒤 같은 이유로 돌아왔다
+   */
+  'identity.retryMinNewAnswers': 2,
   /** 지난 질문과 글자 유사도가 이 값 이상이면 같은 질문으로 본다. 임시값 — 테스트 세트로 재서 정한다 (결정 7) */
   'identity.duplicateQuestionThreshold': 0.6,
   /**

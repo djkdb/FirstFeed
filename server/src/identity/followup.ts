@@ -250,7 +250,12 @@ export function formatCoverage(turns: PastTurn[]): string {
   ].join('\n');
 }
 
-export async function runFollowup(ai: AiService, survey: SurveyAnswers, turns: PastTurn[], job?: JobContext): Promise<CheckedResult<Followup>> {
+/** 프로필 만들기가 돌아온 이유 — v6 부터 프롬프트에 보인다. 없으면 「없음」 */
+export function formatProfileGap(missing: string[]): string {
+  return missing.length === 0 ? '(없음 — 아직 프로필 만들기에서 돌아온 적이 없다)' : ['근거 있는 축이 3개가 되지 않아 돌아왔다. 부족한 것:', ...missing.map((m) => `- ${m}`)].join('\n');
+}
+
+export async function runFollowup(ai: AiService, survey: SurveyAnswers, turns: PastTurn[], job?: JobContext, profileGap: string[] = []): Promise<CheckedResult<Followup>> {
   const answered = turns.filter((t) => t.answer !== null).length;
   const last = turns.at(-1);
   const lastUnknown = last?.answerKind === 'unknown';
@@ -267,9 +272,10 @@ export async function runFollowup(ai: AiService, survey: SurveyAnswers, turns: P
       survey: formatSurvey(survey),
       transcript: formatTranscript(turns),
       coverage: formatCoverage(turns),
+      profile_gap: formatProfileGap(profileGap),
     },
     undefined,
-    ['coverage'], // coverage 는 v3 부터 — v2 로 비교 측정할 때도 같은 코드로 돌게
+    ['coverage', 'profile_gap'], // coverage 는 v3 부터 · profile_gap 은 v6 부터 — 옛 판으로 비교 측정할 때도 같은 코드로 돌게
   );
   const ctx: FollowupContext = {
     // 직전 "모름" 질문은 같은 빈칸을 다시 묻는 것이 정상이므로 중복 비교에서 뺀다

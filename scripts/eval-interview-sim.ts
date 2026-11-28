@@ -24,7 +24,8 @@ const turnsN = Number(arg('turns') ?? 6);
 const label = arg('label') ?? 'run';
 const only = arg('only');
 const withProfile = args.includes('--profile') || args.includes('--until-profile');
-/** 앱처럼: 프로필이 「근거 있는 축 3개 미만」이면 질문 2개를 더 하고 다시 만든다 — 최대 질문 수까지 */
+/** 앱처럼: 프로필이 「근거 있는 축 3개 미만」이면 인터뷰로 돌아가, 다시 「충분하다」(ready)가 되거나 최대 질문 수가 될 때까지 묻고 다시 만든다
+ *  (~~질문 2개를 더 하고 다시 만든다~~ → 2026-11-28: 앱이 돌아온 뒤 ready 전에는 다시 만들지 못하게 바뀜 — flow.ts makeProfile) */
 const untilProfile = args.includes('--until-profile');
 const cloud = args.includes('--cloud-session');
 if (cloud && process.env.CLAUDE_CODE_REMOTE !== 'true') throw new Error('--cloud-session 은 Claude Code 원격 세션 컨테이너(CLAUDE_CODE_REMOTE=true)에서만 씁니다');
@@ -140,8 +141,8 @@ for (const p of PERSONAS) {
           if (pr.outcome === 'needs_more') missing.push(`${listTurns(db, sid).length}턴 뒤: ${st?.note?.missing.join(' / ') ?? ''}`);
           profile = { outcome: pr.outcome, voiceRules: st?.profile?.voiceRules.map((x) => x.text) ?? [], pillars: st?.profile?.pillars.map((x) => `${x.name} — ${x.description}`) ?? [], accountLine: st?.profile?.accountLine ?? null };
           if (!untilProfile || pr.outcome !== 'needs_more' || listTurns(db, sid).length >= max) break;
-          // 앱처럼 인터뷰로 돌아가 더 묻는다(2개씩 — 한 개씩이면 프로필 opus 호출이 질문마다 붙는다)
-          for (let k = 0; k < 2 && listTurns(db, sid).length < max; k++) if (!(await askOne())) break;
+          // 앱처럼 인터뷰로 돌아가 더 묻는다 — ready 가 되거나 최대 질문 수까지(앱 화면도 그때만 「이제 프로필 만들기」를 보인다)
+          while (listTurns(db, sid).length < max && getSessionState(db, sid)?.status !== 'ready') if (!(await askOne())) break;
         } catch (e) {
           profile = { outcome: `오류: ${(e as Error).message}`, voiceRules: [], pillars: [], accountLine: null };
           break;

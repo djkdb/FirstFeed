@@ -38,11 +38,13 @@ export async function askNext(ai: AiService, sessionId: number, job?: JobContext
     setStatus(ai.db, sessionId, 'ready', state.note);
     return { kind: 'limit' };
   }
-  const r = await runFollowup(ai, state.survey, state.turns, job);
+  const gap = state.note?.kind === 'needs_more' ? state.note : null;
+  const r = await runFollowup(ai, state.survey, state.turns, job, gap?.missing ?? []);
   if (!r.ok) return { kind: 'failed', errors: r.errors };
   const turnNo = addTurn(ai.db, sessionId, r.data, r.jobId);
-  // AI 가 "충분하다"고 해도 최소 턴 전에는 무시한다
-  const ready = r.data.ready_for_profile && answered >= min;
+  // AI 가 "충분하다"고 해도 최소 턴 전에는 무시한다. 프로필 만들기에서 돌아온 뒤라면 새 답이 정해진 수만큼 쌓이기 전에도 무시한다
+  const sinceGap = gap ? answered - (gap.atTurn ?? 0) : Infinity;
+  const ready = r.data.ready_for_profile && answered >= min && sinceGap >= getSetting(ai.db, 'identity.retryMinNewAnswers');
   setStatus(ai.db, sessionId, ready ? 'ready' : 'interview', state.note);
   return { kind: 'asked', turnNo, readyForProfile: ready };
 }
@@ -97,6 +99,10 @@ export async function makeProfile(ai: AiService, sessionId: number, job?: JobCon
   const min = getSetting(ai.db, 'identity.minTurns');
   const max = getSetting(ai.db, 'identity.maxTurns');
   if (answered < min) throw new FlowError(`인터뷰 답이 ${answered}개라 아직 프로필을 만들 수 없습니다.`, `최소 ${min}개 질문에 답한 뒤 다시 시도하세요.`);
+  // 한 번 돌아온 뒤에는 부족한 것을 채운 다음에만 다시 만든다 — 같은 답으로 다시 부르면 같은 이유로 돌아와 시간만 든다(가상 사용자 테스트 2026-11-28 ①)
+  if (state.note?.kind === 'needs_more' && state.status !== 'ready' && answered < max) {
+    throw new FlowError('아직 부족한 것을 채우는 질문이 남았습니다.', '이어지는 질문에 답하면 「이제 프로필 만들기」가 다시 보여요.');
+  }
 
   const r = await runProfile(ai, buildSources(state.survey, state.turns), job);
   const o = r.outcome;
@@ -120,8 +126,9 @@ export async function makeProfile(ai: AiService, sessionId: number, job?: JobCon
       kind: exhausted ? 'failed' : 'needs_more',
       message: exhausted
         ? `질문 ${max}개를 다 썼지만 근거 있는 축이 3개가 되지 않았습니다. 설문을 더 구체적으로 채워 처음부터 다시 하거나, 다음 업데이트의 직접 수정 기능을 써 주세요.`
-        : '직접 한 말에서 근거를 찾을 수 있는 축이 3개가 되지 않았습니다. 몇 가지 더 물어볼게요.',
+        : '직접 한 말에서 근거를 찾을 수 있는 축이 3개가 되지 않았습니다. 아래 부족한 것을 채우는 질문을 이어서 할게요 — 채워지면 「이제 프로필 만들기」가 다시 보여요.',
       missing: o.missing,
+      atTurn: answered,
     });
     return { ...meta, outcome: 'needs_more', profileId: null, salvaged: false };
   }

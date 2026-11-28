@@ -10,6 +10,8 @@ export interface SessionNote {
   kind: 'needs_more' | 'failed';
   message: string;
   missing: string[];
+  /** needs_more 로 돌아왔을 때 답한 질문 수 — 그 뒤 새 답이 몇 개인지 세려고(없으면 옛 기록) */
+  atTurn?: number;
 }
 
 export interface Turn extends TurnLike {
